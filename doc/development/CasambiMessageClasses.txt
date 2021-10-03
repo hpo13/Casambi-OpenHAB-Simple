@@ -1,0 +1,125 @@
+
+Classes with class variables for the casambi driver
+
+CasambiMessageClasses 
+  Set of 
+    UserSession, NetworkSession, NetworkInformation, UnitList, UnitState, NetworkState,
+    NetworkGrups, NetworkScenes, FixtureInformation, Event, 
+    Datapoint, NetworkGallery, UnitIcon, NetworkImage 
+// Problem: infer message class from message object
+
+CasambiSession
+  String sessionId;
+  CasambiSite<Map> sites; 
+  CasambiNetwork<Map> networks;
+
+CasambiSite
+  String name;
+  String address;
+  String role;
+  CasambiNetwork<Map> networks;
+
+CasambiNetwork
+  String id;
+  String address;
+  String name;
+  String type;
+  String grade;
+  String role;
+  String sessionId;
+  Integer revision;
+  
+CasambiNetworkState extends CasambiNetwork
+  Object gateway;
+  String timezone;
+  Float dimLevel;
+  Integer[] activeScenes;
+  Photo[] photos;
+  CasambiUnit<Map> units;
+  CasambiScene<Map> scenes;
+  CasambiGroup<Map> groups;
+  
+CasambiUnit
+  Integer id;
+  String address;
+  String name;
+  Integer position;
+  Integer fixtureId;
+  String firmwareVersion;
+  Integer groupId;
+  Object labels;
+  String type;
+    
+CasambiUnitState extends CasambiUnit
+  String image;
+  Integer priority;
+  Integer scene;
+  Boolean on;
+  Boolean online;
+  Integer condition;
+  String status;
+  Integer activeSceneId
+  CasambiControl[] controls;
+  Object details;
+  Integer dimLevel;    
+  
+CasambiControl
+  String type;
+  Integer value; // Dimmer, CCT, Lux, Dimmer
+  String source; // Colorsource
+  Float x;       // Color
+  Float y;       // Color
+  RGB rdb;       // Color
+  Float tw       // CCT
+  Integer min;   // CCT
+  Integer max;   // CCT
+  Integer level; // CCT, Lux
+  String status; // Presence
+  String valueType; // Slider
+  Boolean readonly; // Fixture info
+
+CasambiScene
+  Integer id;
+  String name;
+  Integer position;
+  Integer icon;
+  Color color;
+  String type;
+  Boolean hidden;
+  Object units;
+    
+ CasambiGroup
+  Integer id;
+  String name;
+  Integer position;
+  Array units;
+    
+CasambiFixture
+  Integer id;
+  String type;
+  String vendor;
+  String model;
+  Object transations;
+  CasambiControl[] controls;
+  
+CasambiEvent
+  String method;
+  Integer priority;
+  Integer id;
+  Integer groupId;
+  Integer position;
+  String address;
+  String name;
+  Integer fixtureId;
+  String type
+  Integer condition;
+  Integer wire;
+  Object sensors;
+  Boolean online;
+  Integer activeSceneId;
+  Float dimLevel;
+  Object details;
+  Bolean on;
+  String status;
+  CasambiControl controls;
+  

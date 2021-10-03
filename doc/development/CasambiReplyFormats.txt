@@ -1,0 +1,644 @@
+Casambi Respone Info
+
+Response status codes
+
+200     request OK.
+400     Bad request, given parameters invalid.
+401     Unauthorized. Invalid API key or credentials given.
+403     Api not enabled by Casambi administrator.
+404     Requested data not found.
+405     Method not allowed.
+410     Invalid session.
+416     Retrieval interval is too long.
+429     Quota limits exceeded.
+500     Server error. 
+
+Reply classes to define
+ - Session 
+ - Site
+ - Network
+ - Unit (incl. set of)
+ - Scene (incl. set of)
+ - Group (incl. set of)
+ - Fixture 
+ - Control (incl. array of)
+ - Event
+and maybe a couple of subclasses
+ - unitId (incl. set of)
+
+At some point icons and photos as well
+
+Problems
+ - What to do with variable keys (for sites, networks, units, scenes, groups etc.). Can these be parsed into objects automatically? 
+The keys are not actually needed as they are stored in the id as well. (Try using a Map -> https://stackoverflow.com/questions/16891243/parse-json-with-variable-key#16895111")
+
+ - Store static and variable object information in one class or multiple classes? For example static information for a unit would be id, type, name, fixture id etc.
+ variable unit information would be on, online, status, condition, controls, dimLevel, activeSceneId etc.
+
+*** Create user session response example
+
+{
+    "sessionId": "hJK65SenmlL2354y.P822D76HufewNSloo780PvU-78DwdmnMA8exzIo9.mmNWD23whEqbPOsl11hjjWo03___",
+    "sites": {
+        "Rg5alx4BF41lSU2jK4r7T0Q7X0i00mQ": {
+            "name": "Playground",
+            "address": "",
+            "role": "ADMIN",
+            "networks": {
+                "VcrTwqLZJ26UYMXxTClmpfZxELcrPUAa": {
+                    "id": "VcrTwqLZJ26UYMXxTClmpfZxELcrPUAa",
+                    "address": "a00f251f77cc",
+                    "name": "Dev Network",
+                    "type": "OPEN",
+                    "grade": "EVOLUTION",
+                    "role": "ADMIN"
+                }
+            }
+        }
+    },
+    "networks": {
+        "VcrTwqLZJ26UYMXxTClmpfZxELcrPUAa": {
+            "id": "VcrTwqLZJ26UYMXxTClmpfZxELcrPUAa",
+            "address": "a00f251f77cc",
+            "name": "Dev Network",
+            "type": "OPEN",
+            "grade": "EVOLUTION",
+            "role": "ADMIN"
+        }
+    }
+}
+
+*** Create network session response example
+
+{
+    "VcrTwqLZJ26UYMXxTClmpfZxELcrPUAa": {
+        "id": "VcrTwqLZJ26UYMXxTClmpfZxELcrPUAa",
+        "address": "a00f251f77aa",
+        "name": "Dev Network",
+        "type": "OPEN",
+        "grade": "EVOLUTION",
+        "sessionId": "KDRmwOqerOsTyrr0x9HLrGFe1nknEk3oRoT-Kz3DJ.wx97MTXQXC.ZbWwqt9ze0KwC6h3GCTlPsUemX8uvK5Ow__"
+    }
+}
+
+*** Request network information response example
+
+{
+    "id": "VcrTwqLZJ26UYMXxTClmpfZxELcrPUAa",
+    "name": "Demo Room",
+    "revision": 125,
+    "grade": "EVOLUTION",
+    "address": "b02ef7956bcc",
+    "gateway": {
+        "name": "Demo iPad"
+    },
+    "type": "OPEN",
+    "timezone": "Europe/Helsinki",
+    "photos": [
+        {
+            "name": "Photo",
+            "controls": [],
+            "image": "iR4aIP3vXcB348Pijif2d4Y7AnowFbdD",
+            "position": 0
+        },
+        {
+            "name": "Photo",
+            "controls": [],
+            "image": "KLejfitLiEFeiUnhak6ID69VzJhvWYER",
+            "position": 1
+        }
+    ],
+    "units": {
+        "12": {
+            "id": 12,
+            "address": "80dfc3a5e41d",
+            "name": "CBM #5656",
+            "position": 0,
+            "fixtureId": 5656,
+            "firmwareVersion": "32.10",
+            "groupId": 3,
+            "labels": {},
+            "type": "Luminaire"
+        },
+        "15": {
+            "id": 15,
+            "address": "b3e63c069abc",
+            "name": "aBc (PIR)",
+            "position": 3,
+            "fixtureId": 1202,
+            "firmwareVersion": "32.10",
+            "groupId": 0,
+            "labels": {},
+            "type": "Sensor"
+        },
+        "18": {
+            "id": 18,
+            "address": "a01e6079c30f",
+            "name": "TestZXY",
+            "image": "7Fw3whiOxsfuE6GTR6utJl8OEAPkOd3",
+            "position": 4,
+            "fixtureId": 5124,
+            "firmwareVersion": "32.10",
+            "groupId": 0,
+            "labels": {},
+            "type": "Luminaire"
+        }
+    },
+    "scenes": {
+        "1": {
+            "name": "Timer",
+            "id": 1,
+            "position": 0,
+            "icon": 0,
+            "color": "#FFFFFF",
+            "type": "REGULAR",
+            "hidden": false,
+            "units": {
+                "12": {
+                    "id": 12
+                }
+            }
+        },
+        "4": {
+            "name": "Presence",
+            "id": 2,
+            "position": 1,
+            "icon": 0,
+            "color": "#06FF29",
+            "type": "REGULAR",
+            "hidden": false,
+            "units": {
+                "18": {
+                    "id": 18
+                }
+            }
+        }
+    },
+    "groups": {
+        "3": {
+            "id": 3,
+            "name": "Demo Group",
+            "position": 2,
+            "units": [
+                {
+                    "0": 12,
+                    "position": 0
+                }
+            ]
+        }
+    }
+}
+
+*** Request unit list response example
+
+{
+    "12": {
+        "id": 12,
+        "address": "80dfc3a5e41e",
+        "name": "CBM #5656",
+        "position": 0,
+        "fixtureId": 5656,
+        "firmwareVersion": "32.10",
+        "groupId": 3,
+        "labels": {},
+        "type": "Luminaire"
+    },
+    "15": {
+        "id": 15,
+        "address": "b3e63c069abc",
+        "name": "aBc (PIR)",
+        "position": 3,
+        "fixtureId": 1202,
+        "firmwareVersion": "32.10",
+        "groupId": 0,
+        "labels": {},
+        "type": "Sensor"
+    },
+    "18": {
+        "id": 18,
+        "address": "a01e6079c30f",
+        "name": "TestZXY",
+        "image": "7Fw3whiOxsfuE6GTR6utJl8OEAPkOd3",
+        "position": 4,
+        "fixtureId": 5124,
+        "firmwareVersion": "32.10",
+        "groupId": 0,
+        "labels": {},
+        "type": "Luminaire"
+    }
+}
+
+*** Request unit state response example
+
+{
+    "id": 18,
+    "address": "dfe579c30e4f",
+    "name": "TestUnit",
+    "image": "456ghkOxsfuE6GTR6utJl8OEAPkSqh",
+    "position": 4,
+    "fixtureId": 16574,
+    "firmwareVersion": "32.10",
+    "groupId": 0,
+    "priority": 3,
+    "scene": 0,
+    "on": true,
+    "online": true,
+    "condition": 134,
+    "status": "status_message",
+    "activeSceneId": 4,
+    "controls": [
+        [
+            {
+                "type": "Dimmer",
+                "value": 1
+            },
+            {
+                "source": "XY",
+                "type": "Colorsource"
+            },
+            {
+                "x": 0.14753297508549096,
+                "y": 0.13727405959941377,
+                "rgb": "rgb(136, 255, 255)",
+                "type": "Color"
+            },
+            {
+                "tw": 23.52941,
+                "min": 2700,
+                "max": 6000,
+                "type": "CCT",
+                "value": 6000,
+                "level": 1
+            }
+        ]
+    ],
+    "dimLevel": 1,
+    "type": "Luminaire"
+}
+
+*** Request network state response example
+
+{
+    "id": "VcrTwqLZJ26UYMXxTClmpfZxELcrPUAa",
+    "name": "Demo Room",
+    "revision": 125,
+    "grade": "EVOLUTION",
+    "address": "b02ef7956bcc",
+    "gateway": {
+        "name": "Demo iPad"
+    },
+    "type": "OPEN",
+    "timezone": "Europe/Helsinki",
+    "dimLevel": 0.5,
+    "activeScenes": [
+        3,
+        4
+    ],
+    "photos": [
+        {
+            "name": "Photo",
+            "controls": [],
+            "image": "iR4aIP3vXcB348Pijif2d4Y7AnowFbdD",
+            "position": 0
+        },
+        {
+            "name": "Photo",
+            "controls": [],
+            "image": "KLejfitLiEFeiUnhak6ID69VzJhvWYER",
+            "position": 1
+        }
+    ],
+    "units": {
+        "15": {
+            "id": 15,
+            "address": "44363c069a45",
+            "name": "Sensor Z",
+            "position": 4,
+            "fixtureId": 45602,
+            "firmwareVersion": "32.10",
+            "groupId": 0,
+            "priority": 0,
+            "scene": 0,
+            "on": false,
+            "online": false,
+            "condition": 0,
+            "status": "ok",
+            "activeSceneId": 0,
+            "controls": [
+                [
+                    {
+                        "type": "Presence",
+                        "status": "absent"
+                    },
+                    {
+                        "level": 0,
+                        "type": "Lux",
+                        "value": 0
+                    },
+                    {
+                        "type": "Switch"
+                    }
+                ]
+            ],
+            "details": {
+                "_name": "ccb3e63c069a",
+                "OEM": "Tridonic GmbH & Co KG",
+                "fixture_model": "bDW (PIR)"
+            },
+            "dimLevel": 0,
+            "type": "Sensor"
+        },
+        "18": {
+            "id": 18,
+            "address": "dfe579c30c88",
+            "name": "TestUnit",
+            "image": "456ghkOxsfuE6GTR6utJl8OEAPkSqh",
+            "position": 4,
+            "fixtureId": 16574,
+            "firmwareVersion": "32.10",
+            "groupId": 0,
+            "priority": 3,
+            "scene": 0,
+            "on": true,
+            "online": true,
+            "condition": 134,
+            "status": "status_message",
+            "activeSceneId": 4,
+            "controls": [
+                [
+                    {
+                        "type": "Dimmer",
+                        "value": 1
+                    },
+                    {
+                        "source": "XY",
+                        "type": "Colorsource"
+                    },
+                    {
+                        "x": 0.14753297508549096,
+                        "y": 0.13727405959941377,
+                        "rgb": "rgb(136, 255, 255)",
+                        "type": "Color"
+                    },
+                    {
+                        "tw": 23.52941,
+                        "min": 2700,
+                        "max": 6000,
+                        "type": "CCT",
+                        "value": 6000,
+                        "level": 1
+                    }
+                ]
+            ],
+            "dimLevel": 1,
+            "type": "Luminaire"
+        }
+    },
+    "scenes": {
+        "1": {
+            "name": "Timer",
+            "id": 1,
+            "position": 0,
+            "icon": 0,
+            "color": "#FFFFFF",
+            "type": "REGULAR",
+            "hidden": false,
+            "units": {
+                "12": {
+                    "id": 12
+                }
+            }
+        },
+        "4": {
+            "name": "Presence",
+            "id": 2,
+            "position": 1,
+            "icon": 0,
+            "color": "#06FF29",
+            "type": "REGULAR",
+            "hidden": false,
+            "units": {
+                "18": {
+                    "id": 18
+                }
+            }
+        }
+    },
+    "groups": {
+        "3": {
+            "id": 3,
+            "name": "Demo Group",
+            "position": 2,
+            "units": [
+                {
+                    "0": 12,
+                    "position": 0
+                }
+            ]
+        }
+    }
+}
+
+*** Request network groups response example
+
+{
+    "3": {
+        "id": 3,
+        "name": "Demo Group",
+        "position": 2,
+        "units": [
+            {
+                "id": 12,
+                "position": 0
+            }
+        ]
+    }
+}
+
+Request network scenes response example
+
+{
+    "1": {
+        "name": "Timer",
+        "id": 1,
+        "position": 0,
+        "icon": 0,
+        "color": "#FFFFFF",
+        "type": "REGULAR",
+        "hidden": false,
+        "units": {
+            "12": {
+                "id": 12
+            }
+        }
+    },
+    "4": {
+        "name": "Presence",
+        "id": 2,
+        "position": 1,
+        "icon": 0,
+        "color": "#06FF29",
+        "type": "REGULAR",
+        "hidden": false,
+        "units": {
+            "18": {
+                "id": 18
+            }
+        }
+    }
+}
+
+*** Request datapoints response example
+
+[
+    {
+        "unit": 15,
+        "sensor": "lux",
+        "value": 255,
+        "time": "20190724072154"
+    },
+    {
+        "unit": 15,
+        "sensor": "presence",
+        "value": 0,
+        "time": "20190724132540"
+    },
+    {
+        "unit": 22,
+        "sensor": "battery_level",
+        "value": 0,
+        "time": "20190725063204"
+    }
+]
+
+*** Request network gallery response example
+
+[
+    {
+        "name": "Photo",
+        "controls": [],
+        "image": "iR4aIP3vXcB348Pijif2d4Y7AnowFbdD",
+        "position": 0
+    },
+    {
+        "name": "Photo",
+        "controls": [],
+        "image": "KLejfitLiEFeiUnhak6ID69VzJhvWYER",
+        "position": 1
+    }
+]
+
+*** Request network unit icon and request network image reply with "BLOB:ImageData(png)"
+
+*** Request fixture information response example
+
+{
+    "id": 23456,
+    "type": "Driver",
+    "vendor": "Oktalite Lichttechnik GmbH",
+    "model": "Oktalite AGIRA PLUS",
+    "translations": {},
+    "controls": [
+        {
+            "type": "button",
+            "name": "Button",
+            "buttonLabel": "Button",
+            "dataname": "button",
+            "id": 0,
+            "readonly": true
+        },
+        {
+            "type": "dimmer",
+            "id": 1,
+            "readonly": false
+        },
+        {
+            "type": "rgb",
+            "id": 7,
+            "readonly": false
+        },
+        {
+            "type": "temperature",
+            "id": 25,
+            "readonly": false
+        },
+        {
+            "type": "colorsource",
+            "id": 31,
+            "readonly": false
+        },
+        {
+            "type": "slider",
+            "name": "Slider",
+            "unit": "",
+            "id": 33,
+            "readonly": false,
+            "valueType": "FLOAT"
+        }
+    ]
+}
+
+*** Event message example WSS
+
+{
+    "controls": [
+        {
+            "type": "Dimmer",
+            "value": 0.5
+        }, {
+            "source": "XY",
+            "type": "Colorsource"
+        }, {
+            "type": "Color"
+            "x":0.368343917,
+            "y":0.13,
+            "rgb":"rgb(255, 143, 255)"
+        }, {
+            "min": 2700,
+            "max": 6000,
+            "type": "CCT",
+            "value": 6000,
+            "level": 1
+        }
+    ],
+    "method": "unitChanged",
+    "priority": 15,
+    "id": 45,
+    "groupId": 0,
+    "position": 2,
+    "address": "df89c844c301",
+    "name": "Example Luminaire",
+    "fixtureId": 1234,
+    "type": "Luminaire",
+    "condition": 0,
+    "wire": 10,
+    "sensors": {},
+    "online": true,
+    "activeSceneId": 0,
+    "dimLevel": 0.5,
+    "details": {
+        "DALI": {
+            "SERIAL.4456935198821319392": {
+                    "GTIN": "8718696698181",
+                    "ODM": "Philips",
+                    "address": "0",
+                    "device_type": "6:SR",
+                    "energy_resettable": 900,
+                    "energy_total": 1.5,
+                    "energy_ts": 1560345734.924028,
+                    "lamp_time": 79,
+                    "model": "Xitanium 60W 0.08-0.35A 300V SR 230V",
+                    "operating_time": 16685,
+                    "output_power": 300,
+                    "serial": "4456935198821319392,
+                    "status": "02",
+                    "system_starts": 45
+            }
+        },
+        "OEM": "Casambi",
+        "fixture_model": "ExampleXY"
+    },
+    "on": true,
+    "status": "ok",
+}
+

@@ -1,0 +1,63 @@
+Casambi control message classes
+
+CasambiControl
+  String method;
+  Integer wire
+
+CasambiControlOpen extends CasambiControl
+  String id;
+  String session;
+  String ref;
+  Integer type;
+     
+CasambiControlUnit extends CasambiControl
+  // method = "controlUnit"
+  Integer id;
+  CasambiUnitControl targetControls;
+   
+CasambiControlUnits extends CasambiControl
+  // method = "controlUnits"
+  Integer[] ids;
+  CasambiTargetControl targetControls;
+  
+CasambiControlScene extends CasambiControl
+  // method = "controlScene"
+  Integer id;
+  Float level;
+  
+CasambiControlGroup extends CasambiControl
+  // method = "controlGroup"
+  Integer id;
+  Float level;
+  
+CasambiControlNetwork extends CasambiControl
+  // method = "controlNetwork"
+  Float level;
+  
+CasambiTargetControl
+
+CasambiTargetControlDimmer extends CasambiTargetControl
+  CasambiValue Dimmer;
+  
+CasambiTargetControlColorTemperatur extends CasambiTargetControl
+  CasambiValue ColorTemperature;
+  CasambiSource Colorsource;
+  
+CasambiTargetControlSlider extends CasambiTargetControl
+  CasambiValue Slider;
+
+CasambiTargetControlHueSaturation extends CasambiTargetControl
+  CasambiRGB RGB;
+  CasambiSource Colorsource;
+  
+CasambiTargetControlColorXY
+  CasambiXY XY;
+  CasambiSource Colorsource;
+  
+CasambiValue
+  Float value;
+  
+Casambi Source
+  String source;
+
+  

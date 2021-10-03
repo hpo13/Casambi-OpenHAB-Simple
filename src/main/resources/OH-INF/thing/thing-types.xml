@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="casambitest"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+	<!--CasambiBridge -->
+	<thing-type id="casambibridge">
+		<label>casambiTest Bridge</label>
+		<description>Casambi Bridge to Server</description>
+		<config-description>
+			<parameter name="apiKey" type="text" required="true">
+				<label>Casambi API Key</label>
+				<description>The API Key for the Casambi Server</description>
+			</parameter>
+			<parameter name="userId" type="text" required="true">
+				<label>Casambi User Id</label>
+				<description>The User Id (Email) the Casambi Server</description>
+			</parameter>
+			<parameter name="userPassword" type="text" required="true">
+				<label>Casambi User Password</label>
+				<description>The User Password for the Casambi Server</description>
+			</parameter>
+			<parameter name="networkPassword" type="text" required="true">
+				<label>Casambi Network Password</label>
+				<description>The Network Password for the Casambi Server</description>
+			</parameter>
+		</config-description>
+	</thing-type>
+	<!--CasambiLuminary -->
+	<thing-type id="luminary">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="casambibridge"/>
+		</supported-bridge-type-refs>
+		<label>casambiTest Luminary</label>
+		<description>Casambi Luminary, on/off/intensity</description>
+		<channels>
+			<channel id="switch" typeId="power"/>
+			<channel id="dim" typeId="power"/>
+		</channels>
+		<config-description>
+			<parameter name="luminaryNumber" type="integer" min="1" required="true">
+				<label>Luminary number</label>
+				<description>The number of the luminary to be switched</description>
+			</parameter>
+		</config-description>
+	</thing-type>
+	<!-- Switch Channel Type -->
+	<channel-type id="switch">
+		<item-type>Switch:Point</item-type>
+		<label>Luminary Power</label>
+		<description>Casambi Luminary Power (on/off) </description>
+	</channel-type>
+
+	<!--CasambiScene -->
+	<thing-type id="scene">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="casambibridge"/>
+		</supported-bridge-type-refs>
+		<label>casambiTest Scene</label>
+		<description>Casambi Lighting Scene</description>
+		<channels>
+			<channel id="scene" typeId="state"/>
+		</channels>
+	</thing-type>
+	<!-- Scene Channel Type -->
+	<channel-type id="scene">
+		<item-type>Number:Scene</item-type>
+		<label>Lighting Scene</label>
+		<description>Casambi Lighting Scene</description>
+	</channel-type>
+</thing:thing-descriptions>
