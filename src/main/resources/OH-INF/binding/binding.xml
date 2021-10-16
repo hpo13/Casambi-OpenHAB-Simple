@@ -6,5 +6,7 @@
 	<name>casambiTest Binding</name>
 	<description>Test binding for casambi, used to check things, channels and bridges etc.</description>
 	<author>Hein Osenberg</author>
+	
+	
 
 </binding:binding>

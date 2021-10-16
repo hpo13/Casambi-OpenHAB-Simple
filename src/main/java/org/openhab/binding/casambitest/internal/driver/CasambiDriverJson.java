@@ -30,13 +30,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 
-import org.apache.commons.collections4.QueueUtils;
-import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageEvent;
@@ -45,6 +42,7 @@ import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageNe
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageScene;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageSession;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageUnit;
+import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageUnitState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +61,7 @@ import com.google.gson.reflect.TypeToken;
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
  * @version V0.2 210927@hpo Rewrite with POJOs, add @Nullable annotation
+ * @version V0.3 211010@hpo Ping added
  *
  */
 @NonNullByDefault
@@ -75,11 +74,13 @@ public class CasambiDriverJson {
     private String user_password;
     private String network_password;
     private String api_key;
+    private Boolean gotPong = true;
     private static @Nullable PrintWriter writer;
 
     // Connection status
 
     private @Nullable WebSocket casa_socket;
+    private String socket_status = "null";
 
     private String network_id;
     private String session_id;
@@ -90,7 +91,7 @@ public class CasambiDriverJson {
     final static String path = "/home/localhpo/eclipse-workspace/org.hposenberg.casambi-driver/testdata/";
     final static String sessionTest = "driver_messages.txt";
 
-    private Queue<String> ringBuffer = QueueUtils.synchronizedQueue(new CircularFifoQueue<String>(128));
+    private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<String>();
 
     public class CasambiException extends Exception {
         final static long serialVersionUID = 210829110214L; // Use dateTime
@@ -157,6 +158,7 @@ public class CasambiDriverJson {
 
         URL sessionURL = new URL(this.casaServer, "/v1/users/session");
         String payload = "{\"email\": \"" + this.user + "\", \"password\": \"" + this.user_password + "\"}";
+        // logger.debug("createUserSession: payload {}, key {}", payload, this.api_key);
 
         HttpRequest request = HttpRequest.newBuilder().uri(new URI(sessionURL.toString()))
                 .headers("X-Casambi-Key", this.api_key, "Content-type", "application/json")
@@ -173,7 +175,7 @@ public class CasambiDriverJson {
         } else {
             logger.info("createUserSession - estabished successfully.");
         }
-        writer.println("+++ createUserSession +++");
+        writer.println(getTimeStamp() + " +++ createUserSession +++");
         dumpJson(response.body());
 
         Gson gson = new Gson();
@@ -204,7 +206,7 @@ public class CasambiDriverJson {
         } else {
             logger.info("createNetworkSession - estabished successfully.");
         }
-        writer.println("+++ createNetworkSession +++");
+        writer.println(getTimeStamp() + " +++ createNetworkSession +++");
         dumpJson(response.body());
 
         Gson gson = new Gson();
@@ -237,7 +239,7 @@ public class CasambiDriverJson {
         } else {
             logger.debug("getNetworkInformation - success.");
         }
-        writer.println("+++ getNetworkInformation +++");
+        writer.println(getTimeStamp() + " +++ getNetworkInformation +++");
         dumpJson(response.body());
 
         JsonObject networkInfo = JsonParser.parseString(response.body()).getAsJsonObject();
@@ -263,7 +265,7 @@ public class CasambiDriverJson {
         } else {
             logger.debug("getNetworkState - success.");
         }
-        writer.println("+++ getNetworkState +++");
+        writer.println(getTimeStamp() + " +++ getNetworkState +++");
         dumpJson(response.body());
 
         Gson gson = new Gson();
@@ -294,7 +296,7 @@ public class CasambiDriverJson {
         } else {
             logger.debug("getNetworkDataPoints - success.");
         }
-        writer.println("+++ getNetworkDatapoints +++");
+        writer.println(getTimeStamp() + " +++ getNetworkDatapoints +++");
         dumpJson(response.body());
 
         // Wrap response into object because gson does not seem to like naked json-arrays
@@ -322,7 +324,7 @@ public class CasambiDriverJson {
         } else {
             logger.debug("getUnitList - success.");
         }
-        writer.println("+++ getUnitList +++");
+        writer.println(getTimeStamp() + " +++ getUnitList +++");
         dumpJson(response.body());
 
         Gson gson = new Gson();
@@ -332,7 +334,7 @@ public class CasambiDriverJson {
         return unitList;
     };
 
-    public JsonObject getUnitState(int unit_id)
+    public @Nullable CasambiMessageUnitState getUnitState(int unit_id)
             throws IOException, InterruptedException, URISyntaxException, CasambiException {
 
         URL unitStateURL = new URL(this.casaServer, "/v1/networks/" + this.network_id + "/units/" + unit_id + "/state");
@@ -351,11 +353,12 @@ public class CasambiDriverJson {
         } else {
             logger.debug("getUnitState - success.");
         }
-        writer.println("+++ getUnitState +++");
+        writer.println(getTimeStamp() + " +++ getUnitState +++");
         dumpJson(response.body());
 
-        JsonObject unitInfo = JsonParser.parseString(response.body()).getAsJsonObject();
-        return unitInfo;
+        Gson gson = new Gson();
+        CasambiMessageUnitState unitState = gson.fromJson(response.body(), CasambiMessageUnitState.class);
+        return unitState;
     };
 
     public @Nullable Map<String, CasambiMessageScene> getScenes()
@@ -377,7 +380,7 @@ public class CasambiDriverJson {
         } else {
             logger.debug("getScenes - success.");
         }
-        writer.println("+++ getScenes +++");
+        writer.println(getTimeStamp() + " +++ getScenes +++");
         dumpJson(response.body());
 
         Gson gson = new Gson();
@@ -406,7 +409,7 @@ public class CasambiDriverJson {
         } else {
             logger.debug("getFixtureInfo - success.");
         }
-        writer.println("+++ getFixtureInfo +++");
+        writer.println(getTimeStamp() + " +++ getFixtureInfo +++");
         dumpJson(response.body());
 
         JsonObject fixtureInfo = JsonParser.parseString(response.body()).getAsJsonObject();
@@ -415,15 +418,23 @@ public class CasambiDriverJson {
     };
 
     public @Nullable String receiveMessageJson() {
-        return ringBuffer.poll();
+        String res = null;
+        try {
+            // Blocks until there is something in the queue
+            res = queue.take();
+        } catch (Exception e) {
+            logger.error("receiveMessageJson: Exception {}", e);
+        }
+        return res;
     }
 
     public @Nullable CasambiMessageEvent receiveMessage() {
         Gson gson = new Gson();
         String msg = receiveMessageJson();
         if (msg != null) {
-            writer.println("+++ receiveMessage +++");
+            writer.println(getTimeStamp() + " +++ receiveMessage +++");
             dumpJson(msg);
+            writer.flush();
             CasambiMessageEvent event = gson.fromJson(msg, CasambiMessageEvent.class);
             // System.out.println("getUnitState: " + ppJson(unitInfo));
             return event;
@@ -433,50 +444,66 @@ public class CasambiDriverJson {
     }
 
     private class WebSocketClient implements WebSocket.Listener {
-        private final CountDownLatch latch;
-
-        public WebSocketClient(CountDownLatch latch) {
-            this.latch = latch;
-        };
 
         @Override
         public void onOpen(@Nullable WebSocket webSocket) {
             logger.debug("WebSocket.onOpen called");
+            writer.println(getTimeStamp() + " +++ Socket onOpen +++");
+            socket_status = "open";
             WebSocket.Listener.super.onOpen(webSocket);
         };
 
         @Override
         public CompletionStage<?> onText(@Nullable WebSocket webSocket, @Nullable CharSequence data, boolean last) {
-            logger.debug("WebSocket.onText received {}", data);
-            ringBuffer.add(data.toString());
-            latch.countDown();
+            // logger.debug("WebSocket.onText received {}", data);
+            // socket_status = "data_text";
+            writer.println(getTimeStamp() + " +++ Socket onText +++");
+            writer.append(data);
+            try {
+                queue.put(data.toString());
+            } catch (InterruptedException e) {
+                logger.error("onText: Exception {}", e);
+            }
             return WebSocket.Listener.super.onText(webSocket, data, last);
         };
 
         @Override
         public CompletionStage<?> onBinary(@Nullable WebSocket webSocket, @Nullable ByteBuffer data, boolean last) {
             String msg = StandardCharsets.UTF_8.decode(data).toString();
-            logger.debug("onBinary received {}", ppJson(msg));
-            ringBuffer.add(msg);
-            latch.countDown();
+            // logger.debug("onBinary received {}", ppJson(msg));
+            // socket_status = "data_binary";
+            writer.println(getTimeStamp() + " +++ Socket onText +++");
+            writer.append(data.asCharBuffer());
+            try {
+                queue.put(msg);
+            } catch (InterruptedException e) {
+                logger.error("onText: Exception {}", e);
+            }
             return WebSocket.Listener.super.onBinary(webSocket, data, last);
         };
 
         @Override
         public CompletionStage<?> onClose(@Nullable WebSocket webSocket, int statusCode, @Nullable String reason) {
             logger.debug("onClose status {}, reason {}", statusCode, reason);
+            writer.println(getTimeStamp() + " +++ Socket onClose +++");
+            socket_status = "closed";
+            // push close message to ring buffer here
             return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
         };
 
         @Override
         public void onError(@Nullable WebSocket webSocket, @Nullable Throwable error) {
             logger.error("WebSocket.onError {}", webSocket.toString());
+            writer.println(getTimeStamp() + " +++ Socket onError +++");
+            socket_status = "error";
+            // push error message to ring buffer here
             WebSocket.Listener.super.onError(webSocket, error);
         }
     };
 
-    public void casambiOpen() throws IOException, InterruptedException, URISyntaxException, CasambiException {
+    public void casambiSocketOpen() throws IOException, InterruptedException, URISyntaxException, CasambiException {
 
+        logger.debug("casambiOpen: opening socket for casambi communication");
         if (this.casa_socket == null) {
             URI casambiURI = new URI("wss://door.casambi.com/v1/bridge/");
 
@@ -490,15 +517,14 @@ public class CasambiDriverJson {
             reqJson.addProperty("wire", this.wire_id);
             reqJson.addProperty("type", 1);
 
-            CountDownLatch latch = new CountDownLatch(1);
-            Listener listener = new WebSocketClient(latch);
+            // CountDownLatch latch = new CountDownLatch(1);
+            Listener listener = new WebSocketClient();
 
             this.casa_socket = HttpClient.newHttpClient().newWebSocketBuilder().subprotocols(this.api_key)
                     .buildAsync(casambiURI, listener).join();
 
             this.casa_socket.sendText(reqJson.toString(), true);
-            logger.debug("casambiOpen: waiting for latch.");
-            latch.await();
+            writer.println(getTimeStamp() + " +++ Socket casambiOpen +++");
 
         } else {
             final String msg = "casambiOpen: Error - Socket already open.";
@@ -508,7 +534,7 @@ public class CasambiDriverJson {
     };
 
     // FIXME: Socket inaktivieren (ist das richtig so?)
-    public void casambiClose() throws InterruptedException, CasambiException {
+    public void casambiSocketClose() throws InterruptedException, CasambiException {
 
         if (this.casa_socket != null) {
             JsonObject reqJson = new JsonObject();
@@ -516,20 +542,15 @@ public class CasambiDriverJson {
             reqJson.addProperty("method", "close");
 
             this.casa_socket.sendText(reqJson.toString(), true);
+            writer.println(getTimeStamp() + " +++ Socket casambiClose +++");
 
             final int ms = 1000;
             Thread.sleep(10 * ms);
             this.casa_socket = null;
         } else {
-            final String msg = "casambiOpen: Error - Socket already open.";
+            final String msg = "casambiClose: Error - Socket not open.";
             logger.error(msg);
             throw new CasambiException(msg);
-        }
-        try {
-            writer.println("Done dumping JSON.");
-            writer.close();
-        } catch (Exception e) {
-            logger.warn("casambiClose: Error closing JSON dump: {}", e.toString());
         }
     };
 
@@ -542,7 +563,7 @@ public class CasambiDriverJson {
     }
 
     public void setUnitValue(int unit_id, float dim) throws CasambiException {
-
+        logger.debug("setUnitValue: unit {} value {}", unit_id, dim);
         if (this.casa_socket != null) {
             JsonObject value = new JsonObject();
             value.addProperty("value", dim);
@@ -557,8 +578,9 @@ public class CasambiDriverJson {
             reqJson.add("targetControls", dimmer);
 
             this.casa_socket.sendText(reqJson.toString(), true);
+            writer.println(getTimeStamp() + " +++ Socket setUnitValue +++");
         } else {
-            final String msg = "casambiOpen: Error - Socket already open.";
+            final String msg = "setUnitValue: Error - Socket not open.";
             logger.error(msg);
             throw new CasambiException(msg);
         }
@@ -574,8 +596,9 @@ public class CasambiDriverJson {
             reqJson.addProperty("level", 0);
 
             this.casa_socket.sendText(reqJson.toString(), true);
+            writer.println(getTimeStamp() + " +++ Socket turnSceneOff +++");
         } else {
-            final String msg = "casambiOpen: Error - Socket already open.";
+            final String msg = "turnSceneOff: Error - Socket not open.";
             logger.error(msg);
             throw new CasambiException(msg);
         }
@@ -591,11 +614,43 @@ public class CasambiDriverJson {
             reqJson.addProperty("level", 1);
 
             this.casa_socket.sendText(reqJson.toString(), true);
+            writer.println(getTimeStamp() + " +++ Socket turnSceneOn +++");
         } else {
-            final String msg = "casambiOpen: Error - Socket already open.";
+            final String msg = "turnSceneOn: Error - Socket not open.";
             logger.error(msg);
             throw new CasambiException(msg);
         }
+    }
+
+    public void ping() throws CasambiException {
+        if (!this.gotPong) {
+            logger.warn("ping: Response missing for last ping.");
+        }
+        if (this.casa_socket != null) {
+            JsonObject reqJson = new JsonObject();
+            reqJson.addProperty("wire", this.wire_id);
+            reqJson.addProperty("method", "ping");
+
+            this.casa_socket.sendText(reqJson.toString(), true);
+            this.gotPong = false;
+        } else {
+            final String msg = "ping: Error - Socket not open.";
+            logger.error(msg);
+            throw new CasambiException(msg);
+        }
+    }
+
+    public String getSocketStatus() {
+        return socket_status;
+    }
+
+    public void pingOk() {
+        this.gotPong = true;
+    }
+
+    private String getTimeStamp() {
+        final DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("dd.MM.YY HH:mm:ss");
+        return LocalDateTime.now().format(myFormatObj);
     }
 }
 

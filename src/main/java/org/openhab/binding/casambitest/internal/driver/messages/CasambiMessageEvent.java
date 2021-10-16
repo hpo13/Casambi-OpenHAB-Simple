@@ -47,6 +47,7 @@ public class CasambiMessageEvent {
     public @Nullable CasambiMessageControl @Nullable [] controls;
     public @Nullable String ref;
     public @Nullable String wireStatus;
+    public @Nullable String response;
 
     CasambiMessageEvent() {
         id = 0;

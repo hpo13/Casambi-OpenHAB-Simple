@@ -43,6 +43,9 @@ public class CasambiTestBindingConstants {
     public static final String CHANNEL_DIM = "dim";
     public static final String CHANNEL_SCENE = "scene";
 
+    public static final String DEVICE_ID = "luminaryNumber";
+    public static final String SCENE_ID = "sceneNumber";
+
     public static final int CASAMBI_DIM_FULL_ON = 100;
     public static final int CASAMBI_DIM_OFF = 0;
 }

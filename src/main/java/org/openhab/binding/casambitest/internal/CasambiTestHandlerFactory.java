@@ -21,6 +21,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.casambitest.internal.handler.CasambiBridgeHandler;
 import org.openhab.binding.casambitest.internal.handler.CasambiLuminaryHandler;
 import org.openhab.binding.casambitest.internal.handler.CasambiSceneHandler;
+import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingTypeUID;
 import org.openhab.core.thing.binding.BaseThingHandlerFactory;
@@ -42,10 +43,12 @@ public class CasambiTestHandlerFactory extends BaseThingHandlerFactory {
 
     private final Logger logger = LoggerFactory.getLogger(CasambiTestHandlerFactory.class);
 
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_LUMINARY, THING_TYPE_SCENE);
+    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(BRIDGE_TYPE, THING_TYPE_LUMINARY,
+            THING_TYPE_SCENE);
 
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
+        // logger.debug("supportsThingType: check for uid {}", thingTypeUID);
         return SUPPORTED_THING_TYPES_UIDS.contains(thingTypeUID);
     }
 
@@ -55,7 +58,8 @@ public class CasambiTestHandlerFactory extends BaseThingHandlerFactory {
         logger.debug("createHandler: uid {}", thingTypeUID);
 
         if (BRIDGE_TYPE.equals(thingTypeUID)) {
-            return new CasambiBridgeHandler(thing);
+            Bridge bridge = (Bridge) thing;
+            return new CasambiBridgeHandler(bridge);
         }
         if (THING_TYPE_LUMINARY.equals(thingTypeUID)) {
             return new CasambiLuminaryHandler(thing);
@@ -65,4 +69,5 @@ public class CasambiTestHandlerFactory extends BaseThingHandlerFactory {
         }
         return null;
     }
+
 }
