@@ -15,11 +15,11 @@ package org.openhab.binding.casambitest.internal.handler;
 import static org.openhab.binding.casambitest.internal.CasambiTestBindingConstants.*;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageNetworkState;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.ChannelUID;
@@ -44,9 +44,12 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class CasambiSceneHandler extends BaseThingHandler {
 
+    // Reverse mapping from ids to things
+    private static Map<Integer, Thing> scenesById = new HashMap<>();
+
     private final Logger logger = LoggerFactory.getLogger(CasambiSceneHandler.class);
 
-    private @Nullable Integer sceneId;
+    private Integer sceneId = 0;
 
     // private @Nullable CasambiTestConfiguration config;
 
@@ -60,7 +63,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
         CasambiBridgeHandler bridgeHandler = getBridgeHandler();
         Boolean doRefresh = false;
-        if (bridgeHandler != null) {
+        if (bridgeHandler != null && bridgeHandler.casambi != null) {
             // logger.debug("handleCommand: bridge handler ok.");
             if (CHANNEL_SCENE.equals(channelUID.getId())) {
                 if (command instanceof RefreshType) {
@@ -84,16 +87,8 @@ public class CasambiSceneHandler extends BaseThingHandler {
                 logger.warn("handleCommand: unexpected channel id {}", channelUID.getId());
             }
             if (doRefresh) {
+                logger.debug("handleCommand: (Scene) doRefresh NOP");
                 // Send refresh command here
-                try {
-                    logger.debug("handleCommand: uid {} get unit state", channelUID);
-                    CasambiMessageNetworkState networkState = bridgeHandler.casambi.getNetworkState();
-                    updateSceneState(networkState);
-                    // TODO: parse unitState and updateStatus accordingly
-                } catch (Exception e) {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, String
-                            .format("Channel %s Exception getting unit state %s", channelUID.toString(), e.toString()));
-                }
             }
         } else {
             // logger.warn("handleCommand: bridge handler is null.");
@@ -113,11 +108,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
             updateStatus(ThingStatus.ONLINE);
         }
         sceneId = ((BigDecimal) this.thing.getConfiguration().get(SCENE_ID)).intValueExact();
-        CasambiBridgeHandler h = (CasambiBridgeHandler) bridge.getHandler();
-        if (sceneId != null && h != null) {
-            logger.debug("initialize: adding thing to mapping");
-            h.putSceneById(sceneId, this.thing);
-        }
+        putSceneById(sceneId);
         logger.debug("initialize: uid {}, id {}", this.thing.getUID(), sceneId);
     }
 
@@ -169,16 +160,21 @@ public class CasambiSceneHandler extends BaseThingHandler {
         super.updateState(chan, state);
     }
 
-    private void updateSceneState(@Nullable CasambiMessageNetworkState s) {
-        logger.debug("updateSceneState: id {}, name {}", s.id, s.name);
-        if (s != null && s.activeScenes != null) {
-            if (Arrays.asList(s.activeScenes).contains(sceneId)) {
-                updateState(CHANNEL_SCENE, OnOffType.ON);
-            } else {
-                updateState(CHANNEL_SCENE, OnOffType.OFF);
-            }
+    // Map Luminary ids to things. Needed to update thing status based on casambi message content
+    // Get thing corresponding to id
+    public static @Nullable Thing getSceneById(@Nullable Integer id) {
+        if (id != null) {
+            return scenesById.get(id);
         } else {
-            logger.debug("upateUnitState: scene info null");
+            return null;
+        }
+    }
+
+    // Add a (new) thing to the mapping
+    private void putSceneById(@Nullable Integer id) {
+        logger.debug("putThingById: id {}", id);
+        if (id != null) {
+            scenesById.putIfAbsent(id, this.thing);
         }
     }
 

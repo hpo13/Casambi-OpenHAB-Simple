@@ -23,6 +23,8 @@ import com.google.gson.JsonObject;
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
+ *
+ *          Not really needed - all functionality already provided by CasambiMessgeUnit
  */
 @NonNullByDefault
 public class CasambiMessageUnitState {

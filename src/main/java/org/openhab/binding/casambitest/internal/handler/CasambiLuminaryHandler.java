@@ -15,10 +15,12 @@ package org.openhab.binding.casambitest.internal.handler;
 import static org.openhab.binding.casambitest.internal.CasambiTestBindingConstants.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageUnitState;
+import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageUnit;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.PercentType;
 import org.openhab.core.thing.Bridge;
@@ -45,9 +47,12 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class CasambiLuminaryHandler extends BaseThingHandler {
 
+    // Reverse mapping from ids to things
+    private static Map<Integer, Thing> thingsById = new HashMap<>();
+
     private final Logger logger = LoggerFactory.getLogger(CasambiLuminaryHandler.class);
 
-    private @Nullable Integer deviceId;
+    private Integer deviceId = 0;
 
     // private @Nullable CasambiTestConfiguration config;
 
@@ -61,7 +66,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
         CasambiBridgeHandler bridgeHandler = getBridgeHandler();
         Boolean doRefresh = false;
-        if (bridgeHandler != null) {
+        if (bridgeHandler != null && bridgeHandler.casambi != null) {
             // logger.debug("handleCommand: bridge handler ok.");
             if (CHANNEL_SWITCH.equals(channelUID.getId())) {
                 if (command instanceof RefreshType) {
@@ -103,9 +108,12 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
                 // Send refresh command here
                 try {
                     logger.debug("handleCommand: uid {} get unit state", channelUID);
-                    CasambiMessageUnitState unitState = bridgeHandler.casambi.getUnitState(deviceId);
-                    updateUnitState(unitState);
-                    // TODO: parse unitState and updateStatus accordingly
+                    CasambiMessageUnit unitState = bridgeHandler.casambi.getUnitState(deviceId);
+                    if (unitState != null) {
+                        updateLuminaryState(unitState);
+                    } else {
+                        logger.debug("handleCommand: uid {}, unit state is null", channelUID);
+                    }
                 } catch (Exception e) {
                     updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, String
                             .format("Channel %s Exception getting unit state %s", channelUID.toString(), e.toString()));
@@ -130,11 +138,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
         }
 
         deviceId = ((BigDecimal) this.thing.getConfiguration().get(DEVICE_ID)).intValueExact();
-        CasambiBridgeHandler h = (CasambiBridgeHandler) bridge.getHandler();
-        if (deviceId != null && h != null) {
-            logger.debug("initialize: adding thing to mapping");
-            h.putThingById(deviceId, this.thing);
-        }
+        putThingById(deviceId);
         logger.debug("initialize: uid {}, id {}", this.thing.getUID(), deviceId);
     }
 
@@ -186,22 +190,38 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
         super.updateState(chan, state);
     }
 
-    private void updateUnitState(@Nullable CasambiMessageUnitState s) {
-        logger.debug("updateUnitState: id {}, name {}", s.id, s.name);
-        if (s != null) {
-            // ThingStatus
-            if (s.online) {
-                updateStatus(ThingStatus.ONLINE);
-            } else {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Device went offline");
-            }
-            // ChannelState
-            updateState(CHANNEL_SWITCH, s.on ? OnOffType.ON : OnOffType.OFF);
-            if (s.dimLevel != null) {
-                updateState(CHANNEL_DIM, new PercentType(Math.round(s.dimLevel * 100)));
-            }
+    public void updateLuminaryState(CasambiMessageUnit state) {
+        logger.debug("updateLuminaryState: id {} dimLevel {}", deviceId, state.dimLevel);
+        if (state.online != null && state.online) {
+            updateStatus(ThingStatus.ONLINE);
         } else {
-            logger.debug("upateUnitState: unit state is null");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    String.format("Unit %d status offline", deviceId));
+        }
+        if (state.dimLevel == 0) {
+            updateState(CHANNEL_SWITCH, OnOffType.OFF);
+            updateState(CHANNEL_DIM, new PercentType(0));
+        } else {
+            updateState(CHANNEL_SWITCH, OnOffType.ON);
+            updateState(CHANNEL_DIM, new PercentType(Math.round(state.dimLevel * 100)));
+        }
+    }
+
+    // Map Luminary ids to things. Needed to update thing status based on casambi message content
+    // Get thing corresponding to id
+    public static @Nullable Thing getThingById(@Nullable Integer id) {
+        if (id != null) {
+            return thingsById.get(id);
+        } else {
+            return null;
+        }
+    }
+
+    // Add a (new) thing to the mapping
+    private void putThingById(@Nullable Integer id) {
+        logger.debug("putThingById: id {}", id);
+        if (id != null) {
+            thingsById.putIfAbsent(id, this.thing);
         }
     }
 

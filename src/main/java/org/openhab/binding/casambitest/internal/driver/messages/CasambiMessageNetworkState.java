@@ -17,9 +17,6 @@ import java.util.Map;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
 /**
  * The {@link CasambiMessageNetworkState} is used to parse network state messages with gson
  *
@@ -51,9 +48,4 @@ public class CasambiMessageNetworkState {
         photos = null;
         activeScenes = null;
     };
-
-    public @Nullable CasambiMessageNetworkState parseJson(JsonObject netInfo) {
-        Gson gson = new Gson();
-        return gson.fromJson(netInfo, CasambiMessageNetworkState.class);
-    }
 }

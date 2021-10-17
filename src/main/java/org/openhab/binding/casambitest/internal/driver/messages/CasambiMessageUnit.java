@@ -15,9 +15,6 @@ package org.openhab.binding.casambitest.internal.driver.messages;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
 /**
  * The {@link CasambiMessageUnit} is used to parse single unit structures with gson
  *
@@ -53,9 +50,4 @@ public class CasambiMessageUnit {
         type = "";
         fixtureId = 0;
     };
-
-    public @Nullable CasambiMessageUnit parseJson(JsonObject netInfo) {
-        Gson gson = new Gson();
-        return gson.fromJson(netInfo, CasambiMessageUnit.class);
-    }
 }

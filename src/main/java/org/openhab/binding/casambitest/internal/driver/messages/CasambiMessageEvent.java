@@ -15,9 +15,6 @@ package org.openhab.binding.casambitest.internal.driver.messages;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
 /**
  * The {@link CasambiMessageEvent} is used to parse event messages with gson
  *
@@ -26,6 +23,18 @@ import com.google.gson.JsonObject;
  */
 @NonNullByDefault
 public class CasambiMessageEvent {
+
+    public static enum messageType {
+        unitChanged,
+        peerChanged,
+        networkUpdated,
+        socketChanged, // Driver message (not Casambi message)
+        wireStatusOk,
+        wireStatusError,
+        keepAlive,
+        unknownMessage
+    };
+
     public @Nullable String method;
     public @Nullable Integer priority;
     public @Nullable Integer id;
@@ -56,8 +65,33 @@ public class CasambiMessageEvent {
         controls = null;
     };
 
-    public @Nullable CasambiMessageEvent parseJson(JsonObject netInfo) {
-        Gson gson = new Gson();
-        return gson.fromJson(netInfo, CasambiMessageEvent.class);
+    public messageType getMessageType() {
+        if (method != null) {
+            if (method.compareTo("unitChanged") == 0) {
+                return messageType.unitChanged;
+            } else if (method.compareTo("peerChanged") == 0) {
+                return messageType.peerChanged;
+            } else if (method.compareTo("networkUpdated") == 0) {
+                return messageType.networkUpdated;
+            } else if (method.compareTo("socketChanged") == 0) {
+                return messageType.socketChanged;
+            } else {
+                return messageType.unknownMessage;
+            }
+        } else if (wireStatus != null) {
+            if (wireStatus.compareTo("openWireSucceed") == 0) {
+                return messageType.wireStatusOk;
+            } else {
+                return messageType.wireStatusError;
+            }
+        } else if (response != null) {
+            if (response.compareTo("pong") == 0) {
+                return messageType.keepAlive;
+            } else {
+                return messageType.unknownMessage;
+            }
+        } else {
+            return messageType.unknownMessage;
+        }
     }
 }
