@@ -17,9 +17,6 @@ import java.util.Map;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
 /**
  * The {@link CasambiMessageSites} is used to parse multiple sites strucutures with gson
  *
@@ -33,10 +30,4 @@ public class CasambiMessageSites {
     CasambiMessageSites() {
         sites = null;
     };
-
-    @Nullable
-    public CasambiMessageSites parseJson(JsonObject netInfo) {
-        Gson gson = new Gson();
-        return gson.fromJson(netInfo, CasambiMessageSites.class);
-    }
 }

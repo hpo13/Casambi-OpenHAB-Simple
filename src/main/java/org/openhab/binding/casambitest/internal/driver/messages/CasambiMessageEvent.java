@@ -94,4 +94,39 @@ public class CasambiMessageEvent {
             return messageType.unknownMessage;
         }
     }
+
+    @Override
+    public String toString() {
+        String s;
+        switch (getMessageType()) {
+            case unitChanged:
+                s = String.format("unitChanged - id: %d, name: %s, on: %b, dimLevel: %.2f ", id, name, on, dimLevel);
+                break;
+            case peerChanged:
+                s = String.format("peerChanged - online: %b, wire: %d", online, wire);
+                break;
+            case networkUpdated:
+                s = String.format("networkUpdated - ");
+                break;
+            case socketChanged:
+                s = String.format("socketChanged -  status %s, message %s", status, response);
+                break;
+            case wireStatusOk:
+                s = String.format("wireStatusOk - status %s", wireStatus);
+                break;
+            case wireStatusError:
+                s = String.format("wireStatusError - status %s", wireStatus);
+                break;
+            case keepAlive:
+                s = String.format("keepAlive - %s", response);
+                break;
+            case unknownMessage:
+                s = String.format("unknownMessage - ");
+                break;
+            default:
+                s = String.format("illegal message type - ");
+                ;
+        }
+        return s;
+    }
 }

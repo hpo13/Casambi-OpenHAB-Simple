@@ -224,11 +224,15 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
     }
 
     // Add a (new) thing to the mapping
-    private void putThingById(@Nullable Integer id) {
+    public void putThingById(@Nullable Integer id) {
         logger.debug("putThingById: id {}", id);
         if (id != null) {
             thingsById.putIfAbsent(id, this.thing);
         }
+    }
+
+    public Boolean checkThingsById(Integer id) {
+        return thingsById.containsKey(id);
     }
 
 }

@@ -17,9 +17,6 @@ import java.util.Map;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
 /**
  * The {@link CasambiMessageScene} is used to parse scene structures with gson
  *
@@ -43,9 +40,4 @@ public class CasambiMessageScene {
         type = "";
         hidden = false;
     };
-
-    public @Nullable CasambiMessageScene parseJson(JsonObject photoInfo) {
-        Gson gson = new Gson();
-        return gson.fromJson(photoInfo, CasambiMessageScene.class);
-    }
 }

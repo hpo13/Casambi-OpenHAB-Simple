@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.casambitest.internal.driver;
 
-import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -357,7 +357,7 @@ public class CasambiDriverJson {
             String msg = StandardCharsets.UTF_8.decode(data).toString();
             // socket_status = "data_binary";
             try {
-                if (msg != null && msg.length() > 0) {
+                if (msg.length() > 0) {
                     queue.put(msg);
                     dumpJsonWithMessage("+++ Socket onBinary +++", msg);
                 } else {
@@ -608,7 +608,7 @@ public class CasambiDriverJson {
                 // Path path = Paths.get(System.getProperty("user.home"), logPath, logFile);
                 Path path = Paths.get(logPath, logFile);
                 logger.debug("createUserSession: log file path is {}", path);
-                writer = new PrintWriter(new File(path.toString()));
+                writer = new PrintWriter(new FileWriter(path.toString(), true));
                 writer.println("Casambi JSON message dump.");
                 writer.flush();
             } catch (Exception e) {
@@ -631,7 +631,7 @@ public class CasambiDriverJson {
      * };
      */
 
-    private String ppJson(@Nullable String json) {
+    public String ppJson(@Nullable String json) {
         if (json != null) {
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             JsonObject jObj = JsonParser.parseString(json).getAsJsonObject();
@@ -676,12 +676,12 @@ public class CasambiDriverJson {
         try {
             if (jsonLogActive && writer != null && json != null) {
                 String jStr = ppJson(json);
-                if (jStr != null) {
-                    writer.println(jStr);
-                } else {
-                    logger.info("ppJson: got null string for json: {}", json);
-                    writer.println("=== ERROR ===  ppJson Got null string for json: " + json);
-                }
+                // if (jStr != null) {
+                writer.println(jStr);
+                // } else {
+                // logger.info("ppJson: got null string for json: {}", json);
+                // writer.println("=== ERROR === ppJson Got null string for json: " + json);
+                // }
             }
         } catch (Exception e) {
             logger.warn("dumpJson: Exception dumping JSON: {}", e.toString());

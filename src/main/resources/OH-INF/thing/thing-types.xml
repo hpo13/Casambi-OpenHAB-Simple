@@ -89,7 +89,7 @@
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="casambibridge"/>
 		</supported-bridge-type-refs>
-		<label>casambiTest Luminary</label>
+		<label>Casambi Luminary</label>
 		<description>Casambi luminary, on/off/intensity</description>
    		<channels>
 			<channel id="switch" typeId="casambiSwitch"/>
@@ -98,8 +98,13 @@
         <config-description>
             <parameter name="luminaryNumber" type="integer" min="0" required="true" readOnly="false" multiple="false">
               <required>true</required>
-              <label>Casambi luminary id</label>
+              <label>Casambi luminary Id</label>
               <description>Luminary id as assigned by the Casambi system</description>
+            </parameter>
+            <parameter name="luminaryName" type="text" required="true" readOnly="false" multiple="false">
+              <required>true</required>
+              <label>Casambi Luminary Name</label>
+              <description>Luminary name</description>
             </parameter>
         </config-description>
         <!-- <config-description-ref uri="thing-type:luminary:casambibridge"/> -->

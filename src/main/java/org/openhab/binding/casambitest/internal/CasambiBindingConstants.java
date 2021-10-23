@@ -28,7 +28,7 @@ import org.openhab.core.thing.ThingTypeUID;
 @NonNullByDefault
 public class CasambiBindingConstants {
 
-    private static final String BINDING_ID = "casambitest";
+    public static final String BINDING_ID = "casambitest";
 
     // List of all Thing Type UIDs
     public static final ThingTypeUID BRIDGE_TYPE = new ThingTypeUID(BINDING_ID, "casambibridge");
@@ -38,19 +38,23 @@ public class CasambiBindingConstants {
     public static final Set<ThingTypeUID> SUPPORTED_DEVICE_THING_TYPES_UIDS = new HashSet<>(
             Arrays.asList(BRIDGE_TYPE, THING_TYPE_LUMINARY, THING_TYPE_SCENE));
 
-    // List of all Channel ids
+    // Bridge constants
     // Bridge channels
     public static final String CHANNEL_PEER = "peer";
     public static final String CHANNEL_MESSAGE = "message";
-    // Luminary channels
+
+    // Luminary constants
+    // Parameters
+    public static final String DEVICE_ID = "luminaryNumber";
+    public static final String DEVICE_NAME = "luminaryName";
+    // Channels
     public static final String CHANNEL_SWITCH = "switch";
     public static final String CHANNEL_DIM = "dim";
-    // Scene channels
-    public static final String CHANNEL_SCENE = "scene";
 
-    public static final String DEVICE_ID = "luminaryNumber";
+    // Scene constants
+    // Parameters
     public static final String SCENE_ID = "sceneNumber";
-
-    public static final int CASAMBI_DIM_FULL_ON = 100;
-    public static final int CASAMBI_DIM_OFF = 0;
+    public static final String SCENE_NAME = "sceneName";
+    // Channels
+    public static final String CHANNEL_SCENE = "scene";
 }
