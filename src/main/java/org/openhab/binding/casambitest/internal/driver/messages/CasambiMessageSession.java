@@ -17,9 +17,6 @@ import java.util.Map;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
 /**
  * The {@link CasambiMessageSession} is used to parse session messages with gson
  *
@@ -37,10 +34,4 @@ public class CasambiMessageSession {
         sites = null;
         networks = null;
     };
-
-    @Nullable
-    public CasambiMessageSession parseJson(JsonObject netInfo) {
-        Gson gson = new Gson();
-        return gson.fromJson(netInfo, CasambiMessageSession.class);
-    }
 }

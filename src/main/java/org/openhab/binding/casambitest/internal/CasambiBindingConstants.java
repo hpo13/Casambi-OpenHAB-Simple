@@ -20,13 +20,13 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.core.thing.ThingTypeUID;
 
 /**
- * The {@link CasambiTestBindingConstants} class defines common constants, which are
+ * The {@link CasambiBindingConstants} class defines common constants, which are
  * used across the whole binding.
  *
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiTestBindingConstants {
+public class CasambiBindingConstants {
 
     private static final String BINDING_ID = "casambitest";
 
@@ -39,8 +39,13 @@ public class CasambiTestBindingConstants {
             Arrays.asList(BRIDGE_TYPE, THING_TYPE_LUMINARY, THING_TYPE_SCENE));
 
     // List of all Channel ids
+    // Bridge channels
+    public static final String CHANNEL_PEER = "peer";
+    public static final String CHANNEL_MESSAGE = "message";
+    // Luminary channels
     public static final String CHANNEL_SWITCH = "switch";
     public static final String CHANNEL_DIM = "dim";
+    // Scene channels
     public static final String CHANNEL_SCENE = "scene";
 
     public static final String DEVICE_ID = "luminaryNumber";

@@ -15,8 +15,8 @@ package org.openhab.binding.casambitest.internal.driver;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Type;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -27,10 +27,13 @@ import java.net.http.WebSocket;
 import java.net.http.WebSocket.Listener;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -67,14 +70,15 @@ public class CasambiDriverJson {
 
     // Connection parameters
 
-    private URL casaServer;
+    private @Nullable URL casaServer;
     private String userId;
     private String userPassword;
     private String networkPassword;
     private String apiKey;
     private volatile Boolean gotPong = true;
+
+    static Boolean jsonLogActive = false;
     private static @Nullable PrintWriter writer;
-    private Boolean debug = false;
 
     // Connection status
 
@@ -86,9 +90,6 @@ public class CasambiDriverJson {
     private int casambiWireId;
 
     final Logger logger = LoggerFactory.getLogger(CasambiDriverJson.class);
-
-    final static String path = "/home/localhpo/eclipse-workspace/org.hposenberg.casambi-driver/testdata/";
-    final static String sessionTest = "driver_messages.txt";
 
     private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<String>();
 
@@ -102,18 +103,23 @@ public class CasambiDriverJson {
         };
     };
 
-    // Constructor, need developer key, email (user id), user and network passwords
-    public CasambiDriverJson(String key, String user, String usrPw, String netPw) throws MalformedURLException {
-        this.casaServer = new URL("https://door.casambi.com/");
+    // Constructor, needs developer key, email (user id), user and network passwords
+    public CasambiDriverJson(String key, String user, String usrPw, String netPw) {
+        try {
+            casaServer = new URL("https://door.casambi.com/");
+        } catch (Exception e) {
+            logger.error("CasambiDriverJson: exception", e);
+            casaServer = null;
+        }
         casambiSocket = null;
-        this.casambiWireId = 1;
-        this.casambiSessionId = "";
-        this.casambiNetworkId = "";
+        casambiWireId = 1;
+        casambiSessionId = "";
+        casambiNetworkId = "";
 
-        this.apiKey = key;
-        this.userId = user;
-        this.userPassword = usrPw;
-        this.networkPassword = netPw;
+        apiKey = key;
+        userId = user;
+        userPassword = usrPw;
+        networkPassword = netPw;
     };
 
     // --- REST section -----------------------------------------------------------------------------------------------
@@ -126,7 +132,7 @@ public class CasambiDriverJson {
             logger.error(msg);
             throw new CasambiException(msg);
         } else {
-            logger.info("{} - success", functionName);
+            logger.trace("{} - success", functionName);
             dumpJsonWithMessage("+++ " + functionName + " +++", response.body());
         }
     }
@@ -135,22 +141,13 @@ public class CasambiDriverJson {
     public @Nullable CasambiMessageSession createUserSession()
             throws URISyntaxException, IOException, InterruptedException, CasambiException {
 
-        if (debug) {
-            try {
-                writer = new PrintWriter(new File(path + sessionTest));
-                writer.println("Casambi JSON message dump.");
-            } catch (Exception e) {
-                logger.error("createUserSessionn: Error opening JSON dump file: {}", e.toString());
-            }
-        }
-
-        URL url = new URL(this.casaServer, "/v1/users/session");
+        URL url = new URL(casaServer, "/v1/users/session");
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty("email", this.userId);
-        reqJson.addProperty("password", this.userPassword);
+        reqJson.addProperty("email", userId);
+        reqJson.addProperty("password", userPassword);
 
         HttpRequest request = HttpRequest.newBuilder().uri(new URI(url.toString()))
-                .headers("X-Casambi-Key", this.apiKey, "Content-type", "application/json")
+                .headers("X-Casambi-Key", apiKey, "Content-type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(reqJson.toString())).build();
 
         HttpResponse<String> response = HttpClient.newBuilder().build().send(request,
@@ -161,7 +158,7 @@ public class CasambiDriverJson {
         Gson gson = new Gson();
         CasambiMessageSession sessObj = gson.fromJson(response.body(), CasambiMessageSession.class);
         if (sessObj != null) {
-            this.casambiSessionId = sessObj.sessionId;
+            casambiSessionId = sessObj.sessionId;
         }
         return sessObj;
     };
@@ -170,13 +167,13 @@ public class CasambiDriverJson {
     public @Nullable Map<String, CasambiMessageNetwork> createNetworkSession()
             throws URISyntaxException, IOException, InterruptedException, CasambiException {
 
-        URL url = new URL(this.casaServer, "/v1/networks/session");
+        URL url = new URL(casaServer, "/v1/networks/session");
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty("email", this.userId);
-        reqJson.addProperty("password", this.networkPassword);
+        reqJson.addProperty("email", userId);
+        reqJson.addProperty("password", networkPassword);
 
         HttpRequest request = HttpRequest.newBuilder().uri(new URI(url.toString()))
-                .headers("X-Casambi-Key", this.apiKey, "Content-type", "application/json")
+                .headers("X-Casambi-Key", apiKey, "Content-type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(reqJson.toString())).build();
 
         HttpResponse<String> response = HttpClient.newBuilder().build().send(request,
@@ -190,22 +187,22 @@ public class CasambiDriverJson {
         Map<String, CasambiMessageNetwork> networks = gson.fromJson(response.body(), networkMapType);
         if (networks != null) {
             for (CasambiMessageNetwork network : networks.values()) {
-                this.casambiNetworkId = network.id;
+                casambiNetworkId = network.id;
             }
         }
         return networks;
     };
 
     private HttpRequest makeHttpGet(URL url) throws URISyntaxException {
-        return HttpRequest.newBuilder().uri(new URI(url.toString())).headers("X-Casambi-Key", this.apiKey,
-                "X-Casambi-Session", this.casambiSessionId, "Content-type", "application/json").GET().build();
+        return HttpRequest.newBuilder().uri(new URI(url.toString())).headers("X-Casambi-Key", apiKey,
+                "X-Casambi-Session", casambiSessionId, "Content-type", "application/json").GET().build();
     }
 
     // Queries network and returns network information
     public JsonObject getNetworkInformation()
             throws URISyntaxException, IOException, InterruptedException, CasambiException {
 
-        URL url = new URL(this.casaServer, "/v1/networks/" + this.casambiNetworkId);
+        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId);
 
         HttpResponse<String> response = HttpClient.newBuilder().build().send(makeHttpGet(url),
                 HttpResponse.BodyHandlers.ofString());
@@ -219,7 +216,7 @@ public class CasambiDriverJson {
     public @Nullable CasambiMessageNetworkState getNetworkState()
             throws IOException, InterruptedException, URISyntaxException, CasambiException {
 
-        URL url = new URL(this.casaServer, "/v1/networks/" + this.casambiNetworkId + "/state");
+        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/state");
 
         HttpResponse<String> response = HttpClient.newBuilder().build().send(makeHttpGet(url),
                 HttpResponse.BodyHandlers.ofString());
@@ -238,8 +235,8 @@ public class CasambiDriverJson {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMddhhmmss");
         String fromTime = from.format(fmt);
         String toTime = to.format(fmt);
-        URL url = new URL(this.casaServer, "/v1/networks/" + this.casambiNetworkId + "/datapoints?sensorType="
-                + sensorType + "&from=" + fromTime + "&to=" + toTime);
+        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/datapoints?sensorType=" + sensorType
+                + "&from=" + fromTime + "&to=" + toTime);
 
         HttpResponse<String> response = HttpClient.newBuilder().build().send(makeHttpGet(url),
                 HttpResponse.BodyHandlers.ofString());
@@ -255,7 +252,7 @@ public class CasambiDriverJson {
     public @Nullable Map<String, CasambiMessageUnit> getUnitList()
             throws IOException, InterruptedException, URISyntaxException, CasambiException {
 
-        URL url = new URL(this.casaServer, "/v1/networks/" + this.casambiNetworkId + "/units");
+        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units");
 
         HttpResponse<String> response = HttpClient.newBuilder().build().send(makeHttpGet(url),
                 HttpResponse.BodyHandlers.ofString());
@@ -272,7 +269,7 @@ public class CasambiDriverJson {
     public @Nullable CasambiMessageUnit getUnitState(int unitId)
             throws IOException, InterruptedException, URISyntaxException, CasambiException {
 
-        URL url = new URL(this.casaServer, "/v1/networks/" + this.casambiNetworkId + "/units/" + unitId + "/state");
+        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units/" + unitId + "/state");
 
         HttpResponse<String> response = HttpClient.newBuilder().build().send(makeHttpGet(url),
                 HttpResponse.BodyHandlers.ofString());
@@ -287,7 +284,7 @@ public class CasambiDriverJson {
     public @Nullable Map<String, CasambiMessageScene> getScenes()
             throws IOException, InterruptedException, URISyntaxException, CasambiException {
 
-        URL url = new URL(this.casaServer, "/v1/networks/" + this.casambiNetworkId + "/scenes");
+        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/scenes");
 
         HttpResponse<String> response = HttpClient.newBuilder().build().send(makeHttpGet(url),
                 HttpResponse.BodyHandlers.ofString());
@@ -305,7 +302,7 @@ public class CasambiDriverJson {
     public JsonObject getFixtureInfo(int unitId)
             throws IOException, InterruptedException, URISyntaxException, CasambiException {
 
-        URL url = new URL(this.casaServer, "/v1/fixtures/" + unitId);
+        URL url = new URL(casaServer, "/v1/fixtures/" + unitId);
 
         HttpResponse<String> response = HttpClient.newBuilder().build().send(makeHttpGet(url),
                 HttpResponse.BodyHandlers.ofString());
@@ -326,6 +323,16 @@ public class CasambiDriverJson {
             logger.debug("WebSocket.onOpen called");
             dumpMessage(" +++ Socket onOpen +++");
             casambiSocketStatus = "open";
+            JsonObject msg = new JsonObject();
+            msg.addProperty("method", "socketChanged");
+            msg.addProperty("status", "open");
+            msg.addProperty("conditon", 0);
+            msg.addProperty("response", "ok");
+            try {
+                queue.put(msg.toString());
+            } catch (InterruptedException e) {
+                logger.error("onText: Exception {}", e);
+            }
             WebSocket.Listener.super.onOpen(webSocket);
         };
 
@@ -333,9 +340,11 @@ public class CasambiDriverJson {
         public CompletionStage<?> onText(@Nullable WebSocket webSocket, @Nullable CharSequence data, boolean last) {
             // socket_status = "data_text";
             try {
-                if (data != null) {
-                    dumpJsonWithMessage("+++ Socket onText +++", data.toString());
+                if (data != null && data.length() > 0) {
                     queue.put(data.toString());
+                    dumpJsonWithMessage("+++ Socket onText +++", data.toString());
+                } else {
+                    logger.debug("onText: null message");
                 }
             } catch (InterruptedException e) {
                 logger.error("onText: Exception {}", e);
@@ -347,11 +356,13 @@ public class CasambiDriverJson {
         public CompletionStage<?> onBinary(@Nullable WebSocket webSocket, @Nullable ByteBuffer data, boolean last) {
             String msg = StandardCharsets.UTF_8.decode(data).toString();
             // socket_status = "data_binary";
-            if (data != null) {
-                dumpJsonWithMessage("+++ Socket onBinary +++", data.asCharBuffer().toString());
-            }
             try {
-                queue.put(msg);
+                if (msg != null && msg.length() > 0) {
+                    queue.put(msg);
+                    dumpJsonWithMessage("+++ Socket onBinary +++", msg);
+                } else {
+                    logger.debug("onBinary: null message");
+                }
             } catch (InterruptedException e) {
                 logger.error("onText: Exception {}", e);
             }
@@ -384,8 +395,13 @@ public class CasambiDriverJson {
             JsonObject msg = new JsonObject();
             msg.addProperty("method", "socketChanged");
             msg.addProperty("status", "error");
-            msg.addProperty("conditon", error.hashCode());
-            msg.addProperty("response", error.getMessage());
+            if (error != null) {
+                msg.addProperty("conditon", error.hashCode());
+                msg.addProperty("response", error.getMessage());
+            } else {
+                msg.addProperty("conditon", 0);
+                msg.addProperty("response", "no message");
+            }
             try {
                 queue.put(msg.toString());
             } catch (InterruptedException e) {
@@ -406,16 +422,16 @@ public class CasambiDriverJson {
 
             JsonObject reqJson = new JsonObject();
             reqJson.addProperty("method", "open");
-            reqJson.addProperty("id", this.casambiNetworkId);
-            reqJson.addProperty("session", this.casambiSessionId);
+            reqJson.addProperty("id", casambiNetworkId);
+            reqJson.addProperty("session", casambiSessionId);
             reqJson.addProperty("ref", uuid.toString());
-            reqJson.addProperty("wire", this.casambiWireId);
+            reqJson.addProperty("wire", casambiWireId);
             reqJson.addProperty("type", 1);
 
             // CountDownLatch latch = new CountDownLatch(1);
             Listener listener = new WebSocketClient();
 
-            casambiSocket = HttpClient.newHttpClient().newWebSocketBuilder().subprotocols(this.apiKey)
+            casambiSocket = HttpClient.newHttpClient().newWebSocketBuilder().subprotocols(apiKey)
                     .buildAsync(casambiURI, listener).join();
 
             if (casambiSocket != null) {
@@ -434,16 +450,21 @@ public class CasambiDriverJson {
     // FIXME: Socket inaktivieren (ist das richtig so?)
     public void casambiSocketClose() throws InterruptedException, CasambiException {
 
-        JsonObject reqJson = new JsonObject();
-        reqJson.addProperty("wire", this.casambiWireId);
-        reqJson.addProperty("method", "close");
+        if (jsonLogActive && writer != null) {
+            dumpMessage("+++ Socket casambiClose +++");
+            writer.close();
+            writer = null;
+        }
 
         if (casambiSocket != null) {
+            JsonObject reqJson = new JsonObject();
+            reqJson.addProperty("wire", casambiWireId);
+            reqJson.addProperty("method", "close");
             casambiSocket.sendText(reqJson.toString(), true);
-            dumpMessage("+++ Socket casambiClose +++");
 
             final int ms = 1000;
-            Thread.sleep(10 * ms);
+            CompletableFuture<WebSocket> sc = casambiSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
+            sc.wait(2 * ms);
             casambiSocket = null;
         } else {
             final String msg = "casambiClose: Error - Socket not open.";
@@ -470,7 +491,7 @@ public class CasambiDriverJson {
         dimmer.add("Dimmer", value);
 
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty("wire", this.casambiWireId);
+        reqJson.addProperty("wire", casambiWireId);
         reqJson.addProperty("method", "controlUnit");
         reqJson.addProperty("id", unitId);
         reqJson.add("targetControls", dimmer);
@@ -488,7 +509,7 @@ public class CasambiDriverJson {
     public void turnSceneOff(int sceneId) throws CasambiException {
 
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty("wire", this.casambiWireId);
+        reqJson.addProperty("wire", casambiWireId);
         reqJson.addProperty("method", "controlScene");
         reqJson.addProperty("id", sceneId);
         reqJson.addProperty("level", 0);
@@ -506,7 +527,7 @@ public class CasambiDriverJson {
     public void turnSceneOn(int sceneId) throws CasambiException {
 
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty("wire", this.casambiWireId);
+        reqJson.addProperty("wire", casambiWireId);
         reqJson.addProperty("method", "controlScene");
         reqJson.addProperty("id", sceneId);
         reqJson.addProperty("level", 1);
@@ -526,7 +547,7 @@ public class CasambiDriverJson {
             logger.warn("ping: Response missing for last ping.");
         }
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty("wire", this.casambiWireId);
+        reqJson.addProperty("wire", casambiWireId);
         reqJson.addProperty("method", "ping");
 
         if (casambiSocket != null) {
@@ -547,7 +568,7 @@ public class CasambiDriverJson {
             // Blocks until there is something in the queue
             res = queue.take();
         } catch (Exception e) {
-            logger.error("receiveMessageJson: Exception {}", e);
+            logger.error("receiveMessageJson: Exception {}", e.getMessage());
         }
         return res;
     }
@@ -557,8 +578,8 @@ public class CasambiDriverJson {
         String msg = receiveMessageJson();
         if (msg != null) {
             // Write Message to log file
-            dumpJsonWithMessage("+++ receiveMessage +++", msg);
-            if (debug && writer != null) {
+            // dumpJsonWithMessage("+++ receiveMessage +++", msg);
+            if (jsonLogActive && writer != null) {
                 writer.flush();
             }
             CasambiMessageEvent event = gson.fromJson(msg, CasambiMessageEvent.class);
@@ -572,13 +593,33 @@ public class CasambiDriverJson {
     // Used by CasambiBridgeHandler
 
     public void pingOk() {
-        this.gotPong = true;
+        gotPong = true;
     }
 
     // Getter for socket_status
     public String getSocketStatus() {
         return casambiSocketStatus;
     }
+
+    public void setupJsonLogging(Boolean activate, String logPath, String logFile) {
+        jsonLogActive = activate;
+        if (activate) {
+            try {
+                // Path path = Paths.get(System.getProperty("user.home"), logPath, logFile);
+                Path path = Paths.get(logPath, logFile);
+                logger.debug("createUserSession: log file path is {}", path);
+                writer = new PrintWriter(new File(path.toString()));
+                writer.println("Casambi JSON message dump.");
+                writer.flush();
+            } catch (Exception e) {
+                logger.error("createUserSessionn: Error opening JSON dump file: {}", e.toString());
+                jsonLogActive = false;
+                writer = null;
+            }
+        } else {
+            writer = null;
+        }
+    };
 
     // --- JSON and logging helper routines ---------------------------------------------------------
 
@@ -590,10 +631,14 @@ public class CasambiDriverJson {
      * };
      */
 
-    private String ppJson(String json) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-        JsonObject jObj = JsonParser.parseString(json).getAsJsonObject();
-        return gson.toJson(jObj);
+    private String ppJson(@Nullable String json) {
+        if (json != null) {
+            Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+            JsonObject jObj = JsonParser.parseString(json).getAsJsonObject();
+            return gson.toJson(jObj);
+        } else {
+            return "";
+        }
     };
 
     // Write JSON object to log file (two signatures)
@@ -610,25 +655,39 @@ public class CasambiDriverJson {
      */
 
     private void dumpMessage(String msg) {
-        if (debug && writer != null) {
+        if (jsonLogActive && writer != null) {
             writer.println(getTimeStamp() + " " + msg);
         }
     }
 
-    private void dumpJsonWithMessage(String msg, String json) {
-        if (debug && writer != null) {
-            writer.println(getTimeStamp() + " " + msg);
-            dumpJson(json);
+    private void dumpJsonWithMessage(String msg, @Nullable String json) {
+        // logger.debug("dumpJsonWithMessage: {} - {}", msg, json);
+        if (jsonLogActive && writer != null) {
+            writer.println(getTimeStamp() + " '" + msg + "'");
+            if (json != null) {
+                dumpJson(json);
+            } else {
+                logger.debug("dumJsonWithMessage: got null json. message was '{}'", msg);
+            }
         }
     }
 
-    private void dumpJson(String json) {
+    private void dumpJson(@Nullable String json) {
         try {
-            if (debug && writer != null) {
-                writer.println(ppJson(json));
+            if (jsonLogActive && writer != null && json != null) {
+                String jStr = ppJson(json);
+                if (jStr != null) {
+                    writer.println(jStr);
+                } else {
+                    logger.info("ppJson: got null string for json: {}", json);
+                    writer.println("=== ERROR ===  ppJson Got null string for json: " + json);
+                }
             }
         } catch (Exception e) {
-            logger.error("dumpJson: Error dumping JSON: {}", e.toString());
+            logger.warn("dumpJson: Exception dumping JSON: {}", e.toString());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.debug(sw.toString());
         }
     }
 

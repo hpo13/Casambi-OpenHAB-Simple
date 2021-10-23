@@ -15,14 +15,21 @@ package org.openhab.binding.casambitest.internal.handler;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
- * The {@link CasambiTestConfiguration} class contains fields mapping thing configuration parameters.
+ * The {@link CasambiConfiguration} class contains fields mapping thing configuration parameters.
  *
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiTestConfiguration {
+public class CasambiConfiguration {
     public String apiKey = "";
     public String userId = "";
     public String userPassword = "";
     public String networkPassword = "";
+    public Boolean logMessages = false;
+    public String logDir = "";
+    public Boolean useRemCmd = false;
+    public String remCmdStr = "";
+
+    void CasambiConfiguration() {
+    }
 }

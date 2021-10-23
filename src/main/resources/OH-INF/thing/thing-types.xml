@@ -7,34 +7,82 @@
 	<!--CasambiBridge -->
 	<bridge-type id="casambibridge">
 		<label>casambiTest Bridge</label>
-		<description>Casambi Bridge to Server</description>
+        <description>Casambi Bridge to Server</description>
+		<channels>
+		  <channel id="peer" typeId="peerOnline"/>
+		  <channel id="message" typeId="casambiMessage"/>
+		</channels>
 		<config-description>
-		    <parameter name="apiKey" type="text" required="true" readOnly="false" multiple="false">
+            <parameter-group name="connection">
+              <label>Casambi connection</label>
+              <description>Casambi connection parameters (API-key, userid, passwords)</description>
+            </parameter-group>
+            <parameter-group name="logging">
+              <label>Logging</label>
+              <description>Settings for Casambi message logging</description>
+              <advanced>true</advanced>
+            </parameter-group>
+            <parameter-group name="remcmd">
+              <label>Remote Command</label>
+              <description>Remote command to reactivate the local Casambi bridge device</description>
+              <advanced>true</advanced>
+            </parameter-group>
+		    <parameter name="apiKey" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
 		      <required>true</required>
 		      <label>Casambi API key</label>
 		      <description>API key to connect to the Casambi server. See https://developer.casambi.com</description>
 		    </parameter>
-		    <parameter name="userId" type="text" required="true" readOnly="false" multiple="false">
+		    <parameter name="userId" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
 		      <required>true</required>
 		      <context>email</context>
 		      <label>Casambi user id</label>
 		      <description>User id to connect to the Casambi server.</description>
 		    </parameter>
-		    <parameter name="userPassword" type="text" required="true" readOnly="false" multiple="false">
+		    <parameter name="userPassword" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
 		      <required>true</required>
 		      <context>password</context>
 		      <label>Casambi user password</label>
 		      <description>User password to connect to the Casambi server.</description>
 		    </parameter>
-		    <parameter name="networkPassword" type="text" required="true" readOnly="false" multiple="false">
+		    <parameter name="networkPassword" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
 		      <required>true</required>
 		      <context>password</context>
 		      <label>Casambi network password</label>
 		      <description>Network password to connect to the Casambi server.</description>
 		    </parameter>
-	    </config-description>	
+            <parameter name="logMessages" type="boolean" required="false" readOnly="false" multiple="false" groupName="logging">
+              <required>false</required>
+              <label>Enable logging</label>
+              <description>Enable logging of Casambi messages</description>
+            </parameter>
+            <parameter name="logDir" type="text" required="false" readOnly="false" multiple="false" groupName="logging">
+              <required>false</required>
+              <label>Directory path</label>
+              <description>Path of directory where the logfiles are kept. Must be writable by OpenHAB.</description>
+            </parameter>
+            <parameter name="useRemCmd" type="boolean" required="false" readOnly="false" multiple="false" groupName="remcmd">
+              <required>false</required>
+              <label>Enable sending of a command to reacivate the local Casambi peer device</label>
+              <description>Enable logging of Casambi messages</description>
+            </parameter>
+            <parameter name="remCmdStr" type="text" required="false" readOnly="false" multiple="false" groupName="remcmd">
+              <required>false</required>
+              <label>Casambi Peer Reactivation Coammand</label>
+              <description>Command to be sent to the Casambi peer device to reactivate the bridge.</description>
+            </parameter>
+ 	    </config-description>	
 		<!-- <config-description-ref uri="thing-type:casambibridge"/> -->
 	</bridge-type>
+    <channel-type id="peerOnline">
+        <item-type>Contact</item-type>
+        <label>Peer Online</label>
+        <description>Online status of local Casambi peer device (e.g. mobile phone). If the false, reactivation command is sent (if configured).</description>
+    </channel-type>
+    <channel-type id="casambiMessage">
+        <item-type>Text</item-type>
+        <label>Casambi Message</label>
+        <description>Last Message from the casambi server</description>
+    </channel-type>
 	
 	<!--CasambiLuminary -->
 	<thing-type id="luminary">
@@ -71,6 +119,8 @@
     </channel-type>
 
 	<!--CasambiScene -->
+    <!-- This could be set up differently: one Thing called "Scenes" -->
+    <!-- with channels for the individual scenes. Each channel could be on/off -->
 	<thing-type id="scene">
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="casambibridge"/>

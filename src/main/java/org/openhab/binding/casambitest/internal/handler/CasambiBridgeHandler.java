@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.casambitest.internal.handler;
 
-import static org.openhab.binding.casambitest.internal.CasambiTestBindingConstants.*;
+import static org.openhab.binding.casambitest.internal.CasambiBindingConstants.*;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.casambitest.internal.driver.CasambiDriverJson;
+import org.openhab.binding.casambitest.internal.driver.CasambiDriverSystem;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageEvent;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageNetwork;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageNetworkState;
@@ -29,6 +30,7 @@ import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageSc
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageSession;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageUnit;
 import org.openhab.core.library.types.OnOffType;
+import org.openhab.core.library.types.PercentType;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Channel;
 import org.openhab.core.thing.ChannelUID;
@@ -59,19 +61,29 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
 
     public @Nullable CasambiDriverJson casambi;
 
-    private @Nullable CasambiTestConfiguration config;
+    private @Nullable CasambiConfiguration config;
+    @SuppressWarnings("unused")
     private @Nullable CasambiMessageSession userSession;
+    @SuppressWarnings("unused")
     private @Nullable Map<String, CasambiMessageNetwork> networkSession;
 
     private @Nullable Future<?> pollMessageJob;
     private @Nullable Future<?> sendKeepAliveJob;
     private @Nullable Future<?> pollUnitStatusJob;
+    private @Nullable Future<?> peerRecoveryJob;
+
+    // This won't work, there are too many ways to change online status
+    private volatile Boolean bridgeOnline = false;
+    private volatile Boolean recoveryInProgress = false;
 
     // Read casambi messages from the ring buffer and update channel and thing status accordingly
     // private Runnable pollMessage = doPollMessage;
 
     public CasambiBridgeHandler(Bridge bridge) {
         super(bridge);
+        config = getConfigAs(CasambiConfiguration.class);
+        casambi = new CasambiDriverJson(config.apiKey, config.userId, config.userPassword, config.networkPassword);
+        casambi.setupJsonLogging(config.logMessages, config.logDir, "casambiJsonMessages.txt");
     };
 
     // --- Override superclass methods--------------------------------------------------------------------
@@ -88,6 +100,7 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
     public void initialize() {
         logger.debug("initialize: setting up bridge");
         updateStatus(ThingStatus.UNKNOWN);
+        CasambiDriverSystem.enableSshCommand(config.useRemCmd, config.remCmdStr);
         scheduler.execute(initCasambiSession);
         pollMessageJob = scheduler.submit(doPollMessage);
         sendKeepAliveJob = scheduler.submit(sendKeepAlive);
@@ -106,11 +119,17 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         if (pollUnitStatusJob != null) {
             pollUnitStatusJob.cancel(true);
         }
+        if (peerRecoveryJob != null) {
+            peerRecoveryJob.cancel(true);
+        }
         try {
-            casambi.casambiSocketClose();
+            if (casambi != null) {
+                casambi.casambiSocketClose();
+            }
         } catch (Exception e) {
             logger.error("dispose: Exception {}", e.toString());
         }
+        casambi = null;
     };
 
     // Optional method
@@ -131,78 +150,6 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
 
     // --- Thread definitions --------------------------------------------------------------------------------------
 
-    private Runnable doPollMessage = new Runnable() {
-        @Override
-        public void run() {
-            while (true) {
-                if (casambi != null) {
-                    CasambiMessageEvent msg = casambi.receiveMessage();
-                    if (msg != null) {
-                        switch (msg.getMessageType()) {
-                            case unitChanged:
-                                // Boolean m2 = Optional.ofNullable(msg.on).orElse(false);
-                                // Integer m1 = Optional.ofNullable(msg).ofNullable(msg.id).orElse(0);
-                                // Float m3 = Optional.ofNullable(msg.dimLevel).orElse((float) 0.0);
-                                if (msg.id != null && msg.on != null) {
-                                    logger.debug("pollCasambiMessages: unitChanged id {}, online {}, on {}, dim {}",
-                                            msg.id, msg.online, msg.on, msg.dimLevel);
-                                    // Update online status
-                                    if (msg.online != null && msg.online) {
-                                        logger.warn("pollCasambiMessages: status OFFLINE, id {}", msg.id);
-                                        updateStatus(ThingStatus.ONLINE);
-                                    } else {
-                                        updateStatus(ThingStatus.OFFLINE);
-                                    }
-                                    Thing thing = CasambiLuminaryHandler.getThingById(msg.id);
-                                    // Update luminary state
-                                    // Optional<ThingHandler> m1 = Optional.ofNullable(thing.getHandler());
-                                    // m1.ifPresent((a, b) -> thing.getHandler().updateState(a, b));
-                                    if (thing != null) {
-                                        CasambiLuminaryHandler thingHandler = (CasambiLuminaryHandler) thing
-                                                .getHandler();
-                                        if (thingHandler != null) {
-                                            thingHandler.updateState(thing.getChannel(CHANNEL_SWITCH).getUID(),
-                                                    msg.on ? OnOffType.ON : OnOffType.OFF);
-                                        }
-                                    }
-                                }
-                                break;
-                            case peerChanged:
-                                logger.debug("pollCasambiMessages: peerChanged online {}", msg.online);
-                                updateStatus(msg.online ? ThingStatus.ONLINE : ThingStatus.OFFLINE);
-                                break;
-                            case networkUpdated:
-                                logger.warn("pollCasambiMessages: networkUpdated online {}", msg.online);
-                                break;
-                            case socketChanged: // Driver message
-                                logger.warn("pollCasambiMessages: socketChanged, status {}, message {}", msg.status,
-                                        msg.response);
-                                break;
-                            case wireStatusOk:
-                                logger.debug("pollCasambiMessages: wireStatus: {}", msg.wireStatus);
-                                break;
-                            case wireStatusError:
-                                logger.warn("pollCasambiMessages: wireStatus error: {}", msg.wireStatus);
-                                break;
-                            case keepAlive:
-                                logger.debug("pollCasambiMessages: keepAlive got pong");
-                                casambi.pingOk();
-                                break;
-                            default:
-                                logger.warn("pollCasambiMessages: unknown message type: {}", msg);
-                        }
-                    } else {
-                        logger.warn("pollCasambiMessages: got null message.");
-                        logger.debug("pollCasambiMessages: socketStatus {}", casambi.getSocketStatus());
-                    }
-                } else {
-                    logger.info("+++ pollCasambiMessages: casambi driver is null.");
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Casambi driver is null");
-                }
-            }
-        };
-    };
-
     // Initiate casambi session.
     private Runnable initCasambiSession = new Runnable() {
         // @SuppressWarnings("null")
@@ -210,18 +157,121 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         public void run() {
             logger.debug("initCasambiSession: initializing session with casambi site");
             try {
-                config = getConfigAs(CasambiTestConfiguration.class);
-                casambi = new CasambiDriverJson(config.apiKey, config.userId, config.userPassword,
-                        config.networkPassword);
                 // Open session with casambi server
-                userSession = casambi.createUserSession();
-                networkSession = casambi.createNetworkSession();
-                // Open web socket
-                casambi.casambiSocketOpen();
+                if (casambi != null) {
+                    userSession = casambi.createUserSession();
+                    networkSession = casambi.createNetworkSession();
+                    casambi.casambiSocketOpen();
+                    bridgeOnline = true;
+                } else {
+                    throw (new CasambiException("CasambiDriverJson is null"));
+                }
             } catch (Exception e) {
                 logger.error("initCasambiSession: Exception {}", e.toString());
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                         "Exception during session initialisation: " + e.toString());
+            }
+        };
+    };
+
+    // Process messages from the casambi system
+    private Runnable doPollMessage = new Runnable() {
+        @Override
+        public void run() {
+            while (true) {
+                if (Thread.interrupted()) {
+                    logger.debug("pollCasambiMessages: got thread interrupt. Exiting job.");
+                    return;
+                }
+                if (casambi != null) {
+                    CasambiMessageEvent msg = casambi.receiveMessage();
+                    if (msg != null) {
+                        switch (msg.getMessageType()) {
+                            case unitChanged:
+                                if (msg.id != null && msg.on != null) {
+                                    logger.debug("pollCasambiMessages: unitChanged id {}, online {}, on {}, dim {}",
+                                            msg.id, msg.online, msg.on, msg.dimLevel);
+                                    Thing thing = CasambiLuminaryHandler.getThingById(msg.id);
+                                    Float lvl = (msg.dimLevel != null) ? msg.dimLevel : 0;
+                                    if (thing != null) {
+                                        CasambiLuminaryHandler thingHandler = (CasambiLuminaryHandler) thing
+                                                .getHandler();
+                                        if (thingHandler != null) {
+                                            // Update online status
+                                            if (msg.online != null && msg.online) {
+                                                thingHandler.updateLuminaryStatus(ThingStatus.ONLINE);
+                                            } else {
+                                                logger.warn("pollCasambiMessages: status OFFLINE, id {}", msg.id);
+                                                thingHandler.updateLuminaryStatus(ThingStatus.OFFLINE);
+                                            }
+                                            // Update luminary state
+                                            @Nullable
+                                            Channel channel = thing.getChannel(CHANNEL_SWITCH);
+                                            if (channel != null) {
+                                                thingHandler.updateState(channel.getUID(),
+                                                        Math.round(lvl * 100) != 0 ? OnOffType.ON : OnOffType.OFF);
+                                            }
+                                            channel = thing.getChannel(CHANNEL_DIM);
+                                            if (channel != null) {
+                                                thingHandler.updateState(channel.getUID(),
+                                                        new PercentType(Math.round(lvl * 100)));
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+                            case peerChanged:
+                                if (msg.online != null && msg.online) {
+                                    logger.info("pollCasambiMessages: peer went online");
+                                    updateStatus(ThingStatus.ONLINE);
+                                    bridgeOnline = true;
+                                } else {
+                                    logger.error("pollCasambiMessages: peer went offline");
+                                    updateStatus(ThingStatus.OFFLINE);
+                                    bridgeOnline = false;
+                                    if (!recoveryInProgress) {
+                                        logger.info("pollCasambiMessages: trying to recover");
+                                        peerRecoveryJob = scheduler.submit(doPeerRecovery);
+                                    } else {
+                                        logger.debug(
+                                                "pollCasambiMessages: bridge back online during recovery. Let's see.");
+                                    }
+                                }
+                                break;
+                            case networkUpdated:
+                                logger.warn("pollCasambiMessages: networkUpdated online {}", msg.online);
+                                // What to do: restart driver? rescan things and channels?
+                                break;
+                            case socketChanged: // Driver message
+                                logger.warn("pollCasambiMessages: socketChanged, status {}, message {}", msg.status,
+                                        msg.response);
+                                break;
+                            case wireStatusOk:
+                                logger.debug("pollCasambiMessages: wireStatusOk: {}", msg.wireStatus);
+                                break;
+                            case wireStatusError:
+                                logger.warn("pollCasambiMessages: wireStatusError: {}", msg.wireStatus);
+                                break;
+                            case keepAlive:
+                                logger.trace("pollCasambiMessages: keepAlive got pong");
+                                if (casambi != null) {
+                                    casambi.pingOk();
+                                }
+                                break;
+                            default:
+                                logger.warn("pollCasambiMessages: unknown message type: {}", msg);
+                        }
+                    } else {
+                        logger.warn("pollCasambiMessages: got null message.");
+                        if (casambi != null) {
+                            logger.debug("pollCasambiMessages: socketStatus {}", casambi.getSocketStatus());
+                        }
+                    }
+                } else {
+                    logger.warn("+++ pollCasambiMessages: casambi driver is null. Exiting.");
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Casambi driver is null");
+                    return;
+                }
             }
         };
     };
@@ -231,14 +281,19 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         @Override
         public void run() {
             while (true) {
+                if (Thread.interrupted()) {
+                    logger.debug("sendKeepAlive: got thread interrupt. Exiting job.");
+                    return;
+                }
                 try {
                     Thread.sleep(280 * 1000);
-                    logger.debug("sendKeepAlive:");
+                    logger.trace("sendKeepAlive:");
                     if (casambi != null) {
                         casambi.ping();
                     }
                 } catch (Exception e) {
-                    logger.error("sendKeepAlive: exception {}", e);
+                    logger.error("sendKeepAlive: exception {}. Exiting.", e.getMessage());
+                    return;
                 }
             }
         }
@@ -249,59 +304,104 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         @Override
         public void run() {
             while (true) {
+                if (Thread.interrupted()) {
+                    logger.debug("pollUnitStatus: got thread interrupt. Exiting job.");
+                    return;
+                }
                 try {
                     Thread.sleep(600 * 1000);
-                    logger.debug("pollUnitStatus:");
-                    CasambiMessageNetworkState networkState = casambi.getNetworkState();
-                    if (networkState != null) {
-                        if (networkState.units != null) {
-                            for (Entry<Integer, CasambiMessageUnit> unit : networkState.units.entrySet()) {
-                                Thing thing = CasambiLuminaryHandler.getThingById(unit.getKey());
-                                if (thing != null) {
-                                    CasambiLuminaryHandler thingHandler = (CasambiLuminaryHandler) thing.getHandler();
-                                    CasambiMessageUnit unitState = unit.getValue();
-                                    if (thingHandler != null) {
-                                        thingHandler.updateLuminaryState(unitState);
-                                    }
-                                } else {
-                                    logger.warn("pollUnitStatus: got status for unknown id {}, name {}", unit.getKey(),
-                                            unit.getValue().name);
-                                }
-                                // Optional.ofNullable(networkState);
-                                // Optional<Map<Integer, CasambiMessageUnit>> e =
-                                // Optional.ofNullable(networkState.units);
-                            }
-                        } else {
-                            logger.warn("pollUnitStatus: no units in network.");
-                        }
-                        if (networkState.scenes != null) {
-                            for (Entry<Integer, CasambiMessageScene> scene : networkState.scenes.entrySet()) {
-                                Thing thing = CasambiSceneHandler.getSceneById(scene.getKey());
-                                if (thing != null) {
-                                    CasambiSceneHandler thingHandler = (CasambiSceneHandler) thing.getHandler();
-                                    Channel channelScene = thing.getChannel(CHANNEL_SCENE);
-
-                                    if (networkState.activeScenes != null
-                                            && Arrays.asList(networkState.activeScenes).contains(scene.getKey())) {
-                                        logger.debug("pollUnitStatus: scene {} active", scene.getKey());
+                    logger.trace("pollUnitStatus:");
+                    if (casambi != null) {
+                        CasambiMessageNetworkState networkState = casambi.getNetworkState();
+                        if (networkState != null) {
+                            if (networkState.units != null) {
+                                for (Entry<Integer, CasambiMessageUnit> unit : networkState.units.entrySet()) {
+                                    Thing thing = CasambiLuminaryHandler.getThingById(unit.getKey());
+                                    if (thing != null) {
+                                        CasambiLuminaryHandler thingHandler = (CasambiLuminaryHandler) thing
+                                                .getHandler();
+                                        CasambiMessageUnit unitState = unit.getValue();
+                                        if (thingHandler != null) {
+                                            thingHandler.updateLuminaryState(unitState);
+                                        }
                                     } else {
-                                        logger.debug("pollUnitStatus: scene {} inactive", scene.getKey());
-                                        if (thingHandler != null && channelScene != null) {
-                                            thingHandler.updateState(channelScene.getUID(), OnOffType.OFF);
+                                        logger.warn("pollUnitStatus: got status for unknown id {}, name {}",
+                                                unit.getKey(), unit.getValue().name);
+                                    }
+                                }
+                            } else {
+                                logger.warn("pollUnitStatus: no units in network.");
+                            }
+                            if (networkState.scenes != null) {
+                                for (Entry<Integer, CasambiMessageScene> scene : networkState.scenes.entrySet()) {
+                                    Thing thing = CasambiSceneHandler.getSceneById(scene.getKey());
+                                    if (thing != null) {
+                                        CasambiSceneHandler thingHandler = (CasambiSceneHandler) thing.getHandler();
+                                        Channel channelScene = thing.getChannel(CHANNEL_SCENE);
+
+                                        if (networkState.activeScenes != null
+                                                && Arrays.asList(networkState.activeScenes).contains(scene.getKey())) {
+                                            logger.debug("pollUnitStatus: scene {} active", scene.getKey());
+                                        } else {
+                                            logger.debug("pollUnitStatus: scene {} inactive", scene.getKey());
+                                            if (thingHandler != null && channelScene != null) {
+                                                thingHandler.updateState(channelScene.getUID(), OnOffType.OFF);
+                                            }
                                         }
                                     }
                                 }
+                            } else {
+                                logger.warn("pollUnitStatus: no scenes in network.");
                             }
                         } else {
-                            logger.warn("pollUnitStatus: no scenes in network.");
+                            logger.warn("pollUnitStatus: got null network state message.");
                         }
                     } else {
-                        logger.warn("pollUnitStatus: got null message.");
+                        logger.error("pollUnitStatus: CasambiDriverJson is null");
                     }
                 } catch (Exception e) {
-                    logger.error("pollUnitStatus: exception {}", e);
+                    logger.error("pollUnitStatus: exception {}. Exiting.", e.getMessage());
+                    return;
                 }
             }
         };
     };
+
+    // Try to reactivate the casambi app on the mobile phone
+    private Runnable doPeerRecovery = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(60 * 1000);
+                if (bridgeOnline) {
+                    logger.debug("doPeerRecovery: Step 1 - peer came back online. Recovery ended.");
+                    recoveryInProgress = false;
+                } else {
+                    logger.debug("doPeerRecovery: Step 1 - peer offline. Sending command.");
+                    CasambiDriverSystem.sendSshCommand();
+                    Thread.sleep(120 * 1000);
+                    if (bridgeOnline) {
+                        logger.debug("doPeerRecovery: Step 2 - peer came back online. Recovery ended.");
+                        recoveryInProgress = false;
+                    } else {
+                        logger.debug("doPeerRecovery: Step 2 - peer still offline. Sending command.");
+                        CasambiDriverSystem.sendSshCommand();
+                        Thread.sleep(300 * 1000);
+                        if (bridgeOnline) {
+                            logger.debug("doPeerRecovery: Step 3 - peer came back online. Just in time.");
+                            recoveryInProgress = false;
+                        } else {
+                            logger.debug("doPeerRecovery: Step 3 - peer still offline. Giving up.");
+                            Thread.sleep(600 * 1000);
+                            recoveryInProgress = false;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("doPeerRecovery: exception {}. Exiting.", e.getMessage());
+                return;
+            }
+        }
+    };
+
 }

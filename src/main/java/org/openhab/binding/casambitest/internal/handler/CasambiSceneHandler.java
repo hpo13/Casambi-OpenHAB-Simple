@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.casambitest.internal.handler;
 
-import static org.openhab.binding.casambitest.internal.CasambiTestBindingConstants.*;
+import static org.openhab.binding.casambitest.internal.CasambiBindingConstants.*;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -87,7 +87,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
                 logger.warn("handleCommand: unexpected channel id {}", channelUID.getId());
             }
             if (doRefresh) {
-                logger.debug("handleCommand: (Scene) doRefresh NOP");
+                logger.trace("handleCommand: (Scene) doRefresh NOP");
                 // Send refresh command here
             }
         } else {
@@ -99,7 +99,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
 
     @Override
     public void initialize() {
-        logger.debug("initialize: setting up scene");
+        // logger.debug("initialize: setting up scene");
         Bridge bridge = getBridge();
 
         if (bridge == null) {
@@ -125,7 +125,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
 
     @Override
     public void bridgeStatusChanged(ThingStatusInfo info) {
-        logger.debug("bridgeStatusChanged: {}", info);
+        logger.debug("bridgeStatusChanged: {}, updating scene {}", info, sceneId);
         Bridge bridge = getBridge();
 
         if (bridge == null) {
@@ -156,11 +156,12 @@ public class CasambiSceneHandler extends BaseThingHandler {
 
     @Override
     public void updateState(ChannelUID chan, State state) {
-        logger.debug("updateState: channel {}, state {}", chan, state);
+        logger.trace("updateState: channel {}, state {}", chan, state);
         super.updateState(chan, state);
     }
 
     // Map Luminary ids to things. Needed to update thing status based on casambi message content
+
     // Get thing corresponding to id
     public static @Nullable Thing getSceneById(@Nullable Integer id) {
         if (id != null) {

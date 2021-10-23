@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.casambitest.internal;
 
-import static org.openhab.binding.casambitest.internal.CasambiTestBindingConstants.*;
+import static org.openhab.binding.casambitest.internal.CasambiBindingConstants.*;
 
 import java.util.Set;
 
@@ -32,16 +32,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link CasambiTestHandlerFactory} is responsible for creating things and thing
+ * The {@link CasambiHandlerFactory} is responsible for creating things and thing
  * handlers.
  *
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
 @Component(configurationPid = "binding.casambitest", service = ThingHandlerFactory.class)
-public class CasambiTestHandlerFactory extends BaseThingHandlerFactory {
+public class CasambiHandlerFactory extends BaseThingHandlerFactory {
 
-    private final Logger logger = LoggerFactory.getLogger(CasambiTestHandlerFactory.class);
+    private final Logger logger = LoggerFactory.getLogger(CasambiHandlerFactory.class);
 
     private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(BRIDGE_TYPE, THING_TYPE_LUMINARY,
             THING_TYPE_SCENE);

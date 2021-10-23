@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.casambitest.internal.handler;
 
-import static org.openhab.binding.casambitest.internal.CasambiTestBindingConstants.*;
+import static org.openhab.binding.casambitest.internal.CasambiBindingConstants.*;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -107,7 +107,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
             if (doRefresh) {
                 // Send refresh command here
                 try {
-                    logger.debug("handleCommand: uid {} get unit state", channelUID);
+                    logger.trace("handleCommand: uid {} get unit state", channelUID);
                     CasambiMessageUnit unitState = bridgeHandler.casambi.getUnitState(deviceId);
                     if (unitState != null) {
                         updateLuminaryState(unitState);
@@ -144,7 +144,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
 
     @Override
     public void dispose() {
-        logger.debug("dispose: dispose luninary");
+        logger.debug("dispose: dispose luninary NOP");
     };
 
     @Override
@@ -155,7 +155,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
 
     @Override
     public void bridgeStatusChanged(ThingStatusInfo info) {
-        logger.debug("bridgeStatusChanged: {}", info);
+        logger.debug("bridgeStatusChanged: {}, updating luminary {}", info, deviceId);
         Bridge bridge = getBridge();
 
         if (bridge == null) {
@@ -186,12 +186,13 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
 
     @Override
     public void updateState(ChannelUID chan, State state) {
-        logger.debug("updateState: channel {}, state {}", chan, state);
+        logger.trace("updateState: channel {}, state {}", chan, state);
         super.updateState(chan, state);
     }
 
     public void updateLuminaryState(CasambiMessageUnit state) {
-        logger.debug("updateLuminaryState: id {} dimLevel {}", deviceId, state.dimLevel);
+        Float lvl = (state.dimLevel != null) ? state.dimLevel : 0;
+        logger.trace("updateLuminaryState: id {} dimLevel {}", deviceId, lvl);
         if (state.online != null && state.online) {
             updateStatus(ThingStatus.ONLINE);
         } else {
@@ -203,11 +204,16 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
             updateState(CHANNEL_DIM, new PercentType(0));
         } else {
             updateState(CHANNEL_SWITCH, OnOffType.ON);
-            updateState(CHANNEL_DIM, new PercentType(Math.round(state.dimLevel * 100)));
+            updateState(CHANNEL_DIM, new PercentType(Math.round(lvl * 100)));
         }
     }
 
+    public void updateLuminaryStatus(ThingStatus t) {
+        updateStatus(t);
+    }
+
     // Map Luminary ids to things. Needed to update thing status based on casambi message content
+
     // Get thing corresponding to id
     public static @Nullable Thing getThingById(@Nullable Integer id) {
         if (id != null) {
