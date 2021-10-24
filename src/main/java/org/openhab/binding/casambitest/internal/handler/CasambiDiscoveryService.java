@@ -14,6 +14,7 @@ package org.openhab.binding.casambitest.internal.handler;
 
 import static org.openhab.binding.casambitest.internal.CasambiBindingConstants.*;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -28,7 +29,8 @@ import org.openhab.core.config.discovery.DiscoveryResultBuilder;
 import org.openhab.core.config.discovery.DiscoveryService;
 import org.openhab.core.thing.ThingTypeUID;
 import org.openhab.core.thing.ThingUID;
-import org.osgi.service.component.annotations.Component;
+import org.openhab.core.thing.binding.ThingHandler;
+import org.openhab.core.thing.binding.ThingHandlerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,34 +41,38 @@ import org.slf4j.LoggerFactory;
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-@Component(service = DiscoveryService.class, immediate = true, configurationPid = "discovery.casambitest")
-public class CasambiDiscoveryService extends AbstractDiscoveryService {
-
-    @Nullable
-    private static CasambiBridgeHandler bridge;
+public class CasambiDiscoveryService extends AbstractDiscoveryService implements DiscoveryService, ThingHandlerService {
 
     private static final Logger logger = LoggerFactory.getLogger(CasambiDiscoveryService.class);
 
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Set.of(THING_TYPE_LUMINARY, THING_TYPE_SCENE);
+    private static final int SEARCH_TIME = 10;
+
+    @Nullable
+    private CasambiBridgeHandler bridgeHandler;
+    @Nullable
+    private ThingUID bridgeUID;
+
     public CasambiDiscoveryService() {
-        super(10 * 1000);
+        super(SUPPORTED_THING_TYPES, SEARCH_TIME);
         logger.warn("CasambiDiscoveryService: 0 arg constructor.");
     }
 
     public CasambiDiscoveryService(int timeout) throws IllegalArgumentException {
-        super(timeout);
+        super(SUPPORTED_THING_TYPES, timeout);
         logger.warn("CasambiDiscoveryService: 1 arg constructor.");
     }
 
     @Override
     public Set<ThingTypeUID> getSupportedThingTypes() {
-        return Set.of(THING_TYPE_LUMINARY, THING_TYPE_SCENE);
+        return SUPPORTED_THING_TYPES;
     }
 
     @Override
     protected void startScan() {
         logger.debug("startScan: ");
-        if (bridge != null) {
-            bridge.scheduleDiscoveryScan();
+        if (bridgeHandler != null) {
+            bridgeHandler.scheduleDiscoveryScan();
         } else {
             logger.warn("startScan: bridge not set up. Not scanning.");
         }
@@ -74,17 +80,19 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService {
 
     protected void addDiscoveredLuminary(CasambiMessageUnit unit) {
         try {
-            ThingUID bridgeUID = bridge.getThing().getUID();
             if (bridgeUID != null) {
-                logger.debug("addDiscoveredLuminary: bridge: {}, id {}, name, uid {}", bridgeUID, unit.id, unit.name,
+                ThingUID localBridgeUID = bridgeUID;
+                String uniqueID = "lum" + unit.fixtureId.toString();
+                ThingUID thingUID = new ThingUID(CasambiBindingConstants.THING_TYPE_LUMINARY, localBridgeUID, uniqueID);
+                logger.debug("addDiscoveredLuminary: uid: {}, id {}, name {}, uid {}", thingUID, unit.id, unit.name,
                         unit.fixtureId);
-                ThingUID thingUID = new ThingUID(CasambiBindingConstants.BINDING_ID, bridgeUID,
-                        ":lum" + unit.fixtureId.toString());
                 Map<String, Object> properties = new HashMap<>(1);
                 properties.put(CasambiBindingConstants.DEVICE_NAME, unit.name);
                 properties.put(CasambiBindingConstants.DEVICE_ID, unit.id);
+                properties.put(CasambiBindingConstants.DEVICE_UID, uniqueID);
                 DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingUID).withProperties(properties)
                         .withBridge(bridgeUID).withLabel(unit.name).build();
+                // .withRepresentationProperty(CasambiBindingConstants.DEVICE_UID)
                 thingDiscovered(discoveryResult);
             } else {
                 logger.warn("addDiscoveredLuminary: bridgeUID is null");
@@ -94,7 +102,39 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService {
         }
     }
 
-    protected void setBridge(CasambiBridgeHandler bridgeHandler) {
-        bridge = bridgeHandler;
+    @Override
+    public void setThingHandler(ThingHandler handler) {
+        logger.debug("setThingHandler:");
+        if (handler instanceof CasambiBridgeHandler) {
+            bridgeHandler = (CasambiBridgeHandler) handler;
+            bridgeUID = handler.getThing().getUID();
+        }
+    }
+
+    @Override
+    public @Nullable ThingHandler getThingHandler() {
+        logger.debug("getThingHandler:");
+        return bridgeHandler;
+    }
+
+    @Override
+    public void activate() {
+        logger.debug("activate:");
+        final CasambiBridgeHandler handler = bridgeHandler;
+        if (handler != null) {
+            handler.scheduleDiscoveryScan();
+        }
+    }
+
+    @Override
+    public void deactivate() {
+        logger.debug("deactivate:");
+        removeOlderResults(new Date().getTime(), bridgeUID);
+        /*
+         * final CasambiBridgeHandler handler = bridgeHandler;
+         * if (handler != null) {
+         * handler.unregisterDiscoveryListener();
+         * }
+         */
     }
 }

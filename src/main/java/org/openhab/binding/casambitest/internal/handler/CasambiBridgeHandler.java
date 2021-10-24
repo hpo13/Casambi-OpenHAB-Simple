@@ -15,6 +15,8 @@ package org.openhab.binding.casambitest.internal.handler;
 import static org.openhab.binding.casambitest.internal.CasambiBindingConstants.*;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Future;
@@ -40,7 +42,9 @@ import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
 import org.openhab.core.thing.binding.BaseBridgeHandler;
+import org.openhab.core.thing.binding.BridgeHandler;
 import org.openhab.core.thing.binding.ThingHandler;
+import org.openhab.core.thing.binding.ThingHandlerService;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
 import org.slf4j.Logger;
@@ -91,6 +95,11 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         casambi.setupJsonLogging(config.logMessages, config.logDir, "casambiJsonMessages.txt");
     };
 
+    @Override
+    public Collection<Class<? extends ThingHandlerService>> getServices() {
+        return Collections.singleton(CasambiDiscoveryService.class);
+    }
+
     // --- Override superclass methods--------------------------------------------------------------------
 
     @Override
@@ -113,9 +122,9 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         // updateStatus(ThingStatus.UNKNOWN);
 
         discover = new CasambiDiscoveryService(10 * 1000);
-        CasambiBridgeHandler bridgeHandler = (CasambiBridgeHandler) this.thing.getHandler();
+        BridgeHandler bridgeHandler = this.getThing().getHandler();
         if (bridgeHandler != null) {
-            discover.setBridge(bridgeHandler);
+            discover.setThingHandler(bridgeHandler);
         }
 
         scheduler.execute(initCasambiSession);
@@ -383,8 +392,8 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                             } else {
                                 logger.warn("pollUnitStatus: no scenes in network.");
                             }
-                            logger.warn("pollUnitStatus: start discovery scan");
-                            discover.startScan();
+                            // logger.warn("pollUnitStatus: start discovery scan");
+                            // discover.startScan();
                         } else {
                             logger.warn("pollUnitStatus: got null network state message.");
                         }
@@ -408,14 +417,14 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                 if (casambi != null) {
                     CasambiMessageNetworkState networkState = casambi.getNetworkState();
                     if (networkState != null) {
-                        if (networkState.units != null) {
+                        if (networkState.units != null && discover != null) {
                             for (Entry<Integer, CasambiMessageUnit> unit : networkState.units.entrySet()) {
                                 logger.debug("doDiscoveryScan: adding unit id {}, name {}", unit.getValue().id,
                                         unit.getValue().name);
                                 discover.addDiscoveredLuminary(unit.getValue());
                             }
                         } else {
-                            logger.warn("doDiscoveryScan: no units in network.");
+                            logger.warn("doDiscoveryScan: no units in network or discovery not configured.");
                         }
                     }
                 }
@@ -423,6 +432,7 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                 logger.error("doDiscoveryScan: exception {}. Exiting.", e.getMessage());
                 return;
             }
+            logger.debug("doDiscoveryScan: done.");
         }
     };
 

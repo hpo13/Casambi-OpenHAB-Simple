@@ -46,6 +46,7 @@ public class CasambiBindingConstants {
     // Luminary constants
     // Parameters
     public static final String DEVICE_ID = "luminaryNumber";
+    public static final String DEVICE_UID = "luminaryUID";
     public static final String DEVICE_NAME = "luminaryName";
     // Channels
     public static final String CHANNEL_SWITCH = "switch";
