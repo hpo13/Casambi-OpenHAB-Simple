@@ -121,7 +121,8 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
     public void activate() {
         logger.debug("activate:");
         final CasambiBridgeHandler handler = bridgeHandler;
-        if (handler != null) {
+        if (handler != null && handler.getBridgeOnline()) {
+            logger.info("activate: starting discovery scan.");
             handler.scheduleDiscoveryScan();
         }
     }

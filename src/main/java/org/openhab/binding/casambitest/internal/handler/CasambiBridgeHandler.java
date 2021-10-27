@@ -78,6 +78,7 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
     private @Nullable Future<?> pollUnitStatusJob;
     private @Nullable Future<?> peerRecoveryJob;
     // private @Nullable Future<?> discoveryScanJob;
+    private volatile int missedPong = 0;
 
     // This won't work, there are too many ways to change online status
     private volatile Boolean bridgeOnline = false;
@@ -189,10 +190,16 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                 if (casambi != null) {
                     userSession = casambi.createUserSession();
                     networkSession = casambi.createNetworkSession();
-                    casambi.casambiSocketOpen();
-                    updateState(CHANNEL_PEER, OnOffType.ON);
-                    bridgeOnline = true;
-                    logger.debug("initCasambiSession: session initialized");
+                    if (casambi.casambiSocketOpen()) {
+                        bridgeOnline = true;
+                        updateStatus(ThingStatus.ONLINE);
+                        updateState(CHANNEL_PEER, OnOffType.ON);
+                        logger.debug("initCasambiSession: session initialized");
+                    } else {
+                        logger.error("initCasambiSession: Socket not open");
+                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                                "Error: Socket not open.");
+                    }
                 } else {
                     throw (new CasambiException("CasambiDriverJson is null"));
                 }
@@ -291,9 +298,7 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                                 break;
                             case keepAlive:
                                 logger.trace("handleCasambiMessages: keepAlive got pong");
-                                if (casambi != null) {
-                                    casambi.pingOk();
-                                }
+                                missedPong = 0;
                                 break;
                             default:
                                 logger.warn("handleCasambiMessages: unknown message type: {}", msg);
@@ -325,9 +330,19 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                 }
                 try {
                     Thread.sleep(280 * 1000);
+                    if (missedPong > 0) {
+                        logger.info("ping: Response missing for last ping.");
+                        if (missedPong > 10) {
+                            logger.warn("ping: {} ping responses missing. Sending recovery command.", missedPong);
+                            CasambiDriverSystem.sendSshCommand();
+                            missedPong = 0;
+                        }
+                    }
+
                     logger.trace("sendKeepAlive:");
                     if (casambi != null) {
                         casambi.ping();
+                        missedPong++;
                     }
                 } catch (Exception e) {
                     logger.error("sendKeepAlive: exception {}. Exiting.", e.getMessage());
@@ -478,4 +493,8 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
             }
         }
     };
+
+    public Boolean getBridgeOnline() {
+        return bridgeOnline;
+    }
 }

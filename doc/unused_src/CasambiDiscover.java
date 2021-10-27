@@ -32,8 +32,8 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class CasambiDiscover {
 
-    @Nullable
-    private CasambiBridgeHandler bridge;
+    // @Nullable
+    /// private CasambiBridgeHandler bridge;
 
     private static final Logger logger = LoggerFactory.getLogger(CasambiDiscover.class);
 
@@ -87,6 +87,6 @@ public class CasambiDiscover {
     }
 
     public void setBridge(CasambiBridgeHandler bridgeHandler) {
-        bridge = bridgeHandler;
+        // bridge = bridgeHandler;
     }
 }

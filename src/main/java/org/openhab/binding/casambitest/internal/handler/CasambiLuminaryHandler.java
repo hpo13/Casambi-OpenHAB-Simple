@@ -231,6 +231,8 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
         }
     }
 
+    // Check if a luminary is already registered as a thing
+    // FIXME: need to be supplemented by a check for the fixture id (UID)
     public Boolean checkThingsById(Integer id) {
         return thingsById.containsKey(id);
     }

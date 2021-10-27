@@ -75,7 +75,6 @@ public class CasambiDriverJson {
     private String userPassword;
     private String networkPassword;
     private String apiKey;
-    private volatile Boolean gotPong = true;
 
     static Boolean jsonLogActive = false;
     private static @Nullable PrintWriter writer;
@@ -412,8 +411,9 @@ public class CasambiDriverJson {
 
     };
 
-    public void casambiSocketOpen() throws IOException, InterruptedException, URISyntaxException, CasambiException {
+    public Boolean casambiSocketOpen() throws IOException, InterruptedException, URISyntaxException, CasambiException {
 
+        Boolean socketOk = false;
         logger.debug("casambiOpen: opening socket for casambi communication");
         if (casambiSocket == null) {
             URI casambiURI = new URI("wss://door.casambi.com/v1/bridge/");
@@ -437,6 +437,7 @@ public class CasambiDriverJson {
             if (casambiSocket != null) {
                 casambiSocket.sendText(reqJson.toString(), true);
                 dumpMessage("+++ Socket casambiOpen +++");
+                socketOk = true;
             } else {
                 logger.error("casambiOpen: failed to open socket");
             }
@@ -445,6 +446,7 @@ public class CasambiDriverJson {
             logger.error(msg);
             throw new CasambiException(msg);
         }
+        return socketOk;
     };
 
     // FIXME: Socket inaktivieren (ist das richtig so?)
@@ -456,15 +458,14 @@ public class CasambiDriverJson {
             writer = null;
         }
 
-        if (casambiSocket != null) {
-            JsonObject reqJson = new JsonObject();
-            reqJson.addProperty("wire", casambiWireId);
-            reqJson.addProperty("method", "close");
-            casambiSocket.sendText(reqJson.toString(), true);
+        JsonObject reqJson = new JsonObject();
+        reqJson.addProperty("wire", casambiWireId);
+        reqJson.addProperty("method", "close");
 
-            final int ms = 1000;
+        if (casambiSocket != null) {
+            casambiSocket.sendText(reqJson.toString(), true);
             CompletableFuture<WebSocket> sc = casambiSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
-            sc.wait(2 * ms);
+            sc.wait(2 * 1000);
             casambiSocket = null;
         } else {
             final String msg = "casambiClose: Error - Socket not open.";
@@ -543,16 +544,12 @@ public class CasambiDriverJson {
     }
 
     public void ping() throws CasambiException {
-        if (!gotPong) {
-            logger.warn("ping: Response missing for last ping.");
-        }
         JsonObject reqJson = new JsonObject();
         reqJson.addProperty("wire", casambiWireId);
         reqJson.addProperty("method", "ping");
 
         if (casambiSocket != null) {
             casambiSocket.sendText(reqJson.toString(), true);
-            gotPong = false;
         } else {
             final String msg = "ping: Error - Socket not open.";
             logger.error(msg);
@@ -590,12 +587,6 @@ public class CasambiDriverJson {
         }
     }
 
-    // Used by CasambiBridgeHandler
-
-    public void pingOk() {
-        gotPong = true;
-    }
-
     // Getter for socket_status
     public String getSocketStatus() {
         return casambiSocketStatus;
@@ -623,14 +614,6 @@ public class CasambiDriverJson {
 
     // --- JSON and logging helper routines ---------------------------------------------------------
 
-    // Pretty print JSON object (two signatures)
-    /*
-     * private String ppJson(JsonObject json) {
-     * Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-     * return gson.toJson(json).toString();
-     * };
-     */
-
     public String ppJson(@Nullable String json) {
         if (json != null) {
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -640,19 +623,6 @@ public class CasambiDriverJson {
             return "";
         }
     };
-
-    // Write JSON object to log file (two signatures)
-    /*
-     * private void dumpJson(JsonObject json) {
-     * try {
-     * if (debug && writer != null) {
-     * writer.println(ppJson(json));
-     * }
-     * } catch (Exception e) {
-     * logger.error("dumpJson: Error dumping JSON: {}", e.toString());
-     * }
-     * }
-     */
 
     private void dumpMessage(String msg) {
         if (jsonLogActive && writer != null) {
@@ -676,12 +646,7 @@ public class CasambiDriverJson {
         try {
             if (jsonLogActive && writer != null && json != null) {
                 String jStr = ppJson(json);
-                // if (jStr != null) {
                 writer.println(jStr);
-                // } else {
-                // logger.info("ppJson: got null string for json: {}", json);
-                // writer.println("=== ERROR === ppJson Got null string for json: " + json);
-                // }
             }
         } catch (Exception e) {
             logger.warn("dumpJson: Exception dumping JSON: {}", e.toString());
