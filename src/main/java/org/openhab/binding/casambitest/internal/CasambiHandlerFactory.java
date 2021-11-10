@@ -43,7 +43,7 @@ public class CasambiHandlerFactory extends BaseThingHandlerFactory {
 
     private final Logger logger = LoggerFactory.getLogger(CasambiHandlerFactory.class);
 
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(BRIDGE_TYPE, THING_TYPE_LUMINARY,
+    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_BRIDGE, THING_TYPE_LUMINARY,
             THING_TYPE_SCENE);
 
     @Override
@@ -57,7 +57,7 @@ public class CasambiHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
         logger.debug("createHandler: uid {}", thingTypeUID);
 
-        if (BRIDGE_TYPE.equals(thingTypeUID)) {
+        if (THING_TYPE_BRIDGE.equals(thingTypeUID)) {
             Bridge bridge = (Bridge) thing;
             return new CasambiBridgeHandler(bridge);
         }

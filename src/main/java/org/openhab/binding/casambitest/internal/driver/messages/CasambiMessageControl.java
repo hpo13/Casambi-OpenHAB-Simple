@@ -23,16 +23,20 @@ import org.eclipse.jdt.annotation.Nullable;
  */
 @NonNullByDefault
 public class CasambiMessageControl {
-    public String type; // missing from Photo
-    public @Nullable Float value; // Dimmer, CCT
+    public @Nullable String type; // missing from Photo
+    public @Nullable Float value; // Dimmer, CCT, Colorbalance
     public @Nullable String source; // Colorsource
-    public @Nullable Float x; // Color, Photo
-    public @Nullable Float y; // Color, Photo
-    public @Nullable String rgb; // Color
+    public @Nullable Float x; // Color(?), Photo
+    public @Nullable Float y; // Color(?), Photo
+    public @Nullable String rgb; // Color, RGB
     public @Nullable Float tw; // CCT
     public @Nullable Integer min; // CCT
     public @Nullable Integer max; // CCT
-    public @Nullable Integer level; // CCT
+    public @Nullable Float level; // CCT
+    public @Nullable Float sat; // Color
+    public @Nullable Float hue; // Color
+    public @Nullable Float whiteLevel; // ColorBalance
+    public @Nullable Float colorLevel; // ColorBalance
     public @Nullable String name; // Button
     public @Nullable String buttonLabel; // Button
     public @Nullable String dataname; // Button

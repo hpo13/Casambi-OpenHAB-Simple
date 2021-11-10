@@ -31,31 +31,33 @@ public class CasambiBindingConstants {
     public static final String BINDING_ID = "casambitest";
 
     // List of all Thing Type UIDs
-    public static final ThingTypeUID BRIDGE_TYPE = new ThingTypeUID(BINDING_ID, "casambibridge");
+    public static final ThingTypeUID THING_TYPE_BRIDGE = new ThingTypeUID(BINDING_ID, "casambibridge");
     public static final ThingTypeUID THING_TYPE_LUMINARY = new ThingTypeUID(BINDING_ID, "luminary");
     public static final ThingTypeUID THING_TYPE_SCENE = new ThingTypeUID(BINDING_ID, "scene");
 
     public static final Set<ThingTypeUID> SUPPORTED_DEVICE_THING_TYPES_UIDS = new HashSet<>(
-            Arrays.asList(BRIDGE_TYPE, THING_TYPE_LUMINARY, THING_TYPE_SCENE));
+            Arrays.asList(THING_TYPE_BRIDGE, THING_TYPE_LUMINARY, THING_TYPE_SCENE));
 
     // Bridge constants
     // Bridge channels
-    public static final String CHANNEL_PEER = "peer";
-    public static final String CHANNEL_MESSAGE = "message";
+    public static final String BRIDGE_CHANNEL_PEER = "peer";
+    public static final String BRIDGE_CHANNEL_MESSAGE = "message";
 
     // Luminary constants
     // Parameters
-    public static final String DEVICE_ID = "luminaryNumber";
-    public static final String DEVICE_UID = "luminaryUID";
-    public static final String DEVICE_NAME = "luminaryName";
+    public static final String LUMINARY_ID = "luminaryNumber";
+    public static final String LUMINARY_UID = "luminaryUID";
+    public static final String LUMINARY_NAME = "luminaryName";
     // Channels
-    public static final String CHANNEL_SWITCH = "switch";
-    public static final String CHANNEL_DIM = "dim";
+    public static final String LUMINARY_CHANNEL_SWITCH = "switch";
+    public static final String LUMINARY_CHANNEL_DIM = "dim";
+    public static final String LUMINARY_CHANNEL_COLOR = "color";
 
     // Scene constants
     // Parameters
     public static final String SCENE_ID = "sceneNumber";
+    public static final String SCENE_UID = "sceneUID";
     public static final String SCENE_NAME = "sceneName";
     // Channels
-    public static final String CHANNEL_SCENE = "scene";
+    public static final String SCENE_CHANNEL_SCENE = "scene";
 }

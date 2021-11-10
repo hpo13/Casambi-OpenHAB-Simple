@@ -26,9 +26,6 @@ import org.slf4j.LoggerFactory;
 
 public class CasambiDriverSystem {
 
-    // private static final String sshCmd = "/usr/bin/ssh bbpriv -p 8022 -i ~/.ssh/casambi_rsa";
-    // private static final String sshRemCmd = "am start casambi.ambi/.ui.Casa";
-    // private static String command = sshCmd + " " + sshRemCmd;
     private static Boolean enabled = false;
     private static String command = " ";
 
@@ -59,10 +56,10 @@ public class CasambiDriverSystem {
     }
 
     public static final void enableSshCommand(Boolean enable, String cmd) {
-        logger.debug("enableSshCommand: {}, cmd '{}'", enable, cmd);
+        logger.trace("enableSshCommand: {}, cmd '{}'", enable, cmd);
         enabled = enable;
         if (enable) {
             command = cmd;
         }
     }
-};
+}

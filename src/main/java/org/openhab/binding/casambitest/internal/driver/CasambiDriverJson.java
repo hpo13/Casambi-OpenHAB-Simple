@@ -474,15 +474,7 @@ public class CasambiDriverJson {
         }
     };
 
-    public void turnUnitOff(int unitId) throws CasambiException {
-        setUnitValue(unitId, 0);
-    }
-
-    public void turnUnitOn(int unitId) throws CasambiException {
-        setUnitValue(unitId, 1);
-    }
-
-    public void setUnitValue(int unitId, float dim) throws CasambiException {
+    public void setUnitValue1(int unitId, float dim) throws CasambiException {
         logger.debug("setUnitValue: unit {} value {}", unitId, dim);
 
         JsonObject value = new JsonObject();
@@ -496,6 +488,56 @@ public class CasambiDriverJson {
         reqJson.addProperty("method", "controlUnit");
         reqJson.addProperty("id", unitId);
         reqJson.add("targetControls", dimmer);
+
+        if (casambiSocket != null) {
+            casambiSocket.sendText(reqJson.toString(), true);
+            dumpMessage("+++ Socket setUnitValue +++");
+        } else {
+            final String msg = "setUnitValue: Error - Socket not open.";
+            logger.error(msg);
+            throw new CasambiException(msg);
+        }
+    }
+
+    public void turnUnitOff(int unitId) throws CasambiException {
+        setUnitValue(unitId, 0);
+    }
+
+    public void turnUnitOn(int unitId) throws CasambiException {
+        setUnitValue(unitId, 1);
+    }
+
+    public void setUnitValue(int unitId, float dim) throws CasambiException {
+        JsonObject value = new JsonObject();
+        value.addProperty("value", dim);
+
+        JsonObject dimmer = new JsonObject();
+        dimmer.add("Dimmer", value);
+        setUnitControl(unitId, dimmer);
+    }
+
+    public void setUnitHSB(int unitId, float h, float s, float b) throws CasambiException {
+        logger.info("setUnitHSB: unit {} hsb {},{},{}", unitId, h, s, b);
+        JsonObject RGB = new JsonObject();
+        RGB.addProperty("hue", h);
+        RGB.addProperty("sat", s);
+        JsonObject Colorsource = new JsonObject();
+        Colorsource.addProperty("source", "RGB");
+        JsonObject control = new JsonObject();
+        control.add("RGB", RGB);
+        control.add("Colorsource", Colorsource);
+        setUnitControl(unitId, control);
+        setUnitValue(unitId, b);
+    }
+
+    private void setUnitControl(int unitId, JsonObject control) throws CasambiException {
+        logger.debug("setUnitControl: unit {} control {}", unitId, control.toString());
+
+        JsonObject reqJson = new JsonObject();
+        reqJson.addProperty("wire", casambiWireId);
+        reqJson.addProperty("method", "controlUnit");
+        reqJson.addProperty("id", unitId);
+        reqJson.add("targetControls", control);
 
         if (casambiSocket != null) {
             casambiSocket.sendText(reqJson.toString(), true);

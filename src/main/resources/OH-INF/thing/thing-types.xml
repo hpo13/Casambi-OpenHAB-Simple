@@ -94,7 +94,9 @@
    		<channels>
 			<channel id="switch" typeId="casambiSwitch"/>
 			<channel id="dim" typeId="casambiDim"/>
+            <channel id="color" typeId="system.color"/>
 		</channels>
+        <representation-property>luminaryUID</representation-property>
         <config-description>
             <parameter name="luminaryNumber" type="integer" min="0" required="true" readOnly="false" multiple="false">
               <required>true</required>
@@ -127,6 +129,12 @@
         <description>Casambi luminary dim level (between 0 and 1) </description>
         <!-- <category>Light</category> -->
     </channel-type>
+    <channel-type id="color" system="true">
+        <item-type>Color</item-type>
+        <label>Luminary Color</label>
+        <description>Casambi luminary color selection (rgb) </description>
+        <category>ColorLight</category>
+    </channel-type>
 
 	<!--CasambiScene -->
     <!-- This could be set up differently: one Thing called "Scenes" -->
@@ -140,6 +148,7 @@
 		<channels>
 			<channel id="scene" typeId="casambiScene"/>
 		</channels>
+        <representation-property>sceneUID</representation-property>
         <config-description>
             <parameter name="sceneNumber" type="integer" min="0" required="true" readOnly="false" multiple="false">
               <required>true</required>

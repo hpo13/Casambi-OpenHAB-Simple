@@ -65,7 +65,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
         Boolean doRefresh = false;
         if (bridgeHandler != null && bridgeHandler.casambi != null) {
             // logger.debug("handleCommand: bridge handler ok.");
-            if (CHANNEL_SCENE.equals(channelUID.getId())) {
+            if (SCENE_CHANNEL_SCENE.equals(channelUID.getId())) {
                 if (command instanceof RefreshType) {
                     doRefresh = true;
                 } else if (command instanceof OnOffType) {

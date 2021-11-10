@@ -14,19 +14,16 @@ package org.openhab.binding.casambitest.internal.handler;
 
 import static org.openhab.binding.casambitest.internal.CasambiBindingConstants.*;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.casambitest.internal.CasambiBindingConstants;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageUnit;
 import org.openhab.core.config.discovery.AbstractDiscoveryService;
 import org.openhab.core.config.discovery.DiscoveryResult;
 import org.openhab.core.config.discovery.DiscoveryResultBuilder;
-import org.openhab.core.config.discovery.DiscoveryService;
 import org.openhab.core.thing.ThingTypeUID;
 import org.openhab.core.thing.ThingUID;
 import org.openhab.core.thing.binding.ThingHandler;
@@ -41,27 +38,24 @@ import org.slf4j.LoggerFactory;
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiDiscoveryService extends AbstractDiscoveryService implements DiscoveryService, ThingHandlerService {
+public class CasambiDiscoveryService extends AbstractDiscoveryService implements ThingHandlerService {
 
     private static final Logger logger = LoggerFactory.getLogger(CasambiDiscoveryService.class);
 
     public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Set.of(THING_TYPE_LUMINARY, THING_TYPE_SCENE);
     private static final int SEARCH_TIME = 10;
 
-    @Nullable
-    private CasambiBridgeHandler bridgeHandler;
-    @Nullable
-    private ThingUID bridgeUID;
+    private @Nullable CasambiBridgeHandler bridgeHandler;
+    private @Nullable ThingUID bridgeUID;
+
+    // --- Constructor ---------------------------------------------------------------------------------------------
 
     public CasambiDiscoveryService() {
         super(SUPPORTED_THING_TYPES, SEARCH_TIME);
-        logger.warn("CasambiDiscoveryService: 0 arg constructor.");
+        logger.trace("CasambiDiscoveryService: 0 arg constructor.");
     }
 
-    public CasambiDiscoveryService(int timeout) throws IllegalArgumentException {
-        super(SUPPORTED_THING_TYPES, timeout);
-        logger.warn("CasambiDiscoveryService: 1 arg constructor.");
-    }
+    // --- Override superclass methods--------------------------------------------------------------------
 
     @Override
     public Set<ThingTypeUID> getSupportedThingTypes() {
@@ -78,21 +72,31 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
         }
     }
 
+    @Override
+    protected synchronized void stopScan() {
+        logger.debug("stopScan: ");
+        // FIXME: muss hier ein laufender Scan abgebrochen werden?
+        super.stopScan();
+    }
+
     protected void addDiscoveredLuminary(CasambiMessageUnit unit) {
         try {
             if (bridgeUID != null) {
                 ThingUID localBridgeUID = bridgeUID;
-                String uniqueID = "lum" + unit.fixtureId.toString();
-                ThingUID thingUID = new ThingUID(CasambiBindingConstants.THING_TYPE_LUMINARY, localBridgeUID, uniqueID);
-                logger.debug("addDiscoveredLuminary: uid: {}, id {}, name {}, uid {}", thingUID, unit.id, unit.name,
+                String uniqueID = CasambiLuminaryHandler.getUidFromFixtureId(unit.fixtureId);
+                ThingUID thingUID = new ThingUID(THING_TYPE_LUMINARY, localBridgeUID, uniqueID);
+                logger.debug("addDiscoveredLuminary: tUID: {}, id {}, name {}, uid {}", thingUID, unit.id, unit.name,
                         unit.fixtureId);
-                Map<String, Object> properties = new HashMap<>(1);
-                properties.put(CasambiBindingConstants.DEVICE_NAME, unit.name);
-                properties.put(CasambiBindingConstants.DEVICE_ID, unit.id);
-                properties.put(CasambiBindingConstants.DEVICE_UID, uniqueID);
-                DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingUID).withProperties(properties)
-                        .withBridge(bridgeUID).withLabel(unit.name).build();
-                // .withRepresentationProperty(CasambiBindingConstants.DEVICE_UID)
+                Map<String, Object> properties = new HashMap<>();
+                properties.put(LUMINARY_NAME, unit.name);
+                properties.put(LUMINARY_ID, unit.id);
+                properties.put(LUMINARY_UID, uniqueID);
+                logger.trace("addDiscoveredLuminary: ttUID: {}, bUID {}, label: {}", THING_TYPE_LUMINARY, bridgeUID,
+                        unit.name);
+                logger.trace("addDiscoveredLuminary: prop: {}", properties);
+                DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingUID)
+                        .withThingType(THING_TYPE_LUMINARY).withProperties(properties).withBridge(bridgeUID)
+                        .withRepresentationProperty(LUMINARY_UID).withLabel(unit.name).build();
                 thingDiscovered(discoveryResult);
             } else {
                 logger.warn("addDiscoveredLuminary: bridgeUID is null");
@@ -104,7 +108,7 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
 
     @Override
     public void setThingHandler(ThingHandler handler) {
-        logger.debug("setThingHandler:");
+        logger.trace("setThingHandler: ");
         if (handler instanceof CasambiBridgeHandler) {
             bridgeHandler = (CasambiBridgeHandler) handler;
             bridgeUID = handler.getThing().getUID();
@@ -113,29 +117,30 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
 
     @Override
     public @Nullable ThingHandler getThingHandler() {
-        logger.debug("getThingHandler:");
+        logger.trace("getThingHandler: ");
         return bridgeHandler;
     }
 
     @Override
     public void activate() {
-        logger.debug("activate:");
-        final CasambiBridgeHandler handler = bridgeHandler;
-        if (handler != null && handler.getBridgeOnline()) {
-            logger.info("activate: starting discovery scan.");
-            handler.scheduleDiscoveryScan();
+        if (bridgeHandler != null) {
+            bridgeHandler.registerDiscoveryListener(this);
+            logger.trace("activate: ");
+        } else {
+            logger.warn("activate: error - bridgeHandler is null");
         }
+        super.activate(null);
     }
 
     @Override
     public void deactivate() {
-        logger.debug("deactivate:");
-        removeOlderResults(new Date().getTime(), bridgeUID);
-        /*
-         * final CasambiBridgeHandler handler = bridgeHandler;
-         * if (handler != null) {
-         * handler.unregisterDiscoveryListener();
-         * }
-         */
+        if (bridgeHandler != null) {
+            bridgeHandler.unregisterDiscoveryListener();
+            logger.trace("deactivate: ");
+        } else {
+            logger.warn("deactivate: error - bridgeHandler is null");
+        }
+
+        super.deactivate();
     }
 }
