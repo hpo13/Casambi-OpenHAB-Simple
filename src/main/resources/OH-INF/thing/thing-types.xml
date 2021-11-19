@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <thing:thing-descriptions bindingId="casambitest"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
-	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+    xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
-	<!--CasambiBridge -->
-	<bridge-type id="casambibridge">
-		<label>casambiTest Bridge</label>
+    <!--CasambiBridge -->
+    <bridge-type id="casambibridge">
+        <label>casambiTest Bridge</label>
         <description>Casambi Bridge to Server</description>
-		<channels>
-		  <channel id="peer" typeId="peerOnline"/>
-		  <channel id="message" typeId="casambiMessage"/>
-		</channels>
-		<config-description>
+        <channels>
+          <channel id="peer" typeId="casambiOnline"/>
+          <channel id="message" typeId="casambiMessage"/>
+          <channel id="dim" typeId="casambiDim"/>
+        </channels>
+        <config-description>
             <parameter-group name="connection">
               <label>Casambi connection</label>
               <description>Casambi connection parameters (API-key, userid, passwords)</description>
@@ -27,29 +28,29 @@
               <description>Remote command to reactivate the local Casambi bridge device</description>
               <advanced>true</advanced>
             </parameter-group>
-		    <parameter name="apiKey" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
-		      <required>true</required>
-		      <label>Casambi API key</label>
-		      <description>API key to connect to the Casambi server. See https://developer.casambi.com</description>
-		    </parameter>
-		    <parameter name="userId" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
-		      <required>true</required>
-		      <context>email</context>
-		      <label>Casambi user id</label>
-		      <description>User id to connect to the Casambi server.</description>
-		    </parameter>
-		    <parameter name="userPassword" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
-		      <required>true</required>
-		      <context>password</context>
-		      <label>Casambi user password</label>
-		      <description>User password to connect to the Casambi server.</description>
-		    </parameter>
-		    <parameter name="networkPassword" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
-		      <required>true</required>
-		      <context>password</context>
-		      <label>Casambi network password</label>
-		      <description>Network password to connect to the Casambi server.</description>
-		    </parameter>
+            <parameter name="apiKey" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
+              <required>true</required>
+              <label>Casambi API key</label>
+              <description>API key to connect to the Casambi server. See https://developer.casambi.com</description>
+            </parameter>
+            <parameter name="userId" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
+              <required>true</required>
+              <context>email</context>
+              <label>Casambi user id</label>
+              <description>User id to connect to the Casambi server.</description>
+            </parameter>
+            <parameter name="userPassword" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
+              <required>true</required>
+              <context>password</context>
+              <label>Casambi user password</label>
+              <description>User password to connect to the Casambi server.</description>
+            </parameter>
+            <parameter name="networkPassword" type="text" required="true" readOnly="false" multiple="false" groupName="connection">
+              <required>true</required>
+              <context>password</context>
+              <label>Casambi network password</label>
+              <description>Network password to connect to the Casambi server.</description>
+            </parameter>
             <parameter name="logMessages" type="boolean" required="false" readOnly="false" multiple="false" groupName="logging">
               <required>false</required>
               <label>Enable logging</label>
@@ -70,98 +71,207 @@
               <label>Casambi Peer Reactivation Coammand</label>
               <description>Command to be sent to the Casambi peer device to reactivate the bridge.</description>
             </parameter>
- 	    </config-description>	
-		<!-- <config-description-ref uri="thing-type:casambibridge"/> -->
-	</bridge-type>
-    <channel-type id="peerOnline">
-        <item-type>Contact</item-type>
-        <label>Peer Online</label>
-        <description>Online status of local Casambi peer device (e.g. mobile phone). If the false, reactivation command is sent (if configured).</description>
-    </channel-type>
-    <channel-type id="casambiMessage">
-        <item-type>Text</item-type>
-        <label>Casambi Message</label>
-        <description>Last Message from the casambi server</description>
-    </channel-type>
-	
-	<!--CasambiLuminary -->
-	<thing-type id="luminary">
-		<supported-bridge-type-refs>
-			<bridge-type-ref id="casambibridge"/>
-		</supported-bridge-type-refs>
-		<label>Casambi Luminary</label>
-		<description>Casambi luminary, on/off/intensity</description>
-   		<channels>
-			<channel id="switch" typeId="casambiSwitch"/>
-			<channel id="dim" typeId="casambiDim"/>
-            <channel id="color" typeId="system.color"/>
-		</channels>
+        </config-description>   
+    </bridge-type>
+    
+    <!--CasambiLuminary -->
+    <thing-type id="luminary">
+        <supported-bridge-type-refs>
+            <bridge-type-ref id="casambibridge"/>
+        </supported-bridge-type-refs>
+        <label>Casambi Luminary</label>
+        <description>Casambi luminary, on/off/intensity</description>
+        <channels>
+            <!--  <channel id="onoff" typeId="casambiOnOff"/> -->
+            <channel id="dim" typeId="casambiDim"/>
+            <channel id="color" typeId="casambiColor"/>
+            <channel id="cct" typeId = "casambiCCT"/>
+            <!--  <channel id="colorbalance" typeId ="casambiColorbalance"/> -->
+            <channel id="whitelevel" typeId ="casambiWhitelevel"/>
+        </channels>
         <representation-property>luminaryUID</representation-property>
         <config-description>
-            <parameter name="luminaryNumber" type="integer" min="0" required="true" readOnly="false" multiple="false">
+            <parameter-group name="identification">
+              <label>Luminary identification</label>
+              <description>Data for luminary identification (number, name, uid)</description>
+            </parameter-group>
+            <parameter-group name="properties">
+              <label>Luminary properties</label>
+              <description>Properties (control types, min/max color temperature)</description>
+              <advanced>true</advanced>
+            </parameter-group>
+
+            <parameter name="luminaryId" type="integer" min="0" required="true" readOnly="false" multiple="false" groupName="identification">
               <required>true</required>
               <label>Casambi luminary Id</label>
               <description>Luminary id as assigned by the Casambi system</description>
             </parameter>
-            <parameter name="luminaryName" type="text" required="true" readOnly="false" multiple="false">
+            <parameter name="luminaryName" type="text" required="true" readOnly="false" multiple="false" groupName="identification">
               <required>true</required>
               <label>Casambi Luminary Name</label>
-              <description>Luminary name</description>
+              <description>Luminary name from the casambi system</description>
             </parameter>
-            <parameter name="luminaryUID" type="text" required="true" readOnly="false" multiple="false">
+            <parameter name="luminaryUID" type="text" required="true" readOnly="false" multiple="false" groupName="identification">
               <required>true</required>
               <label>Casambi Luminary unique Id</label>
               <description>Luminary unique id, based on the fixture id.</description>
             </parameter>
-        </config-description>
-        <!-- <config-description-ref uri="thing-type:luminary:casambibridge"/> -->
-	</thing-type>
-	<!-- Switch Channel Type -->
-	<channel-type id="casambiSwitch">
-		<item-type>Switch</item-type>
-		<label>Luminary Power</label>
-		<description>Casambi luminary power (on/off) </description>
-		<!-- <category>Switch</category> -->
-	</channel-type>
-    <channel-type id="casambiDim">
-        <item-type>Dimmer</item-type>
-        <label>Luminary Dim</label>
-        <description>Casambi luminary dim level (between 0 and 1) </description>
-        <!-- <category>Light</category> -->
-    </channel-type>
-    <channel-type id="color" system="true">
-        <item-type>Color</item-type>
-        <label>Luminary Color</label>
-        <description>Casambi luminary color selection (rgb) </description>
-        <category>ColorLight</category>
-    </channel-type>
 
-	<!--CasambiScene -->
-    <!-- This could be set up differently: one Thing called "Scenes" -->
-    <!-- with channels for the individual scenes. Each channel could be on/off -->
-	<thing-type id="scene">
-		<supported-bridge-type-refs>
-			<bridge-type-ref id="casambibridge"/>
-		</supported-bridge-type-refs>
-		<label>casambiTest Scene</label>
-		<description>Casambi Lighting Scene (may include multiple luminaries)</description>
-		<channels>
-			<channel id="scene" typeId="casambiScene"/>
-		</channels>
-        <representation-property>sceneUID</representation-property>
-        <config-description>
-            <parameter name="sceneNumber" type="integer" min="0" required="true" readOnly="false" multiple="false">
-              <required>true</required>
-              <label>Casambi Scene Number</label>
-              <description>Scene number as assigned by the Casambi system</description>
+            <parameter name="hasDimmer" type="boolean" required="false" readOnly="false" multiple="false" groupName="properties">
+              <required>false</required>
+              <label>Luminary can be dimmed</label>
+              <description>Luminary brightness can be controlled</description>
+              <advanced>true</advanced>
+            </parameter>
+
+            <parameter name="hasCCT" type="boolean" required="false" readOnly="false" multiple="false" groupName="properties">
+              <required>false</required>
+              <label>Luminary color temperature may be set</label>
+              <description>Luminary color temperature may be set (between min and max values))</description>
+              <advanced>true</advanced>
+            </parameter>
+            <parameter name="tempMin" type="decimal" required="false" readOnly="false" multiple="false" groupName="properties">
+              <required>false</required>
+              <label>Minimum color temperature</label>
+              <description>Minimum color temperature for CCT setting</description>
+              <advanced>true</advanced>
+            </parameter>
+            <parameter name="tempMax" type="decimal" required="false" readOnly="false" multiple="false" groupName="properties">
+              <required>false</required>
+              <label>Maximum color temperature</label>
+              <description>Maximum color temperature for CCT setting</description>
+              <advanced>true</advanced>
+            </parameter>            
+
+            <parameter name="hasColor" type="boolean" required="false" readOnly="false" multiple="false" groupName="properties">
+              <required>false</required>
+              <label>Luminary color may be set</label>
+              <description>Luminary color may be set (hue, saturation, brigtness)</description>
+              <advanced>true</advanced>
+            </parameter>
+            <!-- <parameter name="hasColorbalance" type="boolean" required="false" readOnly="false" multiple="false" groupName="properties">
+              <required>false</required>
+              <label>Balance between color and white may be set</label>
+              <description>Balance between color and white</description>
+              <advanced>true</advanced>
+            </parameter> -->
+            <parameter name="hasWhitelevel" type="boolean" required="false" readOnly="false" multiple="false" groupName="properties">
+              <required>false</required>
+              <label>Level of white component</label>
+              <description>Controls balance between color and white</description>
+              <advanced>true</advanced>
             </parameter>
         </config-description>
-	</thing-type>
-	<!-- Scene Channel Type -->
-	<channel-type id="casambiScene">
-		<item-type>Switch</item-type>
-		<label>Lighting Scene</label>
-        <description>Casambi lighting scene (on/off)</description>
-		<!-- <category>Switch</category> -->
-	</channel-type>
+    </thing-type>
+
+    <!--CasambiScene -->
+    <!-- This could be set up differently: one Thing called "Scenes" -->
+    <!-- with channels for the individual scenes. Each channel could be on/off -->
+    <thing-type id="scene">
+        <supported-bridge-type-refs>
+            <bridge-type-ref id="casambibridge"/>
+        </supported-bridge-type-refs>
+        <label>Casambi Scene</label>
+        <description>Casambi Lighting Scene (may include multiple luminaries)</description>
+        <channels>
+            <!-- <channel id="id" typeId="casambiScene"/> -->
+            <!-- <channel id="onoff" typeId="casambiOnOff"/> -->
+            <channel id="dim" typeId="casambiDim"/>
+        </channels>
+        <!-- <representation-property>sceneUID</representation-property> -->
+        <config-description>
+            <parameter name="sceneId" type="integer" min="0" required="true" readOnly="false" multiple="false">
+              <required>true</required>
+              <label>Casambi Scene Id</label>
+              <description>Scene id (number) as assigned by the Casambi system</description>
+            </parameter>
+            <parameter name="sceneName" type="text" required="true" readOnly="false" multiple="false">
+              <required>true</required>
+              <label>Casambi Scene Name</label>
+              <description>Scene name from the Casambi system</description>
+            </parameter>
+            <parameter name="sceneUID" type="text" required="true" readOnly="false" multiple="false">
+              <required>true</required>
+              <label>Casambi Scene unique Id</label>
+              <description>Scene unique id, based on the id.</description>
+            </parameter>
+        </config-description>
+    </thing-type>
+
+    <!--CasambiGroup -->
+    <thing-type id="group">
+        <supported-bridge-type-refs>
+            <bridge-type-ref id="casambibridge"/>
+        </supported-bridge-type-refs>
+        <label>Casambi Group</label>
+        <description>Casambi luminary group that can be controlled together</description>
+        <channels>
+            <!-- <channel id="id" typeId="casambiGroup"/> -->
+            <!-- <channel id="onoff" typeId="casambiOnOff"/> -->
+            <channel id="dim" typeId="casambiDim"/>
+        </channels>
+        <!-- <representation-property>groupUID</representation-property> -->
+        <config-description>
+            <parameter name="groupId" type="integer" min="0" required="true" readOnly="false" multiple="false">
+              <required>true</required>
+              <label>Casambi Group Id</label>
+              <description>Group id (number) as assigned by the Casambi system</description>
+              <advanced>true</advanced>
+            </parameter>
+            <parameter name="groupName" type="text" required="true" readOnly="false" multiple="false">
+              <required>true</required>
+              <label>Casambi Group Name</label>
+              <description>Group name taken from the Casambi system</description>
+            </parameter>
+            <parameter name="groupUID" type="text" required="true" readOnly="false" multiple="false">
+              <required>true</required>
+              <label>Casambi Group unique Id</label>
+              <description>Group unique id, based on the group id.</description>
+            </parameter>
+        </config-description>
+    </thing-type>
+
+
+    <channel-type id="casambiOnline">
+        <item-type>Contact</item-type>
+        <label>Online Status</label>
+        <description>Online status of Casambi item.</description>
+    </channel-type>
+    <channel-type id="casambiMessage">
+        <item-type>Text</item-type>
+        <label>Casambi Message</label>
+        <description>Show messages from the driver</description>
+    </channel-type>
+    
+    <!-- <channel-type id="casambiOnOff">
+        <item-type>Switch</item-type>
+        <label>Item OnOff</label>
+        <description>Switch an item on or off</description>
+        <category>Switch</category>
+    </channel-type>  --> 
+    <channel-type id="casambiDim">
+        <item-type>Dimmer</item-type>
+        <label>Item Dim</label>
+        <description>Control the dim level of an item (between 0 and 100)</description>
+        <category>Light</category>
+    </channel-type>
+    <channel-type id="casambiColor">
+        <item-type>Color</item-type>
+        <label>Luminary Color</label>
+        <description>Luminary color specified as HSB (hue, saturation, brightness)</description>
+        <category>Light</category>
+    </channel-type>
+    <channel-type id="casambiCCT">
+        <item-type>Dimmer</item-type>
+        <label>Luminary Color Temperature</label>
+        <description>Luminary color temperature (between min and max °K) mapped to 0 - 100</description>
+        <category>Light</category>
+    </channel-type>
+    <channel-type id="casambiWhitelevel">
+        <item-type>Dimmer</item-type>
+        <label>Luminary White Level</label>
+        <description>Luminary white level. Controls blance between color and white components.</description>
+        <category>Light</category>
+    </channel-type>
+
 </thing:thing-descriptions>

@@ -43,20 +43,20 @@ import org.slf4j.LoggerFactory;
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiSceneHandler extends BaseThingHandler {
+public class CasambiGroupHandler extends BaseThingHandler {
 
-    // FIXME: scenesById muss noch ausgebaut werden (analog luminaries), auch die methods dazu.
-    private static Map<Integer, Thing> scenesById = new HashMap<>();
+    // FIXME: groupsById muss noch ausgebaut werden (analog luminaries), auch die methods dazu.
+    private static Map<Integer, Thing> groupsById = new HashMap<>();
 
-    private final Logger logger = LoggerFactory.getLogger(CasambiSceneHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(CasambiGroupHandler.class);
 
-    private Integer sceneId = 0;
+    private Integer groupId = 0;
 
     // private @Nullable CasambiTestConfiguration config;
 
-    public CasambiSceneHandler(Thing thing) {
+    public CasambiGroupHandler(Thing thing) {
         super(thing);
-        // logger.debug("constructor: scene");
+        // logger.debug("constructor: group");
     }
 
     @Override
@@ -71,9 +71,9 @@ public class CasambiSceneHandler extends BaseThingHandler {
                     if (command instanceof RefreshType) {
                         doRefresh = true;
                     } else if (command instanceof OnOffType) {
-                        bridgeHandler.casambiSocket.setSceneOnOff(sceneId, command == OnOffType.ON);
+                        bridgeHandler.casambiSocket.setGroupOnOff(groupId, command == OnOffType.ON);
                         // } else if (command instanceof PercentType) {
-                        // bridgeHandler.casambiSocket.setSceneLevel(sceneId, ((PercentType) command).floatValue() /
+                        // bridgeHandler.casambiSocket.setGroupLevel(groupId, ((PercentType) command).floatValue() /
                         // 100);
                     } else {
                         logger.warn("handleCommand: unexpected command type {}", command.getClass());
@@ -87,7 +87,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
                     if (command instanceof RefreshType) {
                         doRefresh = true;
                     } else if (command instanceof PercentType) {
-                        bridgeHandler.casambiSocket.setSceneLevel(sceneId, ((PercentType) command).floatValue() / 100);
+                        bridgeHandler.casambiSocket.setGroupLevel(groupId, ((PercentType) command).floatValue() / 100);
                     } else {
                         logger.warn("handleCommand: unexpected command type {}", command.getClass());
                     }
@@ -99,7 +99,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
                 logger.warn("handleCommand: unexpected channel id {}", channelUID.getId());
             }
             if (doRefresh) {
-                logger.trace("handleCommand: (Scene) doRefresh NOP");
+                logger.trace("handleCommand: (Group) doRefresh NOP");
                 // Send refresh command here
             }
         } else {
@@ -110,7 +110,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
 
     @Override
     public void initialize() {
-        // logger.debug("initialize: setting up scene");
+        // logger.debug("initialize: setting up group");
         Bridge bridge = getBridge();
 
         if (bridge == null) {
@@ -118,25 +118,25 @@ public class CasambiSceneHandler extends BaseThingHandler {
         } else {
             updateStatus(ThingStatus.ONLINE);
         }
-        sceneId = ((BigDecimal) this.thing.getConfiguration().get(SCENE_ID)).intValueExact();
-        putSceneById(sceneId);
-        logger.debug("initialize: uid {}, id {}", this.thing.getUID(), sceneId);
+        groupId = ((BigDecimal) this.thing.getConfiguration().get(SCENE_ID)).intValueExact();
+        putGroupById(groupId);
+        logger.debug("initialize: uid {}, id {}", this.thing.getUID(), groupId);
     }
 
     @Override
     public void dispose() {
-        logger.debug("dispose: dispose scene");
+        logger.debug("dispose: dispose group");
     };
 
     @Override
     public void handleRemoval() {
-        logger.debug("handleRemoval: removing scene");
+        logger.debug("handleRemoval: removing group");
         updateStatus(ThingStatus.REMOVED);
     }
 
     @Override
     public void bridgeStatusChanged(ThingStatusInfo info) {
-        logger.debug("bridgeStatusChanged: {}, updating scene {}", info, sceneId);
+        logger.debug("bridgeStatusChanged: {}, updating group {}", info, groupId);
         Bridge bridge = getBridge();
 
         if (bridge == null) {
@@ -174,19 +174,19 @@ public class CasambiSceneHandler extends BaseThingHandler {
     // Map Luminary ids to things. Needed to update thing status based on casambi message content
 
     // Get thing corresponding to id
-    public static @Nullable Thing getSceneById(@Nullable Integer id) {
+    public static @Nullable Thing getGroupById(@Nullable Integer id) {
         if (id != null) {
-            return scenesById.get(id);
+            return groupsById.get(id);
         } else {
             return null;
         }
     }
 
     // Add a (new) thing to the mapping
-    private void putSceneById(@Nullable Integer id) {
+    private void putGroupById(@Nullable Integer id) {
         logger.debug("putThingById: id {}", id);
         if (id != null) {
-            scenesById.putIfAbsent(id, this.thing);
+            groupsById.putIfAbsent(id, this.thing);
         }
     }
 

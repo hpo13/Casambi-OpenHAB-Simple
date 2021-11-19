@@ -15,26 +15,25 @@ package org.openhab.binding.casambitest.internal.handler;
 import static org.openhab.binding.casambitest.internal.CasambiBindingConstants.*;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageUnit;
+import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.HSBType;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.PercentType;
 import org.openhab.core.thing.Bridge;
+import org.openhab.core.thing.Channel;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
 import org.openhab.core.thing.ThingStatusInfo;
+import org.openhab.core.thing.ThingUID;
 import org.openhab.core.thing.binding.BaseThingHandler;
 import org.openhab.core.thing.binding.BridgeHandler;
+import org.openhab.core.thing.binding.builder.ThingBuilder;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
 import org.openhab.core.types.State;
@@ -52,6 +51,8 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class CasambiLuminaryHandler extends BaseThingHandler {
 
+    public CasambiLuminaryConfiguration config;
+
     private final Logger logger = LoggerFactory.getLogger(CasambiLuminaryHandler.class);
 
     private Integer deviceId = 0;
@@ -61,80 +62,90 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
 
     public CasambiLuminaryHandler(Thing thing) {
         super(thing);
-        logger.trace("constructor: luminary uid {}, id {}", thing.getUID(), thing.getConfiguration().get(LUMINARY_ID));
+        config = getConfigAs(CasambiLuminaryConfiguration.class);
+        deviceId = Integer.valueOf(thing.getConfiguration().get(LUMINARY_ID).toString());
+        deviceUid = thing.getConfiguration().get(LUMINARY_UID).toString();
+        logger.info("constructor: luminary uid {}, id {}", deviceUid, deviceId);
     }
 
     // --- Overridden superclass methods ---------------------------------------------------------------------------
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
+        boolean commandHandled = false;
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
         CasambiBridgeHandler bridgeHandler = getBridgeHandler();
-        Boolean doRefresh = false;
-        if (bridgeHandler != null && bridgeHandler.casambi != null) {
-            if (LUMINARY_CHANNEL_SWITCH.equals(channelUID.getId())) {
-                if (command instanceof RefreshType) {
-                    doRefresh = true;
-                } else if (command instanceof OnOffType) {
-                    try {
-                        if ((OnOffType) command == OnOffType.ON) {
-                            bridgeHandler.casambi.turnUnitOn(deviceId);
-                        } else {
-                            bridgeHandler.casambi.turnUnitOff(deviceId);
+        if (bridgeHandler != null && bridgeHandler.casambiSocket != null) {
+            try {
+                if (!(command instanceof RefreshType)) {
+                    if (LUMINARY_CHANNEL_ONOFF.equals(channelUID.getId())) {
+                        // Set dim level (0-100)
+                        if (command instanceof OnOffType) {
+                            bridgeHandler.casambiSocket.setUnitOnOff(deviceId, command.equals(OnOffType.ON));
+                            commandHandled = true;
                         }
-                    } catch (Exception e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                                String.format("Channel %s Exception %s", channelUID.toString(), e.toString()));
-                    }
-                } else {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                            String.format("Channel %s Illegal command %s", channelUID.toString(), command.toString()));
-                }
-            } else if (LUMINARY_CHANNEL_COLOR.equals(channelUID.getId())) {
-                if (command instanceof RefreshType) {
-                    doRefresh = true;
-                } else if (command instanceof HSBType) {
-                    try {
-                        String[] hsb = ((HSBType) command).toString().split(",");
-                        if (hsb.length == 3) {
-                            Float h = Float.valueOf(hsb[0]) / 360;
-                            Float s = Float.valueOf(hsb[1]) / 100;
-                            Float b = Float.valueOf(hsb[2]) / 100;
-                            bridgeHandler.casambi.setUnitHSB(deviceId, h, s, b);
-                        } else {
-                            logger.warn("handleCommand: illegal hsb value {}", command.toString());
+                    } else if (LUMINARY_CHANNEL_DIMMER.equals(channelUID.getId())) {
+                        // Set dim level (0-100)
+                        if (command instanceof PercentType) {
+                            bridgeHandler.casambiSocket.setUnitDimmer(deviceId,
+                                    ((PercentType) command).floatValue() / 100);
+                            commandHandled = true;
                         }
-                    } catch (Exception e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                                String.format("Channel %s Exception %s", channelUID.toString(), e.toString()));
+                    } else if (LUMINARY_CHANNEL_COLOR.equals(channelUID.getId())) {
+                        // Set hue (0-360), saturation (0-100) and brightness (0-100)
+                        logger.info("handleCommand: got color channel command {}", command);
+                        if (command instanceof HSBType) {
+                            String[] hsb = ((HSBType) command).toString().split(",");
+                            if (hsb.length == 3) {
+                                Float h = Float.valueOf(hsb[0]) / 360;
+                                Float s = Float.valueOf(hsb[1]) / 100;
+                                Float b = Float.valueOf(hsb[2]) / 100;
+                                bridgeHandler.casambiSocket.setUnitHSB(deviceId, h, s, b);
+                            } else {
+                                logger.warn("handleCommand: illegal hsb value {}", command.toString());
+                            }
+                            commandHandled = true;
+                        } else if (command instanceof OnOffType) {
+                            bridgeHandler.casambiSocket.setUnitOnOff(deviceId, command.equals(OnOffType.ON));
+                            commandHandled = true;
+                        }
+                    } else if (LUMINARY_CHANNEL_CCT.equals(channelUID.getId())) {
+                        // Set color temperature (e.g. 2000 - 6500)
+                        logger.info("handleCommand: got cct channel command {}", command);
+                        if (command instanceof DecimalType) {
+                            Float slider = ((PercentType) command).floatValue() / 100;
+                            Float tMin = config.tempMin;
+                            Float tMax = config.tempMax;
+                            Float temp = tMin + (tMax - tMin) * slider;
+                            bridgeHandler.casambiSocket.setUnitCCT(deviceId, temp);
+                            commandHandled = true;
+                        }
+                    } else if (LUMINARY_CHANNEL_WHITELEVEL.equals(channelUID.getId())) {
+                        // Set color balance color (0-100) and white (0-100)
+                        logger.info("handleCommand: got colorbalance channel command {}", command);
+                        if (command instanceof PercentType) {
+                            Float slider = ((PercentType) command).floatValue();
+                            bridgeHandler.casambiSocket.setUnitWhitelevel(deviceId, slider);
+                            commandHandled = true;
+                        }
+                    } else {
+                        logger.warn("handleCommand: unexpected channel id {}", channelUID.getId());
                     }
-                } else {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                            String.format("Channel %s Illegal command %s", channelUID.toString(), command.toString()));
-                }
-            } else if (LUMINARY_CHANNEL_DIM.equals(channelUID.getId())) {
-                logger.info("handleCommand: got color channel command {}", command);
-                if (command instanceof RefreshType) {
-                    doRefresh = true;
-                } else if (command instanceof PercentType) {
-                    try {
-                        bridgeHandler.casambi.setUnitValue(deviceId, ((PercentType) command).floatValue() / 100);
-                    } catch (Exception e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                                String.format("Channel %s Exception %s", channelUID.toString(), e.toString()));
+                    if (!commandHandled) {
+                        logger.warn("handleCommand: channel {}, unexpected command type {}", channelUID,
+                                command.getClass());
                     }
-                } else {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                            String.format("Channel %s Illegal command %s", channelUID.toString(), command.toString()));
                 }
-            } else {
-                logger.warn("handleCommand: unexpected channel id {}", channelUID.getId());
+            } catch (Exception e) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                        String.format("Channel %s, Command %s, Exception %s", channelUID.toString(), command.getClass(),
+                                e.toString()));
             }
-            if (doRefresh) {
+            if (command instanceof RefreshType) {
                 // Send refresh command here
                 try {
                     logger.trace("handleCommand: uid {} get unit state", channelUID);
-                    CasambiMessageUnit unitState = bridgeHandler.casambi.getUnitState(deviceId);
+                    CasambiMessageUnit unitState = bridgeHandler.casambiRest.getUnitState(deviceId);
                     if (unitState != null) {
                         updateLuminaryState(unitState);
                     } else {
@@ -153,25 +164,69 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
 
     @Override
     public void initialize() {
-        Bridge bridge = getBridge();
-
-        if (bridge == null) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
-        } else {
-            updateStatus(ThingStatus.ONLINE);
-        }
-
         deviceId = ((BigDecimal) this.thing.getConfiguration().get(LUMINARY_ID)).intValueExact();
         deviceUid = this.thing.getConfiguration().get(LUMINARY_UID).toString();
-        putThingById(UnitUidIdSet.uidIdCombine(deviceUid, deviceId));
-        logger.trace("initialize: uid {}, id {}", deviceUid, deviceId);
+        ThingUID thingUid = this.thing.getUID();
+
+        CasambiBridgeHandler bridgeHandler = getBridgeHandler();
+        if (bridgeHandler != null) {
+
+            bridgeHandler.thingsById.put(bridgeHandler.thingsById.uidIdCombine(deviceUid, deviceId), this.thing);
+            logger.info("initialize: uid {}, id {}, thingUid {}", deviceUid, deviceId, thingUid);
+
+            // FIXME: This shouldn't be done on every initialization but once after as scan
+
+            // Get properties of the device
+            boolean hasBri = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINARY_HAS_DIMMER));
+            boolean hasCo = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINARY_HAS_COLOR));
+            boolean hasCoTe = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINARY_HAS_CCT));
+            boolean hasWhLv = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINARY_HAS_WHITELEVEL));
+
+            logger.info("Thing {}: hasBri {}, hasCo {}, hasCoTe {}, hasCoBa {}, hasWhLv {}", deviceUid, hasBri, hasCo,
+                    hasCoTe, hasWhLv);
+
+            // Remove channels that have no corresponding control in the device
+            ThingBuilder tb = editThing();
+            for (Channel ch : this.thing.getChannels()) {
+                logger.info("Thing {} has channel: uid {}, label {} type {}", deviceUid, ch.getUID(), ch.getLabel(),
+                        ch.getChannelTypeUID());
+                if (LUMINARY_CHANNEL_DIMMER.equals(ch.getUID().getId())) {
+                    if (!hasBri) {
+                        logger.info("Thing: {} removing DIMMER channel {}", deviceUid, ch.getUID());
+                        tb.withoutChannel(ch.getUID());
+                    }
+                }
+                if (LUMINARY_CHANNEL_COLOR.equals(ch.getUID().getId())) {
+                    if (!hasCo) {
+                        logger.info("Thing: {} removing COLOR channel {}", deviceUid, ch.getUID());
+                        tb.withoutChannel(ch.getUID());
+                    }
+                }
+                if (LUMINARY_CHANNEL_CCT.equals(ch.getUID().getId())) {
+                    if (!hasCoTe) {
+                        logger.info("Thing: {} Removing CCT channel {}", deviceUid, ch.getUID());
+                        tb.withoutChannel(ch.getUID());
+                    }
+                }
+                if (LUMINARY_CHANNEL_WHITELEVEL.equals(ch.getUID().getId())) {
+                    if (!hasWhLv) {
+                        logger.info("Thing: {} Removing WHITELEVEL channel {}", deviceUid, ch.getUID());
+                        tb.withoutChannel(ch.getUID());
+                    }
+                }
+            }
+            updateThing(tb.build());
+
+            updateStatus(ThingStatus.ONLINE);
+        } else {
+            logger.error("initialize: bridge handler is null");
+        }
     }
 
     @Override
     public void dispose() {
-        logger.debug("dispose: dispose luninary handler id {}, uid {}. NOP!", this.deviceId, this.deviceUid);
-        // FIXME: do the actual disposal
-        // super.dispose();
+        logger.debug("dispose: dispose luninary handler id {}, uid {}.", this.deviceId, this.deviceUid);
+        super.dispose();
     };
 
     @Override
@@ -221,7 +276,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
 
     public void updateLuminaryState(CasambiMessageUnit state) {
         Float lvl = (state.dimLevel != null) ? state.dimLevel : 0;
-        logger.trace("updateLuminaryState: id {} dimLevel {}", deviceId, lvl);
+        logger.trace("updateLuminaryState: id {} dimLevel {} online {}", deviceId, lvl, state.online);
         if (state.online != null && state.online) {
             updateStatus(ThingStatus.ONLINE);
         } else {
@@ -230,10 +285,10 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
         }
         if (state.dimLevel == 0) {
             // updateState(LUMINARY_CHANNEL_SWITCH, OnOffType.OFF);
-            updateState(LUMINARY_CHANNEL_DIM, new PercentType(0));
+            updateState(LUMINARY_CHANNEL_DIMMER, new PercentType(0));
         } else {
             // updateState(LUMINARY_CHANNEL_SWITCH, OnOffType.ON);
-            updateState(LUMINARY_CHANNEL_DIM, new PercentType(Math.round(lvl * 100)));
+            updateState(LUMINARY_CHANNEL_DIMMER, new PercentType(Math.round(lvl * 100)));
         }
     }
 
@@ -243,96 +298,14 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
 
     // Map Luminary uids to things. Needed to update thing status based on casambi message content and for discovery
 
-    // Add a (new) thing to the mapping
-    public void putThingById(@Nullable String uidId) {
-        logger.trace("putThingById: uidId {}", uidId);
-        if (uidId != null) {
-            thingsByUidId.putIfAbsent(uidId, this.thing);
-        }
-    }
-
     public String getUid() {
         return this.thing.getConfiguration().getProperties().get(LUMINARY_UID).toString();
     }
 
     // --- Static methods ----------------------------------------------------------------------------------
 
-    // Mapping from uids to things
-    private static Map<String, Thing> thingsByUidId = new HashMap<>();
-
-    // Get thing corresponding to uidId
-    public static @Nullable Thing getThingByUidId(@Nullable String uidId) {
-        if (uidId != null) {
-            return thingsByUidId.get(uidId);
-        } else {
-            return null;
-        }
-    }
-
-    public static @Nullable Thing getFirstThingById(@Nullable Integer id) {
-        if (id != null) {
-            for (Entry<String, Thing> uidIdThing : thingsByUidId.entrySet()) {
-                String uid = uidIdThing.getKey();
-                // UnitUidIdSet.logger.debug("getFirstThingById: looking for {}, got {}", id, uid);
-                if (UnitUidIdSet.getId(uid) == id) {
-                    return uidIdThing.getValue();
-                }
-            }
-        }
-        return null;
-    }
-
     public static String getUidFromFixtureId(Integer fixtureId) {
         return "lum" + fixtureId.toString();
     }
 
-    // --- Inner class UnitUidSet --------------------------------------------------------------------------------
-    // --- UnitUidIdSet manages uid (fixture) - id (unit) combinations, needed for discovey
-
-    public static class UnitUidIdSet {
-
-        // Instance stuff
-
-        private Set<String> oldThings = new HashSet<>();
-        private Set<String> newThings = new HashSet<>();
-
-        UnitUidIdSet() {
-            for (Entry<String, Thing> mapping : thingsByUidId.entrySet()) {
-                oldThings.add(mapping.getKey());
-            }
-            logger.trace("UidIdSet: constructor oldThings {}", oldThings);
-        }
-
-        public Set<String> getOldThings() {
-            return oldThings;
-        }
-
-        public Set<String> getNewThings() {
-            return newThings;
-        }
-
-        public void updateOldNew(String uid, Integer id) {
-            String uidId = uidIdCombine(uid, id);
-            if (oldThings.contains(uidId)) {
-                logger.trace("updateOldNew: uid {} matches, removing from oldThings", uidId);
-                oldThings.remove(uidId);
-            } else {
-                logger.trace("updateOldNew: uid {} does not match, adding to newThings", uidId);
-                newThings.add(uidId);
-            }
-        }
-
-        // Static stuff - convert uid/id ti uidId and uidId to id
-
-        private static final Logger logger = LoggerFactory.getLogger(UnitUidIdSet.class);
-
-        public static Integer getId(String uidId) {
-            String[] u = uidId.split(":");
-            return Integer.parseInt(u[1]);
-        }
-
-        public static String uidIdCombine(String uid, Integer id) {
-            return String.format("%s:%d", uid, id);
-        }
-    }
 }

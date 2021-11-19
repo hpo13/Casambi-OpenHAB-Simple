@@ -30,14 +30,15 @@ public class CasambiMessageControl {
     public @Nullable Float y; // Color(?), Photo
     public @Nullable String rgb; // Color, RGB
     public @Nullable Float tw; // CCT
-    public @Nullable Integer min; // CCT
-    public @Nullable Integer max; // CCT
+    public @Nullable Float min; // CCT
+    public @Nullable Float max; // CCT
     public @Nullable Float level; // CCT
     public @Nullable Float sat; // Color
     public @Nullable Float hue; // Color
     public @Nullable Float whiteLevel; // ColorBalance
     public @Nullable Float colorLevel; // ColorBalance
     public @Nullable String name; // Button
+    public @Nullable String label; // Color
     public @Nullable String buttonLabel; // Button
     public @Nullable String dataname; // Button
     public @Nullable String unit; // Slider, Photo
@@ -48,4 +49,40 @@ public class CasambiMessageControl {
     CasambiMessageControl() {
         type = "";
     };
+
+    public Boolean isDimmer() {
+        return type.equals("Dimmer");
+    }
+
+    public Boolean isColor() {
+        return "Color".equals(type);
+    }
+
+    public Boolean isCCT() {
+        return ("Slider".equals(type) && "CCT".equals(name)) || "CCT".equals(type);
+    }
+
+    public Boolean isColorbalance() {
+        return type.equals("ColorBalance");
+    }
+
+    public Boolean isWhiteDimmer() {
+        return "Slider".equals(type) && "White Dimmer".equals(name);
+    }
+
+    public Float getMin() {
+        if (min != null) {
+            return min;
+        } else {
+            return (float) 0;
+        }
+    }
+
+    public Float getMax() {
+        if (max != null) {
+            return max;
+        } else {
+            return (float) 0;
+        }
+    }
 }

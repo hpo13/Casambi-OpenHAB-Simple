@@ -17,23 +17,20 @@ import static org.openhab.binding.casambitest.internal.CasambiBindingConstants.*
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.Future;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.casambitest.internal.driver.CasambiDriverJson;
+import org.openhab.binding.casambitest.internal.driver.CasambiDriverLogger;
+import org.openhab.binding.casambitest.internal.driver.CasambiDriverRest;
+import org.openhab.binding.casambitest.internal.driver.CasambiDriverSocket;
 import org.openhab.binding.casambitest.internal.driver.CasambiDriverSystem;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageEvent;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageEvent.messageType;
-import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageNetwork;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageNetworkState;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageScene;
-import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageSession;
 import org.openhab.binding.casambitest.internal.driver.messages.CasambiMessageUnit;
-import org.openhab.binding.casambitest.internal.handler.CasambiLuminaryHandler.UnitUidIdSet;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.PercentType;
 import org.openhab.core.library.types.StringType;
@@ -70,11 +67,13 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
 
     private @Nullable CasambiBridgeConfiguration config;
 
-    public @Nullable CasambiDriverJson casambi;
-    private @Nullable CasambiDiscoveryService discover;
+    public @Nullable CasambiDriverRest casambiRest;
+    public @Nullable CasambiDriverSocket casambiSocket;
+    public @Nullable CasambiDriverLogger messageLogger;
+    private @Nullable CasambiDiscoveryService casambiDiscover;
 
     private @Nullable Future<?> pollMessageJob;
-    private @Nullable Future<?> sendKeepAliveJob;
+    private @Nullable Future<?> socketKeepAliveJob;
     private @Nullable Future<?> pollUnitStatusJob;
     private @Nullable Future<?> peerRecoveryJob;
 
@@ -82,18 +81,16 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
     private volatile Boolean bridgeOnline = false;
     private volatile Boolean recoveryInProgress = false;
 
-    @SuppressWarnings("unused")
-    private @Nullable CasambiMessageSession userSession;
-    @SuppressWarnings("unused")
-    private @Nullable Map<String, CasambiMessageNetwork> networkSession;
+    // FIXME: move this to the bridge handler. Then it needn't be static
+    public CasambiThingsById thingsById = new CasambiThingsById();
+
+    // private @Nullable CasambiMessageSession userSession;
+    // private @Nullable Map<String, CasambiMessageNetwork> networkSession;
 
     // --- Constructor ---------------------------------------------------------------------------------------------
 
     public CasambiBridgeHandler(Bridge bridge) {
         super(bridge);
-        config = getConfigAs(CasambiBridgeConfiguration.class);
-        casambi = new CasambiDriverJson(config.apiKey, config.userId, config.userPassword, config.networkPassword);
-        casambi.setupJsonLogging(config.logMessages, config.logDir, "casambiJsonMessages.txt");
     };
 
     @Override
@@ -106,29 +103,45 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand: (Bridge) channel uid {}, command {}", channelUID, command);
-        if (casambi != null) {
+        if (casambiSocket != null) {
             if (command instanceof RefreshType) {
                 logger.trace("handleCommand: (Bridge) doRefresh NOP");
+            } else if (LUMINARY_CHANNEL_DIMMER.equals(channelUID.getId())) {
+                // Set dim level (0-100)
+                if (command instanceof PercentType) {
+                    try {
+                        casambiSocket.setNetworkLevel(((PercentType) command).floatValue() / 100);
+                    } catch (Exception e) {
+                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                                String.format("Channel %s Exception %s", channelUID.toString(), e.toString()));
+                    }
+                } else {
+                    logger.warn("handleCommand: channel {}, unexpected command type {}", channelUID,
+                            command.getClass());
+                }
+            } else {
+                logger.warn("handleCommand: unexpected channel {}, command {}", channelUID, command.getClass());
             }
         } else {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                    String.format("CasambiDriver is null, channel ", channelUID.toString()));
+                    String.format("CasambiSocket is null, channel ", channelUID.toString()));
         }
     };
 
     @Override
     public void initialize() {
         logger.debug("initialize: setting up bridge");
-        BridgeHandler bridgeHandler = this.getThing().getHandler();
-        if (bridgeHandler != null) {
-            discover.setThingHandler(bridgeHandler);
-        }
-        scheduler.execute(initCasambiSession);
-        pollMessageJob = scheduler.submit(handleCasambiMessages);
-        sendKeepAliveJob = scheduler.submit(sendKeepAlive);
-        pollUnitStatusJob = scheduler.submit(pollUnitStatus);
 
-        CasambiDriverSystem.enableSshCommand(config.useRemCmd, config.remCmdStr);
+        // Setup REST & WebSocket interface and start jobs
+        scheduler.execute(initCasambiSession);
+
+        // Discovery Handler
+        BridgeHandler bridgeHandler = this.getThing().getHandler();
+        if (bridgeHandler != null && casambiDiscover != null) {
+            logger.debug("initialize: setting bridgeHandler in discovery handler");
+            casambiDiscover.setThingHandler(bridgeHandler);
+        }
+        // logThingChannelConfig(this.thing);
     };
 
     @Override
@@ -137,8 +150,8 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         if (pollMessageJob != null) {
             pollMessageJob.cancel(true);
         }
-        if (sendKeepAliveJob != null) {
-            sendKeepAliveJob.cancel(true);
+        if (socketKeepAliveJob != null) {
+            socketKeepAliveJob.cancel(true);
         }
         if (pollUnitStatusJob != null) {
             pollUnitStatusJob.cancel(true);
@@ -147,12 +160,13 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
             peerRecoveryJob.cancel(true);
         }
         try {
-            if (casambi != null) {
-                casambi.casambiSocketClose();
+            if (casambiSocket != null) {
+                casambiSocket.close();
             }
         } catch (Exception e) {
             logger.error("dispose: Exception {}", e.toString());
         }
+        super.dispose();
         // casambi = null;
     };
 
@@ -179,11 +193,11 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
     }
 
     public void registerDiscoveryListener(CasambiDiscoveryService discoveryHandler) {
-        discover = discoveryHandler;
+        casambiDiscover = discoveryHandler;
     }
 
     public void unregisterDiscoveryListener() {
-        discover = null;
+        casambiDiscover = null;
     }
 
     // --- Runnable definitions ----------------------------------------------------------------------------------
@@ -194,14 +208,33 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         public void run() {
             logger.debug("initCasambiSession: initializing session with casambi site");
             try {
+
+                config = getConfigAs(CasambiBridgeConfiguration.class);
+                messageLogger = new CasambiDriverLogger(config.logMessages, config.logDir, "casambiJsonMessages.txt");
+                casambiRest = new CasambiDriverRest(config.apiKey, config.userId, config.userPassword,
+                        config.networkPassword, messageLogger);
+                CasambiDriverSystem.enableSshCommand(config.useRemCmd, config.remCmdStr);
+
                 // Open session with casambi server
-                if (casambi != null) {
-                    userSession = casambi.createUserSession();
-                    networkSession = casambi.createNetworkSession();
-                    if (casambi.casambiSocketOpen()) {
+                if (casambiRest != null) {
+                    // REST part
+                    /* userSession = */ casambiRest.createUserSession();
+                    /* networkSession = */ casambiRest.createNetworkSession();
+                    // pollUnitStatus needs REST session
+                    pollUnitStatusJob = scheduler.submit(pollUnitStatus);
+
+                    // WebSocket part
+                    casambiSocket = casambiRest.getSocket();
+                    if (casambiSocket.open()) {
+
                         bridgeOnline = true;
                         updateStatus(ThingStatus.ONLINE);
                         updateState(BRIDGE_CHANNEL_PEER, OnOffType.ON);
+
+                        // pollMessageJob and socketKeepAlive need open socket
+                        pollMessageJob = scheduler.submit(handleCasambiMessages);
+                        socketKeepAliveJob = scheduler.submit(socketKeepAlive);
+
                         logger.debug("initCasambiSession: session initialized");
                     } else {
                         logger.error("initCasambiSession: Socket not open");
@@ -209,7 +242,9 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                                 "Error: Socket not open.");
                     }
                 } else {
-                    throw (new CasambiException("CasambiDriverJson is null"));
+                    logger.error("initCasambiSession: REST session not open");
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                            "Error: REST session not open.");
                 }
             } catch (Exception e) {
                 logger.error("initCasambiSession: Exception {}", e.toString());
@@ -229,8 +264,8 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                     logger.trace("handleCasambiMessages: got thread interrupt. Exiting job.");
                     return;
                 }
-                if (casambi != null) {
-                    CasambiMessageEvent msg = casambi.receiveMessage();
+                if (casambiRest != null) {
+                    CasambiMessageEvent msg = casambiSocket.receiveMessage();
                     if (msg != null) {
                         if (msg.getMessageType() != messageType.keepAlive) {
                             updateState(BRIDGE_CHANNEL_MESSAGE, StringType.valueOf(msg.toString()));
@@ -240,8 +275,8 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                                 if (msg.id != null && msg.on != null) {
                                     logger.debug("handleCasambiMessages: unitChanged id {}, online {}, on {}, dim {}",
                                             msg.id, msg.online, msg.on, msg.dimLevel);
-                                    Thing thing = CasambiLuminaryHandler.getFirstThingById(msg.id);
-                                    Float lvl = (msg.dimLevel != null) ? msg.dimLevel : 0;
+
+                                    Thing thing = thingsById.getFirstLuminary(msg.id);
                                     if (thing != null) {
                                         CasambiLuminaryHandler thingHandler = (CasambiLuminaryHandler) thing
                                                 .getHandler();
@@ -253,15 +288,9 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                                                 logger.warn("handleCasambiMessages: status OFFLINE, id {}", msg.id);
                                                 thingHandler.updateLuminaryStatus(ThingStatus.OFFLINE);
                                             }
-                                            // Update luminary state
-                                            @Nullable
-                                            Channel channel = thing.getChannel(LUMINARY_CHANNEL_SWITCH);
+                                            Channel channel = thing.getChannel(LUMINARY_CHANNEL_DIMMER);
                                             if (channel != null) {
-                                                thingHandler.updateState(channel.getUID(),
-                                                        Math.round(lvl * 100) != 0 ? OnOffType.ON : OnOffType.OFF);
-                                            }
-                                            channel = thing.getChannel(LUMINARY_CHANNEL_DIM);
-                                            if (channel != null) {
+                                                Float lvl = (msg.dimLevel != null) ? msg.dimLevel : 0;
                                                 thingHandler.updateState(channel.getUID(),
                                                         new PercentType(Math.round(lvl * 100)));
                                             }
@@ -315,8 +344,8 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                         }
                     } else {
                         logger.warn("handleCasambiMessages: got null message.");
-                        if (casambi != null) {
-                            logger.debug("handleCasambiMessages: socketStatus {}", casambi.getSocketStatus());
+                        if (casambiRest != null) {
+                            logger.debug("handleCasambiMessages: socketStatus {}", casambiSocket.getSocketStatus());
                         }
                     }
                 } else {
@@ -326,39 +355,6 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                 }
             }
         };
-    };
-
-    // Send a ping message on the web socket to keep it open
-    private Runnable sendKeepAlive = new Runnable() {
-        @Override
-        public void run() {
-            logger.debug("sendKeepAlive: starting runnable.");
-            while (true) {
-                if (Thread.interrupted()) {
-                    logger.trace("sendKeepAlive: got thread interrupt. Exiting job.");
-                    return;
-                }
-                try {
-                    Thread.sleep(280 * 1000);
-                    if (missedPong > 0) {
-                        logger.info("ping: Response missing for last ping.");
-                        if (missedPong > 10) {
-                            logger.warn("ping: {} ping responses missing. Sending recovery command.", missedPong);
-                            CasambiDriverSystem.sendSshCommand();
-                            missedPong = 0;
-                        }
-                    }
-                    logger.trace("sendKeepAlive:");
-                    if (casambi != null) {
-                        casambi.ping();
-                        missedPong++;
-                    }
-                } catch (Exception e) {
-                    logger.error("sendKeepAlive: exception {}. Exiting.", e.getMessage());
-                    return;
-                }
-            }
-        }
     };
 
     // Do regular polls of the network state and adjust bridge and things accordingly
@@ -372,17 +368,18 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
                     return;
                 }
                 try {
+                    // Poll the unit status every 10 Minutes
                     Thread.sleep(600 * 1000);
                     logger.trace("pollUnitStatus:");
-                    if (casambi != null) {
-                        CasambiMessageNetworkState networkState = casambi.getNetworkState();
+                    if (casambiRest != null) {
+                        CasambiMessageNetworkState networkState = casambiRest.getNetworkState();
                         if (networkState != null) {
 
                             // Get status of luminaries
                             if (networkState.units != null) {
 
                                 for (Entry<Integer, CasambiMessageUnit> unit : networkState.units.entrySet()) {
-                                    Thing thing = CasambiLuminaryHandler.getFirstThingById(unit.getKey());
+                                    Thing thing = thingsById.getFirstLuminary(unit.getKey());
                                     if (thing != null) {
                                         CasambiLuminaryHandler thingHandler = (CasambiLuminaryHandler) thing
                                                 .getHandler();
@@ -402,25 +399,20 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
 
                             // Get scene status
                             if (networkState.scenes != null) {
-
                                 for (Entry<Integer, CasambiMessageScene> scene : networkState.scenes.entrySet()) {
                                     Thing thing = CasambiSceneHandler.getSceneById(scene.getKey());
                                     if (thing != null) {
                                         CasambiSceneHandler thingHandler = (CasambiSceneHandler) thing.getHandler();
-                                        Channel channelScene = thing.getChannel(SCENE_CHANNEL_SCENE);
+                                        Channel channelScene = thing.getChannel(SCENE_CHANNEL_DIM);
 
                                         if (networkState.activeScenes != null
                                                 && Arrays.asList(networkState.activeScenes).contains(scene.getKey())) {
                                             logger.trace("pollUnitStatus: scene {} active", scene.getKey());
                                         } else {
                                             logger.trace("pollUnitStatus: scene {} inactive", scene.getKey());
-                                            if (thingHandler != null && channelScene != null) {
-                                                thingHandler.updateState(channelScene.getUID(), OnOffType.OFF);
-                                            }
                                         }
                                     }
                                 }
-
                             } else {
                                 logger.debug("pollUnitStatus: no scenes in network.");
                             }
@@ -439,77 +431,42 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         };
     };
 
-    // Discover devices
-    public void scheduleDiscoveryScan() {
-        logger.trace("scheduleDiscoveryScan:");
-        scheduler.execute(new Runnable() {
-            @Override
-            public void run() {
-                logger.trace("doDiscoveryScan: starting runnable.");
+    // Send a ping message on the web socket to keep it open
+    private Runnable socketKeepAlive = new Runnable() {
+        @Override
+        public void run() {
+            logger.debug("sendKeepAlive: starting runnable.");
+            while (true) {
+                if (Thread.interrupted()) {
+                    logger.trace("sendKeepAlive: got thread interrupt. Exiting job.");
+                    return;
+                }
                 try {
-                    if (casambi != null) {
-                        CasambiMessageNetworkState networkState = casambi.getNetworkState();
-                        if (networkState != null) {
-                            if (networkState.units != null && discover != null) {
-
-                                // Initialize list of existing things and new units
-                                CasambiLuminaryHandler.UnitUidIdSet oldNewThings = new CasambiLuminaryHandler.UnitUidIdSet();
-                                Set<String> oldThings = oldNewThings.getOldThings();
-                                logger.debug("doDiscoveryScan: oldThings before scan {}", oldThings);
-
-                                // Loop through units removing from existing things and adding to new units
-                                for (Entry<Integer, CasambiMessageUnit> unit : networkState.units.entrySet()) {
-                                    Integer id = unit.getValue().id;
-                                    Integer fixtureId = unit.getValue().fixtureId;
-                                    String uid = CasambiLuminaryHandler.getUidFromFixtureId(fixtureId);
-                                    logger.trace("doDiscoveryScan: got unit id {}, uid {}, name {}", id, uid,
-                                            unit.getValue().name);
-                                    oldNewThings.updateOldNew(uid, id);
-                                }
-
-                                // Add new units to things (using newThings)
-                                Set<String> newThings = oldNewThings.getNewThings();
-                                logger.debug("doDiscoveryScan: adding new things {}", newThings);
-
-                                for (String uidId : newThings) {
-                                    logger.trace("doDiscoveryScan: adding new unit uidId {}", uidId);
-                                    Integer id = UnitUidIdSet.getId(uidId);
-                                    CasambiMessageUnit unit = networkState.units.get(id);
-                                    if (unit != null) {
-                                        discover.addDiscoveredLuminary(unit);
-                                    }
-                                }
-
-                                // Remove things without units (using oldThings)
-                                oldThings = oldNewThings.getOldThings();
-                                logger.debug("doDiscoveryScan: removing old things {}", oldThings);
-
-                                for (String uidId : oldThings) {
-                                    Thing thing = CasambiLuminaryHandler.getThingByUidId(uidId);
-                                    if (thing != null) {
-                                        logger.trace("doDiscoveryScan: removing old thing uidId {}", uidId);
-                                        CasambiLuminaryHandler handler = (CasambiLuminaryHandler) thing.getHandler();
-                                        // FIXME: Does this work?
-                                        handler.dispose();
-                                    } else {
-                                        logger.debug("doDiscoveryScan: thing not found, cannot remove for uidId {}",
-                                                uidId);
-                                    }
-                                }
-
-                            } else {
-                                logger.warn("doDiscoveryScan: no units in network or discovery not configured.");
+                    // Sleep for slightly less than 5 minutes
+                    Thread.sleep(280 * 1000);
+                    if (missedPong > 0) {
+                        logger.info("ping: Response missing for last ping.");
+                        // FIXME: will this help?
+                        if (missedPong > 10) {
+                            if (config.useRemCmd) {
+                                logger.warn("ping: {} ping responses missing. Sending recovery command.", missedPong);
+                                CasambiDriverSystem.sendSshCommand();
+                                missedPong = 0;
                             }
                         }
                     }
+                    logger.trace("sendKeepAlive:");
+                    if (casambiSocket != null) {
+                        casambiSocket.ping();
+                        missedPong++;
+                    }
                 } catch (Exception e) {
-                    logger.error("doDiscoveryScan: exception {}. Exiting.", e.getMessage());
+                    logger.error("sendKeepAlive: exception {}. Exiting.", e.getMessage());
                     return;
                 }
-                logger.trace("doDiscoveryScan: done.");
             }
-        });
-    }
+        }
+    };
 
     // Try to reactivate the casambi app on the mobile phone
     private Runnable doPeerRecovery = new Runnable() {
@@ -555,4 +512,21 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
             }
         }
     };
+
+    public void logThingChannelConfig(Thing th) {
+        logger.info("logThingChannelConfig: {}, {}", th.getUID(), th.getLabel());
+        for (Channel ch : th.getChannels()) {
+            logChannelConfig(ch);
+        }
+    }
+
+    public void logChannelConfig(Channel ch) {
+        logger.info("logChannelConfig: uid {}, typeUid {}, accItTyp {}, kind {}", ch.getUID(), ch.getChannelTypeUID(),
+                ch.getAcceptedItemType(), ch.getKind());
+        logger.info("   {}, label    {}, desc {}, autoUpd {}", ch.getUID(), ch.getLabel(), ch.getDescription(),
+                ch.getAutoUpdatePolicy());
+        logger.info("   {}, dfltTags {}", ch.getUID(), ch.getDefaultTags());
+        logger.info("   {}, config   {}", ch.getUID(), ch.getConfiguration());
+        logger.info("   {}, props    {}", ch.getUID(), ch.getProperties());
+    }
 }
