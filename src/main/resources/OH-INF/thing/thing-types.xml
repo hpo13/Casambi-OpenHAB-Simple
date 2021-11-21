@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<thing:thing-descriptions bindingId="casambitest"
+<thing:thing-descriptions bindingId="casambisimple"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
     xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
     <!--CasambiBridge -->
     <bridge-type id="casambibridge">
-        <label>casambiTest Bridge</label>
+        <label>Casambi Bridge</label>
         <description>Casambi Bridge to Server</description>
         <channels>
           <channel id="peer" typeId="casambiOnline"/>
@@ -176,7 +176,7 @@
         <channels>
             <!-- <channel id="id" typeId="casambiScene"/> -->
             <!-- <channel id="onoff" typeId="casambiOnOff"/> -->
-            <channel id="dim" typeId="casambiDim"/>
+            <channel id="dim" typeId="casambiDimWriteOnly"/>
         </channels>
         <!-- <representation-property>sceneUID</representation-property> -->
         <config-description>
@@ -208,7 +208,7 @@
         <channels>
             <!-- <channel id="id" typeId="casambiGroup"/> -->
             <!-- <channel id="onoff" typeId="casambiOnOff"/> -->
-            <channel id="dim" typeId="casambiDim"/>
+            <channel id="dim" typeId="casambiDimWriteOnly"/>
         </channels>
         <!-- <representation-property>groupUID</representation-property> -->
         <config-description>
@@ -255,6 +255,12 @@
         <description>Control the dim level of an item (between 0 and 100)</description>
         <category>Light</category>
     </channel-type>
+    <channel-type id="casambiDimWriteOnly">
+        <item-type>Dimmer</item-type>
+        <label>Scene/Group Dim</label>
+        <description>Control the dim level of a scene or a group (between 0 and 100). Write only.</description>
+        <category>Light</category>
+    </channel-type>
     <channel-type id="casambiColor">
         <item-type>Color</item-type>
         <label>Luminary Color</label>
@@ -270,7 +276,7 @@
     <channel-type id="casambiWhitelevel">
         <item-type>Dimmer</item-type>
         <label>Luminary White Level</label>
-        <description>Luminary white level. Controls blance between color and white components.</description>
+        <description>Luminary white level. Controls balance between color and white components.</description>
         <category>Light</category>
     </channel-type>
 

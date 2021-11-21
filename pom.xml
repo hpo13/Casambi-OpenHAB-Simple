@@ -10,8 +10,8 @@
     <version>3.2.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>org.openhab.binding.casambitest</artifactId>
+  <artifactId>org.openhab.binding.casambisimple</artifactId>
 
-  <name>openHAB Add-ons :: Bundles :: casambiTest Binding</name>
+  <name>openHAB Add-ons :: Bundles :: simple Casambi Binding</name>
 
 </project>

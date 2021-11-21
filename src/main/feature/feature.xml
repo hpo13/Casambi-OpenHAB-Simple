@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<features name="org.openhab.binding.casambitest-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.4.0">
+<features name="org.openhab.binding.casambisimple-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.4.0">
 	<repository>mvn:org.openhab.core.features.karaf/org.openhab.core.features.karaf.openhab-core/${ohc.version}/xml/features</repository>
 
-	<feature name="openhab-binding-casambitest" description="casambiTest Binding" version="${project.version}">
+	<feature name="openhab-binding-casambisimple" description="Simple Casambi Binding" version="${project.version}">
 		<feature>openhab-runtime-base</feature>
-		<bundle start-level="80">mvn:org.openhab.addons.bundles/org.openhab.binding.casambitest/${project.version}</bundle>
+		<bundle start-level="80">mvn:org.openhab.addons.bundles/org.openhab.binding.casambisimple/${project.version}</bundle>
 	</feature>
 </features>
