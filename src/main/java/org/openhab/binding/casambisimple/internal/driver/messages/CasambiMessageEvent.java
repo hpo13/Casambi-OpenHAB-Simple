@@ -79,7 +79,7 @@ public class CasambiMessageEvent {
                 return messageType.unknownMessage;
             }
         } else if (wireStatus != null) {
-            if ("openWireSucced".equals(wireStatus)) {
+            if ("openWireSucceed".equals(wireStatus)) {
                 return messageType.wireStatusOk;
             } else {
                 return messageType.wireStatusError;

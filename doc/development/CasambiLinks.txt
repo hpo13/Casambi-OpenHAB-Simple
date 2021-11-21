@@ -1,9 +1,0 @@
-Casambi Links
-
- - Casambi developer site
- - https://developer.casambi.com/
- 
- - Casambi server
- - https://door.casambi.com
- - also accessible with web-sockets
-

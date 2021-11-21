@@ -81,6 +81,7 @@
         </supported-bridge-type-refs>
         <label>Casambi Luminary</label>
         <description>Casambi luminary, on/off/intensity</description>
+        <category>lightbulb</category>
         <channels>
             <!--  <channel id="onoff" typeId="casambiOnOff"/> -->
             <channel id="dim" typeId="casambiDim"/>

@@ -203,6 +203,10 @@ public class CasambiDriverSocket implements WebSocket.Listener {
         } catch (InterruptedException e) {
             logger.error("onText: Exception {}", e);
         }
+
+        logger.warn("onClose: trying to reopen socket.");
+        open();
+
         return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
     };
 
@@ -226,6 +230,10 @@ public class CasambiDriverSocket implements WebSocket.Listener {
         } catch (InterruptedException e) {
             logger.error("onText: Exception {}", e);
         }
+
+        logger.warn("onError: trying to reopen socket.");
+        open();
+
         WebSocket.Listener.super.onError(webSocket, error);
     }
 
