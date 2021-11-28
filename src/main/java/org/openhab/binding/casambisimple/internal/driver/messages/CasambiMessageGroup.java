@@ -32,6 +32,5 @@ public class CasambiMessageGroup {
         name = "";
         id = 0;
         // units = null;
-    };
-
+    }
 }

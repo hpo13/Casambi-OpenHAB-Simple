@@ -47,5 +47,5 @@ public class CasambiMessageNetworkState {
         type = "";
         photos = null;
         activeScenes = null;
-    };
+    }
 }

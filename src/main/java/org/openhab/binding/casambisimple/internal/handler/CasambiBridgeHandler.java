@@ -27,10 +27,10 @@ import org.openhab.binding.casambisimple.internal.driver.CasambiDriverRest;
 import org.openhab.binding.casambisimple.internal.driver.CasambiDriverSocket;
 import org.openhab.binding.casambisimple.internal.driver.CasambiDriverSystem;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageEvent;
+import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageEvent.messageType;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageNetworkState;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageScene;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageUnit;
-import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageEvent.messageType;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.PercentType;
 import org.openhab.core.library.types.StringType;
@@ -50,8 +50,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link CasambiBridgeHandler} is responsible for handling commands, which are
- * sent to one of the channels.
+ * The {@link CasambiBridgeHandler} manages to connection to the Casambi system
+ * It sets up the connection, processes messages from the system, regularly polls
+ * the system status and handles keepalive and recovery.
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
@@ -92,7 +93,7 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
     public CasambiBridgeHandler(Bridge bridge) {
         super(bridge);
         config = getConfigAs(CasambiBridgeConfiguration.class);
-    };
+    }
 
     @Override
     public Collection<Class<? extends ThingHandlerService>> getServices() {
@@ -128,7 +129,7 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                     String.format("CasambiSocket is null, channel ", channelUID.toString()));
         }
-    };
+    }
 
     @Override
     public void initialize() {
@@ -144,7 +145,7 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
             logger.debug("initialize: setting bridgeHandler in discovery handler");
         }
         // logThingChannelConfig(this.thing);
-    };
+    }
 
     @Override
     public void dispose() {
@@ -170,7 +171,7 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         }
         super.dispose();
         // casambi = null;
-    };
+    }
 
     // Optional method
     @Override
@@ -178,7 +179,7 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         logger.trace("childHandlerInitialized: NOP!");
         // Das ist Quatsch hier - nur implementieren, wenn auch etwas sinnvolles passiert (mit dem thing!)
         // updateStatus(ThingStatus.ONLINE);
-    };
+    }
 
     // Optional method
     @Override
@@ -186,7 +187,7 @@ public class CasambiBridgeHandler extends BaseBridgeHandler {
         logger.trace("childHandlerDispose: NOP!");
         // Das ist Quatsch hier - nur implementieren, wenn auch etwas sinnvolles passiert (mit dem thing!)
         // updateStatus(ThingStatus.REMOVED);
-    };
+    }
 
     // --- More instance methods --------------------------------------------------------------------------------
 

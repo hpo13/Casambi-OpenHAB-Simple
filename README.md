@@ -15,20 +15,22 @@ The driver allows to control luminaries that have previously been set up on the 
 ## Supported Things
 
 The binding supports lighting devices on the casambi network. It was tested with the following devices
-<ul>
-<li>Tridonic DALI dimmer - white light, dimming only
-<li>LEDbyDESIGN LED Bulb - white light with color temperature adjustment
-<li>LEDbyDESIGN E27 RGBW - color light bulb with white (including color temperature) and color (hsb) channels
-</ul>
+
+* Tridonic DALI dimmer - white light, dimming only
+* LEDbyDESIGN LED Bulb - white light with color temperature adjustment
+* LEDbyDESIGN E27 RGBW - color light bulb with white (including color temperature) and color (hsb) channels
+
 Other devices should work as well, as long as the control types "Dimmer", "Color", "CCT", and "White Dimmer" are used.
 
-In case it matters, the binding was tested with the Casambi network running in EVOLUTION mode.
+As a gateway an old Android phone with the Casambi app (see Android or Apple app store) installed was used.
+
+In case it matters, the binding was tested with the Casambi network running in EVOLUTION mode. 
 
 ## Discovery
 
 Manual discovery is supported. For a device to be discovered it has to be included in the casambi network.
 
-If a device has been removed from the Casambi network, the corresponding thing will be removed automatically.
+If a device has been removed from the Casambi network, the corresponding thing will be removed automatically when discovery is run.
 
 ## Binding Configuration
 
@@ -39,32 +41,28 @@ Binding configuration is handled entierly through the the OpenHAB GUI (see below
 Things are configured automatically upon discovery. Manual configuration is possible through the OpenHAB GUI, though discouraged. Only a few settings (e.g. name) may be changed without breaking the setup.
 
 There are four types of Things
-<ul>
-<li> Luminaries - Individual devices on the Casambi network
-<li> Scenes - A set of devices together with individual settings that are defined as a scene in the Casambi system.
-<li> Groups - A number of devices that have been grouped together in the Casambi system
-<li> Bridge - The Network as a  whole can be dimmed through the bridge.
-</ul>
+
+* Luminaries - Individual devices on the Casambi network
+* Scenes - A set of devices together with individual settings that are defined as a scene in the Casambi system.
+* Groups - A number of devices that have been grouped together in the Casambi system
+* Bridge - The Network as a  whole can be dimmed through the bridge.
+
 For individual devices, all configured channels can be controlled individually. For scenes, groups and the network only the overall dim level can be contolled.
 
 The following parameters exist for Luminaries, Scenes and Groups (all are set up automatically):
 
-<ul>
-<li> Casambi Luminary Id - Luminary id number as defined by the casambi system. Used to control devices, scenes and groups and to link received information the correspondig entities.
-<li> Casambi Luminary Name - Name of the luminary. Used as default for the thing name. Although this is read from the Casambi system during discovery, this may be changed.
-<li> Casambi Luminary unique Id - Used to uniquely identify a device on on the Casambi system. The Luminary Id will change, whenever a device is removed an then added to the system again. The unique id is based on the fixture id and will not change. For scenes and groups this is based on the Scene/Group Id and used to distingush between the thing types. Should not be changed.
-</ul>
+* Casambi Luminary Id - Luminary id number as defined by the casambi system. Used to control devices, scenes and groups and to link received information the correspondig entities.
+* Casambi Luminary Name - Name of the luminary. Used as default for the thing name. Although this is read from the Casambi system during discovery, this may be changed.
+* Casambi Luminary unique Id - Used to uniquely identify a device on on the Casambi system. The Luminary Id will change, whenever a device is removed an then added to the system again. The unique id is based on the fixture id and will not change. For scenes and groups this is based on the Scene/Group Id and used to distingush between the thing types. Should not be changed.
 
 For luminaries, additional parameters exist (as advanced settings):
 
-<ul>
-<li> Luminary can be dimmed - true if the luminary has a "Dimmer" control
-<li> Luminary color temperature may be set - true if the luminary has a "CCT" control
-<li> Minimum color temperature - in °K, only relevant if color temperature can be set. Minimum color temperature that can be set. Supplied by the casambi system.
-<li> Maximum color temperature - like minimum color temperature
-<li> Luminary color may be set - true if the luminary has a "Color" control
-<li> Level of white component - true if the luminary has a "White Dimmer" control
-</ul>
+* Luminary can be dimmed - true if the luminary has a "Dimmer" control
+* Luminary color temperature may be set - true if the luminary has a "CCT" control
+* Minimum color temperature - in °K, only relevant if color temperature can be set. Minimum color temperature that can be set. Supplied by the casambi system.
+* Maximum color temperature - like minimum color temperature
+* Luminary color may be set - true if the luminary has a "Color" control
+* Level of white component - true if the luminary has a "White Dimmer" control
 
 ## Channels
 
@@ -129,10 +127,13 @@ Missing are Slider, XY and RGB color modes (only HSB is supported) and probably 
 
 Also the driver is currently limited to one network (and one site). 
 
+There is no internationalisation and tests are missing as well.
+
 ## Operation with an Android Phone as a Gateway 
 
 Using a mobile phone (Android in my case) presents its own challenges. The mobile phone will have to be awake all the time and the Casambi app needs to be active 
-(and preferably running in the foreground). For this you will have to disable the battery optimization for the Casambi app. For details on unattended operation see separate document.
+(and preferably running in the foreground). For this you will have to disable the battery optimization for the Casambi app. For details on
+unattended operation see doc/Android_as_Gateway.md.
 
 ## Example Casambi Controls
 
@@ -173,3 +174,10 @@ The following is the controls section for a single device as part of a Casambi N
       ],
 ```
 Included are four controls for brightness (Dimmer), color (Color), white leve (White Dimmer) and color temperature (CCT). Some of the information seems to be vendor dependent. It remains to be seen how much the structure varies between different vendors and how this affects operation of the driver
+
+## Known bugs
+
+* Color (hue) setting gives wrong color
+* Bridge channel 'Online status' does not work
+
+For more issues concerning code cleanup, additional functionality, errors and production preparation see doc/ToDos_and_Issues.md

@@ -34,8 +34,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link casambiTestHandler} is responsible for handling commands, which are
- * sent to one of the channels.
+ * The {@link CasambiGroupHandler} allows to control groups of devices
+ *
+ * Groups of devices as defined by the Casambi system can be controlled through
+ * OpenHAB things. Only one dimmer channel is supported which controls the dim level
+ * of the group. The channel is write only (that is, the dim level cannot be read back).
  *
  * @author Hein Osenberg - Initial contribution
  */
@@ -56,11 +59,19 @@ public class CasambiGroupHandler extends BaseThingHandler {
         // logger.debug("constructor: group");
     }
 
+    /**
+     * hanldeCommand handles channel commands for group things
+     *
+     * Commands supported are refresh, onoff and dim
+     *
+     * @param channelUID
+     * @param command
+     */
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
         CasambiBridgeHandler bridgeHandler = getBridgeHandler();
-        Boolean doRefresh = false;
+        boolean doRefresh = false;
         if (bridgeHandler != null) {
             CasambiDriverSocket casambiSocketLocal = bridgeHandler.casambiSocket;
             if (casambiSocketLocal != null) {
@@ -125,7 +136,7 @@ public class CasambiGroupHandler extends BaseThingHandler {
     @Override
     public void dispose() {
         logger.debug("dispose: dispose group");
-    };
+    }
 
     @Override
     public void handleRemoval() {
@@ -195,5 +206,4 @@ public class CasambiGroupHandler extends BaseThingHandler {
     public static String getUidFromId(Integer id) {
         return "grp" + id.toString();
     }
-
 }

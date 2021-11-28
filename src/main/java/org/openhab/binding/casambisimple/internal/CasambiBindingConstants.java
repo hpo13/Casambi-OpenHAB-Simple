@@ -85,5 +85,4 @@ public class CasambiBindingConstants {
     // Channels
     public static final String GROUP_CHANNEL_ONOFF = "onoff";
     public static final String GROUP_CHANNEL_DIM = "dim";
-
-};
+}

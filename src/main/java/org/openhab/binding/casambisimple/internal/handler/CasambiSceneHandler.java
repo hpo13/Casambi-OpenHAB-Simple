@@ -34,8 +34,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link casambiTestHandler} is responsible for handling commands, which are
- * sent to one of the channels.
+ * The {@link CasambiSceneHandler} allows to control groups of scenes
+ *
+ * Scenes as defined by the Casambi system can be controlled through OpenHAB
+ * things. Only one dimmer channel is supported which controls the dim level
+ * of the scene. The channel is write only (that is, the dim level cannot be read back).
  *
  * @author Hein Osenberg - Initial contribution
  */
@@ -60,7 +63,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
         CasambiBridgeHandler bridgeHandler = getBridgeHandler();
-        Boolean doRefresh = false;
+        boolean doRefresh = false;
         if (bridgeHandler != null) {
             CasambiDriverSocket casambiSocketLocal = bridgeHandler.casambiSocket;
             if (casambiSocketLocal != null) {
@@ -125,7 +128,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
     @Override
     public void dispose() {
         logger.debug("dispose: dispose scene");
-    };
+    }
 
     @Override
     public void handleRemoval() {
@@ -195,5 +198,4 @@ public class CasambiSceneHandler extends BaseThingHandler {
     public static String getUidFromId(Integer id) {
         return "scn" + id.toString();
     }
-
 }

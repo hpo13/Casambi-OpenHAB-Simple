@@ -45,5 +45,4 @@ public class CasambiDiscoverySet {
             newThings.add(uidId);
         }
     }
-
 }

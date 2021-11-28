@@ -39,5 +39,5 @@ public class CasambiMessageScene {
         id = 0;
         type = "";
         hidden = false;
-    };
+    }
 }

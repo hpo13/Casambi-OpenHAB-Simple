@@ -40,9 +40,13 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * Casambi driver - interface to Casambi REST API
+ * The {@link CasambiDriverRest} manages the REST connection to the Casambi system
  *
- * Based on casambi-master by Olof Hellquist https://github.com/awahlig/casambi-master
+ * It creates the user and network session, and sends information requests to the
+ * Casambi system.
+ *
+ * Based on casambi-master by Olof Hellquist https://github.com/awahlig/casambi-master and
+ * the Casambi documentation at https://developer.casambi.com/
  *
  * @author Hein Osenberg - Initial contribution
  */
@@ -83,7 +87,7 @@ public class CasambiDriverRest {
         userId = user;
         userPassword = usrPw;
         networkPassword = netPw;
-    };
+    }
 
     public CasambiDriverSocket getSocket() {
         return new CasambiDriverSocket(apiKey, casambiSessionId, casambiNetworkId, casambiWireId, messageLogger);
@@ -117,6 +121,10 @@ public class CasambiDriverRest {
                 .headers("X-Casambi-Key", apiKey, "Content-type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(reqJson.toString())).build();
 
+        // FIXME: get HttpClient from HttpClientFactory (see Coding Guidelines)
+        // How to do this?
+        // HttpClientFactory hcf;
+        // org.eclipse.jetty.client.HttpClient hc = hcf.createHttpClient("CasambiRest");
         HttpResponse<String> response = HttpClient.newBuilder().build().send(request,
                 HttpResponse.BodyHandlers.ofString());
 
@@ -128,7 +136,7 @@ public class CasambiDriverRest {
             casambiSessionId = sessObj.sessionId;
         }
         return sessObj;
-    };
+    }
 
     // Creates network session and returns network info
     public @Nullable Map<String, CasambiMessageNetwork> createNetworkSession()
@@ -158,7 +166,7 @@ public class CasambiDriverRest {
             }
         }
         return networks;
-    };
+    }
 
     private HttpRequest makeHttpGet(URL url) throws URISyntaxException {
         return HttpRequest.newBuilder().uri(new URI(url.toString())).headers("X-Casambi-Key", apiKey,
@@ -178,7 +186,7 @@ public class CasambiDriverRest {
 
         JsonObject networkInfo = JsonParser.parseString(response.body()).getAsJsonObject();
         return networkInfo;
-    };
+    }
 
     public @Nullable CasambiMessageNetworkState getNetworkState()
             throws IOException, InterruptedException, URISyntaxException, CasambiException {
@@ -193,7 +201,7 @@ public class CasambiDriverRest {
         Gson gson = new Gson();
         CasambiMessageNetworkState networkState = gson.fromJson(response.body(), CasambiMessageNetworkState.class);
         return networkState;
-    };
+    }
 
     // FIXME: convert to message object
     public JsonObject getNetworkDatapoints(LocalDateTime from, LocalDateTime to, int sensorType)
@@ -214,7 +222,7 @@ public class CasambiDriverRest {
         String res = "{\"datapoints\":" + response.body() + "}";
         JsonObject networkDataPoints = JsonParser.parseString(res).getAsJsonObject();
         return networkDataPoints;
-    };
+    }
 
     public @Nullable Map<String, CasambiMessageUnit> getUnitList()
             throws IOException, InterruptedException, URISyntaxException, CasambiException {
@@ -231,7 +239,7 @@ public class CasambiDriverRest {
         }.getType();
         Map<String, CasambiMessageUnit> unitList = gson.fromJson(response.body(), unitMapType);
         return unitList;
-    };
+    }
 
     public @Nullable CasambiMessageUnit getUnitState(int unitId)
             throws IOException, InterruptedException, URISyntaxException, CasambiException {
@@ -246,7 +254,7 @@ public class CasambiDriverRest {
         Gson gson = new Gson();
         CasambiMessageUnit unitState = gson.fromJson(response.body(), CasambiMessageUnit.class);
         return unitState;
-    };
+    }
 
     public @Nullable Map<String, CasambiMessageScene> getScenes()
             throws IOException, InterruptedException, URISyntaxException, CasambiException {
@@ -263,7 +271,7 @@ public class CasambiDriverRest {
         }.getType();
         Map<String, CasambiMessageScene> scenes = gson.fromJson(response.body(), sceneMapType);
         return scenes;
-    };
+    }
 
     // FIXME: convert to message object
     public JsonObject getFixtureInfo(int unitId)
@@ -279,5 +287,5 @@ public class CasambiDriverRest {
         JsonObject fixtureInfo = JsonParser.parseString(response.body()).getAsJsonObject();
         // System.out.println("getUnitState: " + ppJson(unitInfo));
         return fixtureInfo;
-    };
+    }
 }

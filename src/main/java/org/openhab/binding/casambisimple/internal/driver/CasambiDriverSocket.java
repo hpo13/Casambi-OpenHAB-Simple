@@ -32,18 +32,24 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 /**
- * Casambi driver - interface to Casambi websocket API
+ * The {@link CasambiDriverSocket} manages the Websocket connection to the Casambi system
  *
- * Based on Python casambi-master by Olof Hellquist https://github.com/awahlig/casambi-master
+ * It sets up the connection, sends commands to luminaries, scenes and groups and
+ * processes messages from the system.
+ *
+ * Based on casambi-master by Olof Hellquist https://github.com/awahlig/casambi-master and
+ * the Casambi documentation at https://developer.casambi.com/
  *
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
 public class CasambiDriverSocket implements WebSocket.Listener {
 
+    // FIXME: get websocket from WebSocketClientFactory (see Coding Guidelines)
+    // private @Nullable WebSocketFactory ws1Factory;
     private @Nullable WebSocket casambiSocket;
     private String casambiSocketStatus = "null";
-    private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<String>();
+    private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
 
     private String apiKey;
     private String casambiNetworkId;
@@ -60,13 +66,21 @@ public class CasambiDriverSocket implements WebSocket.Listener {
         casambiSessionId = sessionId;
         casambiWireId = wireId;
         casambiMessageLogger = messageLogger;
+        // WebSocketClient ws2 = ws1Factory.createWebSocketClient("CasabmiSocket");
     }
 
     // import org.openhab.binding.casambisimple.internal.driver.CasambiDriverConstants.*;
 
+    /**
+     * open initialises the websocket connection. Needs networkId and wireId from the REST session.
+     *
+     * It is an error to open a websocket, when it is already open.
+     *
+     * @return true if websocket was opened successfully
+     */
     public Boolean open() {
 
-        Boolean socketOk = false;
+        boolean socketOk = false;
         logger.debug("casambiOpen: opening socket for casambi communication");
         if (casambiSocket == null) {
             try {
@@ -93,7 +107,7 @@ public class CasambiDriverSocket implements WebSocket.Listener {
                     casambiMessageLogger.dumpMessage("+++ Socket casambiOpen +++");
                     socketOk = true;
                 } else {
-                    logger.error("casambiOpen: Erro socket is null");
+                    logger.error("casambiOpen: Error socket is null");
                 }
             } catch (Exception e) {
                 logger.error("casambiOpen: Exception opening websocket {}", e);
@@ -102,12 +116,20 @@ public class CasambiDriverSocket implements WebSocket.Listener {
             logger.error("casambiOpen: Error - Socket already open.");
         }
         return socketOk;
-    };
+    }
 
     // FIXME: Socket inaktivieren (ist das richtig so?)
+
+    /**
+     * close shuts down the websocket connection. Socket is set to null.
+     *
+     * It is an error to close a null socket.
+     *
+     * @return true if socket was closed successfully
+     */
     public Boolean close() {
 
-        Boolean socketOk = false;
+        boolean socketOk = false;
         casambiMessageLogger.close();
 
         JsonObject reqJson = new JsonObject();
@@ -128,7 +150,7 @@ public class CasambiDriverSocket implements WebSocket.Listener {
             logger.error("casambiClose: Error - Socket not open.");
         }
         return socketOk;
-    };
+    }
 
     // Getter for socket_status
     public String getSocketStatus() {
@@ -137,6 +159,13 @@ public class CasambiDriverSocket implements WebSocket.Listener {
 
     // --- Overridden WebSocket methods --------------------------------------------------------------------------------
 
+    /**
+     * opOpen handles the websockets open events.
+     *
+     * Here a message is put into the queue to inform the bridge handler.
+     *
+     * @param webSocket is the actual websocket
+     */
     @Override
     public void onOpen(@Nullable WebSocket webSocket) {
         logger.debug("WebSocket.onOpen called");
@@ -153,8 +182,17 @@ public class CasambiDriverSocket implements WebSocket.Listener {
             logger.error("onText: Exception {}", e);
         }
         WebSocket.Listener.super.onOpen(webSocket);
-    };
+    }
 
+    /**
+     * onText handles text from the websocket. Not really needed here (casambi messages are binary).
+     *
+     * Messages are put into the queue for the bridge handler to process.
+     *
+     * @param websocket is the actual websocket
+     * @param data is the text (or a segment of text)
+     * @param last is true if this is the last segment
+     */
     @Override
     public CompletionStage<?> onText(@Nullable WebSocket webSocket, @Nullable CharSequence data, boolean last) {
         // socket_status = "data_text";
@@ -169,8 +207,17 @@ public class CasambiDriverSocket implements WebSocket.Listener {
             logger.error("onText: Exception {}", e);
         }
         return WebSocket.Listener.super.onText(webSocket, data, last);
-    };
+    }
 
+    /**
+     * onBinary handles data from the websocket. Used for messages by the casambi system
+     *
+     * Messages are converted into text and put into the queue for the bridge handler to process.
+     *
+     * @param websocket is the actual websocket
+     * @param data is the text (or a segment of text)
+     * @param last is true if this is the last segment
+     */
     @Override
     public CompletionStage<?> onBinary(@Nullable WebSocket webSocket, @Nullable ByteBuffer data, boolean last) {
         String msg = StandardCharsets.UTF_8.decode(data).toString();
@@ -186,8 +233,17 @@ public class CasambiDriverSocket implements WebSocket.Listener {
             logger.error("onText: Exception {}", e);
         }
         return WebSocket.Listener.super.onBinary(webSocket, data, last);
-    };
+    }
 
+    /**
+     * onClose handles the websocket close events
+     *
+     * Here a message is queue for the bridge handler and the socket is reopened
+     *
+     * @param websocket is the actual websocket
+     * @param status code
+     * @param reason
+     */
     @Override
     public CompletionStage<?> onClose(@Nullable WebSocket webSocket, int statusCode, @Nullable String reason) {
         logger.debug("onClose status {}, reason {}", statusCode, reason);
@@ -205,11 +261,21 @@ public class CasambiDriverSocket implements WebSocket.Listener {
         }
 
         logger.warn("onClose: trying to reopen socket.");
+
+        // FIXME: need to set casambiSocket = null before open?
         open();
 
         return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
-    };
+    }
 
+    /**
+     * onClose handles the websocket error events
+     *
+     * Here a message is queue for the bridge handler and the socket is reopened
+     *
+     * @param websocket is the actual websocket
+     * @param error
+     */
     @Override
     public void onError(@Nullable WebSocket webSocket, @Nullable Throwable error) {
         logger.error("WebSocket.onError {}", webSocket);
@@ -232,6 +298,7 @@ public class CasambiDriverSocket implements WebSocket.Listener {
         }
 
         logger.warn("onError: trying to reopen socket.");
+        // FIXME: need to set casambiSocket = null before open?
         open();
 
         WebSocket.Listener.super.onError(webSocket, error);
@@ -239,18 +306,59 @@ public class CasambiDriverSocket implements WebSocket.Listener {
 
     // --- Luminary controls -----------------------------------------------------------------------------------------
 
+    /**
+     * setUnitOnOff switches a Casambi luminary on or off
+     *
+     * Currently works by setting brightness to 0 or 1
+     * FIXME: might remember the last brightness of the device and restore that when switched on
+     *
+     * @param unitId
+     * @param onOff
+     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     */
     public void setUnitOnOff(int unitId, boolean onOff) throws CasambiException {
         setObjectOnOff(CasambiDriverConstants.methodUnit, CasambiDriverConstants.targetId, unitId, onOff);
     }
 
+    /**
+     * setSceneOnOff switches a Casambi scene on or off
+     *
+     * Currently works by setting brightness to 0 or 1
+     * FIXME: might remember the last dim command and repeat that
+     *
+     * @param unitId
+     * @param onOff
+     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     */
     public void setSceneOnOff(int unitId, boolean onOff) throws CasambiException {
         setObjectOnOff(CasambiDriverConstants.methodScene, CasambiDriverConstants.targetId, unitId, onOff);
     }
 
+    /**
+     * setGroupOnOff switches a Casambi group on or off
+     *
+     * Currently works by setting brightness to 0 or 1
+     * FIXME: might remember the last dim command and repeat that
+     *
+     * @param unitId
+     * @param onOff
+     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     */
     public void setGroupOnOff(int unitId, boolean onOff) throws CasambiException {
         setObjectOnOff(CasambiDriverConstants.methodGroup, CasambiDriverConstants.targetId, unitId, onOff);
     }
 
+    /**
+     * setObjectOnOff does the actual switching for luminaries, scenes and groups
+     *
+     * Works by setting brightness to 0 or 1
+     *
+     * @method selects luminary, group or scene (method attribute of the JSON message)
+     * @param id usually just "id", may be set to "ids", when multiple luminaries are to be switched
+     * @param objectId number of the object to be switched
+     * @param onOff
+     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     */
     private void setObjectOnOff(String method, @Nullable String id, int objectId, boolean onOff)
             throws CasambiException {
         JsonObject cOnOff = new JsonObject();
@@ -261,11 +369,29 @@ public class CasambiDriverSocket implements WebSocket.Listener {
         setObjectControl(method, id, objectId, control);
     }
 
+    /**
+     * setUnitDimmer sets the dim level of a Casambi luminary
+     *
+     * @param unitId
+     * @param dim level, must be between 0 and 1. O is equivalent to off, everything else is on
+     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     */
     public void setUnitDimmer(int unitId, float dim) throws CasambiException {
         setObjectDimmer(CasambiDriverConstants.methodUnit, CasambiDriverConstants.targetId, unitId, dim);
     }
 
-    public void setObjectDimmer(String method, @Nullable String id, int objectId, float dim) throws CasambiException {
+    /**
+     * setObjectDimmer assembles the control message to dim luminaries
+     *
+     * Just used for luminaries, because a control-type message is needed.
+     *
+     * @method selects luminary, group or scene (method attribute of the JSON message)
+     * @param id usually just "id", may be set to "ids", when multiple luminaries are to be switched
+     * @param objectId number of the object to be switched
+     * @param dim level, between 0 and 1
+     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     */
+    private void setObjectDimmer(String method, @Nullable String id, int objectId, float dim) throws CasambiException {
         JsonObject dimmer = new JsonObject();
         dimmer.addProperty(CasambiDriverConstants.controlValue, dim);
 
@@ -274,6 +400,18 @@ public class CasambiDriverSocket implements WebSocket.Listener {
         setObjectControl(method, id, objectId, control);
     }
 
+    /**
+     * setObjectControl puts together the complete message and sends it to the Casambi system
+     *
+     * Just used for luminaries, because a control-type message is needed.
+     * FIXME: use setUnitControl() instead
+     *
+     * @method selects luminary, group or scene (method attribute of the JSON message)
+     * @param id usually just "id", may be set to "ids", when multiple luminaries are to be switched
+     * @param objectId number of the object to be switched
+     * @param control, control part of the message
+     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     */
     private void setObjectControl(String method, @Nullable String id, int unitId, JsonObject control)
             throws CasambiException {
 

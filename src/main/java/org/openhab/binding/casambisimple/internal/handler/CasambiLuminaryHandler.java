@@ -42,8 +42,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link CasambiLuminaryHandler} is responsible for handling commands, which are
- * sent to one of the channels.
+ * The {@link CasambiLuminary Handler} allows to control luminary devices
+ *
+ * Luminaries as defined by the Casambi system can be controlled through OpenHAB
+ * things. Several channels are supportet for brightness, color, color temperature
+ * and white level.
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.3 211010@hpo First version to actually control lights
@@ -146,7 +149,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
                             // Set color temperature (e.g. 2000 - 6500)
                             logger.info("handleCommand: got cct channel command {}", command);
                             if (command instanceof DecimalType) {
-                                Float slider = ((PercentType) command).floatValue() / 100;
+                                float slider = ((PercentType) command).floatValue() / 100;
                                 Float tMin = config.tempMin;
                                 Float tMax = config.tempMax;
                                 Float temp = tMin + (tMax - tMin) * slider;
@@ -286,7 +289,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
     public void dispose() {
         logger.debug("dispose: dispose luninary handler id {}, uid {}.", this.deviceId, this.deviceUid);
         super.dispose();
-    };
+    }
 
     /**
      * bridgeStatusChanged informs a thing about a change in the bridge status. The thing status
@@ -398,5 +401,4 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
     public static String getUidFromFixtureId(Integer fixtureId) {
         return "lum" + fixtureId.toString();
     }
-
 }

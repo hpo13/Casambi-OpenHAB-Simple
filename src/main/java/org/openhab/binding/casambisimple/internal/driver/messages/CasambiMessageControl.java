@@ -48,7 +48,7 @@ public class CasambiMessageControl {
 
     CasambiMessageControl() {
         type = "";
-    };
+    }
 
     public Boolean isDimmer() {
         return type != null && type.equals("Dimmer");

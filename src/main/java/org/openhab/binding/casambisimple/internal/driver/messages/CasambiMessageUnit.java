@@ -49,5 +49,5 @@ public class CasambiMessageUnit {
         address = "";
         type = "";
         fixtureId = 0;
-    };
+    }
 }

@@ -35,5 +35,5 @@ public class CasambiMessageSite {
         address = "";
         role = "";
         networks = null;
-    };
+    }
 }

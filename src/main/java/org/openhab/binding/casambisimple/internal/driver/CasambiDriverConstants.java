@@ -49,5 +49,4 @@ public class CasambiDriverConstants {
     public static final String controlTW = "TW";
     public static final String controlXY = "XY";
     public static final String controlTargetControls = "targetControls";
-
 }

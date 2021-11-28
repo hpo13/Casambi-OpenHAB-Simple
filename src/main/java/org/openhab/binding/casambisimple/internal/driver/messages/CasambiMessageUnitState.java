@@ -51,5 +51,5 @@ public class CasambiMessageUnitState {
         type = "";
         on = false;
         online = false;
-    };
+    }
 }

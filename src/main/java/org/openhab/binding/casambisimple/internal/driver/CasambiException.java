@@ -23,6 +23,5 @@ public class CasambiException extends Exception {
     public CasambiException(String msg) {
         super(msg);
         message = msg;
-    };
-
+    }
 }

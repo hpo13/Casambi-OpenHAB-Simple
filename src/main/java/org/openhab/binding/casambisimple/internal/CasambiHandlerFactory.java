@@ -75,5 +75,4 @@ public class CasambiHandlerFactory extends BaseThingHandlerFactory {
         }
         return null;
     }
-
 }

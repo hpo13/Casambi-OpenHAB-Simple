@@ -72,7 +72,7 @@ public class CasambiDriverLogger {
         } else {
             return "";
         }
-    };
+    }
 
     public void dumpMessage(String msg) {
         if (writer != null) {

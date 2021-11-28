@@ -30,5 +30,5 @@ public class CasambiMessagePhoto {
 
     CasambiMessagePhoto() {
         name = "";
-    };
+    }
 }

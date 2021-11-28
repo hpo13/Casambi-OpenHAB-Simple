@@ -28,6 +28,5 @@ public class CasambiMessageUnitShort {
 
     CasambiMessageUnitShort() {
         id = 0;
-    };
-
+    }
 }

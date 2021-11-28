@@ -33,7 +33,7 @@ public class CasambiMessageEvent {
         wireStatusError,
         keepAlive,
         unknownMessage
-    };
+    }
 
     public @Nullable String method;
     public @Nullable Integer priority;
@@ -63,7 +63,7 @@ public class CasambiMessageEvent {
         name = "";
         address = "";
         controls = null;
-    };
+    }
 
     public messageType getMessageType() {
         if (method != null) {

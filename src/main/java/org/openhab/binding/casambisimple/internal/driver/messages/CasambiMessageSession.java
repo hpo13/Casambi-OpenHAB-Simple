@@ -33,5 +33,5 @@ public class CasambiMessageSession {
         sessionId = "";
         sites = null;
         networks = null;
-    };
+    }
 }
