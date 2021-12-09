@@ -280,8 +280,11 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
         // }
         // updateThing(tb.build());
         logger.debug("  removing from thingsById");
-        CasambiThingsById thingsById = getBridgeHandler().thingsById;
-        thingsById.remove(thingsById.uidIdCombine(deviceUid, deviceId));
+        CasambiBridgeHandler bridgeHandler = getBridgeHandler();
+        if (bridgeHandler != null) {
+            CasambiThingsById thingsById = bridgeHandler.thingsById;
+            thingsById.remove(thingsById.uidIdCombine(deviceUid, deviceId));
+        }
         updateStatus(ThingStatus.REMOVED);
     }
 

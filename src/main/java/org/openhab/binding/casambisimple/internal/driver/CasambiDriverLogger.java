@@ -53,7 +53,7 @@ public class CasambiDriverLogger {
                 Path path = Paths.get(logPath, logFile);
                 logger.debug("createUserSession: log file path is {}", path);
                 writerLocal = new PrintWriter(new FileWriter(path.toString(), true));
-                writerLocal.println("Casambi JSON message dump.");
+                writerLocal.println(getTimeStamp() + " Casambi JSON message dump.");
                 writer = writerLocal;
                 flush();
             } catch (Exception e) {
@@ -114,7 +114,7 @@ public class CasambiDriverLogger {
     public void close() {
         PrintWriter writerLocal = writer;
         if (writerLocal != null) {
-            dumpMessage("+++ Socket casambiClose +++");
+            dumpMessage(getTimeStamp() + " ++++ Socket casambiClose +++");
             flush();
             writerLocal.close();
             writer = null;

@@ -22,13 +22,17 @@ import org.openhab.binding.casambisimple.internal.handler.CasambiBridgeHandler;
 import org.openhab.binding.casambisimple.internal.handler.CasambiGroupHandler;
 import org.openhab.binding.casambisimple.internal.handler.CasambiLuminaryHandler;
 import org.openhab.binding.casambisimple.internal.handler.CasambiSceneHandler;
+import org.openhab.core.io.net.http.HttpClientFactory;
+import org.openhab.core.io.net.http.WebSocketFactory;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingTypeUID;
 import org.openhab.core.thing.binding.BaseThingHandlerFactory;
 import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.thing.binding.ThingHandlerFactory;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +52,15 @@ public class CasambiHandlerFactory extends BaseThingHandlerFactory {
     // THING_TYPE_LUMINARY,
     // THING_TYPE_SCENE);
     private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = CasambiBindingConstants.SUPPORTED_DEVICE_THING_TYPES_UIDS;
+    private final HttpClientFactory httpClientFactory;
+    private final WebSocketFactory webSocketFactory;
+
+    @Activate
+    public CasambiHandlerFactory(@Reference WebSocketFactory webSocketFactory,
+            @Reference HttpClientFactory httpClientFactory) {
+        this.httpClientFactory = httpClientFactory;
+        this.webSocketFactory = webSocketFactory;
+    }
 
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
@@ -62,7 +75,8 @@ public class CasambiHandlerFactory extends BaseThingHandlerFactory {
 
         if (THING_TYPE_BRIDGE.equals(thingTypeUID)) {
             Bridge bridge = (Bridge) thing;
-            return new CasambiBridgeHandler(bridge);
+            return new CasambiBridgeHandler(bridge, webSocketFactory.getCommonWebSocketClient(),
+                    httpClientFactory.getCommonHttpClient());
         }
         if (THING_TYPE_LUMINARY.equals(thingTypeUID)) {
             return new CasambiLuminaryHandler(thing);
