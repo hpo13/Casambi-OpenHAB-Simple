@@ -18,20 +18,16 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiMessageSession} is used to parse session messages with gson
+ * The {@link CasambiSimpleMessageSites} is used to parse multiple sites strucutures with gson
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiMessageSession {
-    public String sessionId;
-    public @Nullable CasambiMessageSites sites;
-    public @Nullable Map<String, CasambiMessageNetwork> networks;
+public class CasambiSimpleMessageSites {
+    public @Nullable Map<String, CasambiSimpleMessageSite> sites;
 
-    CasambiMessageSession() {
-        sessionId = "";
+    CasambiSimpleMessageSites() {
         sites = null;
-        networks = null;
     }
 }

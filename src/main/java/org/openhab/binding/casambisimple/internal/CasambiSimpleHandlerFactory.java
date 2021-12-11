@@ -12,16 +12,16 @@
  */
 package org.openhab.binding.casambisimple.internal;
 
-import static org.openhab.binding.casambisimple.internal.CasambiBindingConstants.*;
+import static org.openhab.binding.casambisimple.internal.CasambiSimpleBindingConstants.*;
 
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.casambisimple.internal.handler.CasambiBridgeHandler;
-import org.openhab.binding.casambisimple.internal.handler.CasambiGroupHandler;
-import org.openhab.binding.casambisimple.internal.handler.CasambiLuminaryHandler;
-import org.openhab.binding.casambisimple.internal.handler.CasambiSceneHandler;
+import org.openhab.binding.casambisimple.internal.handler.CasambiSimpleBridgeHandler;
+import org.openhab.binding.casambisimple.internal.handler.CasambiSimpleGroupHandler;
+import org.openhab.binding.casambisimple.internal.handler.CasambiSimpleLuminaryHandler;
+import org.openhab.binding.casambisimple.internal.handler.CasambiSimpleSceneHandler;
 import org.openhab.core.io.net.http.HttpClientFactory;
 import org.openhab.core.io.net.http.WebSocketFactory;
 import org.openhab.core.thing.Bridge;
@@ -44,19 +44,19 @@ import org.slf4j.LoggerFactory;
  */
 @NonNullByDefault
 @Component(configurationPid = "binding.casambisimple", service = ThingHandlerFactory.class)
-public class CasambiHandlerFactory extends BaseThingHandlerFactory {
+public class CasambiSimpleHandlerFactory extends BaseThingHandlerFactory {
 
-    private final Logger logger = LoggerFactory.getLogger(CasambiHandlerFactory.class);
+    private final Logger logger = LoggerFactory.getLogger(CasambiSimpleHandlerFactory.class);
 
     // private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_BRIDGE,
     // THING_TYPE_LUMINARY,
     // THING_TYPE_SCENE);
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = CasambiBindingConstants.SUPPORTED_DEVICE_THING_TYPES_UIDS;
+    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = CasambiSimpleBindingConstants.SUPPORTED_DEVICE_THING_TYPES_UIDS;
     private final HttpClientFactory httpClientFactory;
     private final WebSocketFactory webSocketFactory;
 
     @Activate
-    public CasambiHandlerFactory(@Reference WebSocketFactory webSocketFactory,
+    public CasambiSimpleHandlerFactory(@Reference WebSocketFactory webSocketFactory,
             @Reference HttpClientFactory httpClientFactory) {
         this.httpClientFactory = httpClientFactory;
         this.webSocketFactory = webSocketFactory;
@@ -75,17 +75,17 @@ public class CasambiHandlerFactory extends BaseThingHandlerFactory {
 
         if (THING_TYPE_BRIDGE.equals(thingTypeUID)) {
             Bridge bridge = (Bridge) thing;
-            return new CasambiBridgeHandler(bridge, webSocketFactory.getCommonWebSocketClient(),
+            return new CasambiSimpleBridgeHandler(bridge, webSocketFactory.getCommonWebSocketClient(),
                     httpClientFactory.getCommonHttpClient());
         }
         if (THING_TYPE_LUMINARY.equals(thingTypeUID)) {
-            return new CasambiLuminaryHandler(thing);
+            return new CasambiSimpleLuminaryHandler(thing);
         }
         if (THING_TYPE_SCENE.equals(thingTypeUID)) {
-            return new CasambiSceneHandler(thing);
+            return new CasambiSimpleSceneHandler(thing);
         }
         if (THING_TYPE_GROUP.equals(thingTypeUID)) {
-            return new CasambiGroupHandler(thing);
+            return new CasambiSimpleGroupHandler(thing);
         }
         return null;
     }

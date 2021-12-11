@@ -18,26 +18,20 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiMessageScene} is used to parse scene structures with gson
+ * The {@link CasambiSimpleMessageSession} is used to parse session messages with gson
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiMessageScene {
-    public String name;
-    public Integer id;
-    public @Nullable Integer position;
-    public @Nullable Integer icon;
-    public @Nullable String color;
-    public String type;
-    public Boolean hidden;
-    public @Nullable Map<Integer, CasambiMessageUnit> units;
+public class CasambiSimpleMessageSession {
+    public String sessionId;
+    public @Nullable CasambiSimpleMessageSites sites;
+    public @Nullable Map<String, CasambiSimpleMessageNetwork> networks;
 
-    CasambiMessageScene() {
-        name = "";
-        id = 0;
-        type = "";
-        hidden = false;
+    CasambiSimpleMessageSession() {
+        sessionId = "";
+        sites = null;
+        networks = null;
     }
 }

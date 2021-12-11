@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageEvent;
+import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +39,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 /**
- * The {@link CasambiDriverSocket} manages the Websocket connection to the Casambi system
+ * The {@link CasambiSimpleDriverSocket} manages the Websocket connection to the Casambi system
  *
  * It sets up the connection, sends commands to luminaries, scenes and groups and
  * processes messages from the system.
@@ -50,7 +50,7 @@ import com.google.gson.JsonObject;
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiDriverSocket {
+public class CasambiSimpleDriverSocket {
 
     private String casambiSocketStatus = "null";
     private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
@@ -59,19 +59,19 @@ public class CasambiDriverSocket {
     private String casambiNetworkId;
     private String casambiSessionId;
     private Integer casambiWireId;
-    private CasambiDriverLogger casambiMessageLogger;
+    private CasambiSimpleDriverLogger casambiMessageLogger;
 
     private @Nullable WebSocketClient casambiSocket;
     private @Nullable Session casambiSession;
     private @Nullable RemoteEndpoint casambiRemote;
     private Object socketFlag = new Object();
 
-    final Logger logger = LoggerFactory.getLogger(CasambiDriverSocket.class);
+    final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverSocket.class);
 
     private final String socketUrl = "wss://door.casambi.com/v1/bridge/";
 
-    CasambiDriverSocket(String key, String sessionId, String networkId, Integer wireId,
-            CasambiDriverLogger messageLogger, WebSocketClient webSocketClient) {
+    CasambiSimpleDriverSocket(String key, String sessionId, String networkId, Integer wireId,
+            CasambiSimpleDriverLogger messageLogger, WebSocketClient webSocketClient) {
         apiKey = key;
         casambiNetworkId = networkId;
         casambiSessionId = sessionId;
@@ -85,22 +85,22 @@ public class CasambiDriverSocket {
         CasambiListener listener = new CasambiListener();
         if (casambiSocket != null) {
             try {
-                // logger.trace("CasambiDriverSocket: before casambiSocket.start");
+                // logger.trace("CasambiSimpleDriverSocket: before casambiSocket.start");
                 casambiSocket.start();
                 final URI casambiURI = new URI(socketUrl);
                 ClientUpgradeRequest request = new ClientUpgradeRequest();
                 request.setSubProtocols(apiKey);
-                // logger.trace("CasambiDriverSocket: before casambiSocket.connect");
+                // logger.trace("CasambiSimpleDriverSocket: before casambiSocket.connect");
                 casambiSocket.connect(listener, casambiURI, request);
             } catch (Exception e) {
-                logger.error("CasambiDriverSocket: Exception setting up session - {}", e.getMessage());
+                logger.error("CasambiSimpleDriverSocket: Exception setting up session - {}", e.getMessage());
             }
         } else {
-            logger.error("CasambiDriverSocket: casambiSocket is null");
+            logger.error("CasambiSimpleDriverSocket: casambiSocket is null");
         }
     }
 
-    // import org.openhab.binding.casambisimple.internal.driver.CasambiDriverConstants.*;
+    // import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverConstants.*;
 
     /**
      * open initialises the websocket connection. Needs networkId and wireId from the REST session.
@@ -116,11 +116,11 @@ public class CasambiDriverSocket {
         UUID uuid = UUID.randomUUID();
 
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty(CasambiDriverConstants.controlMethod, "open");
-        reqJson.addProperty(CasambiDriverConstants.targetId, casambiNetworkId);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, "open");
+        reqJson.addProperty(CasambiSimpleDriverConstants.targetId, casambiNetworkId);
         reqJson.addProperty("session", casambiSessionId);
         reqJson.addProperty("ref", uuid.toString());
-        reqJson.addProperty(CasambiDriverConstants.controlWire, casambiWireId);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
         reqJson.addProperty("type", 1);
 
         logger.trace("casambiOpen: waiting for casambiRemote");
@@ -133,7 +133,7 @@ public class CasambiDriverSocket {
             }
         } catch (InterruptedException e) {
             logger.error("casambiOpen: Exception during wait - {}", e.getMessage());
-            e.printStackTrace();
+            // e.printStackTrace();
         }
 
         if (casambiRemote != null) {
@@ -143,7 +143,7 @@ public class CasambiDriverSocket {
                 casambiMessageLogger.dumpMessage("+++ Socket casambiOpen +++");
                 socketOk = true;
             } catch (Exception e) {
-                logger.error("casambiOpen: Exception opening remote connection {}", e);
+                logger.error("casambiOpen: Exception opening remote connection {}", e.getMessage());
             }
         } else {
             logger.error("casambiOpen: Error - remote connection null.");
@@ -164,8 +164,8 @@ public class CasambiDriverSocket {
         casambiMessageLogger.close();
 
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty(CasambiDriverConstants.controlWire, casambiWireId);
-        reqJson.addProperty(CasambiDriverConstants.controlMethod, "close");
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, "close");
 
         if (casambiRemote != null) {
             try {
@@ -222,7 +222,7 @@ public class CasambiDriverSocket {
             casambiMessageLogger.dumpMessage(" +++ Socket onOpen +++");
             casambiSocketStatus = "open";
             JsonObject msg = new JsonObject();
-            msg.addProperty(CasambiDriverConstants.controlMethod, "socketChanged");
+            msg.addProperty(CasambiSimpleDriverConstants.controlMethod, "socketChanged");
             msg.addProperty("status", "open");
             msg.addProperty("conditon", 0);
             msg.addProperty("response", "ok");
@@ -256,7 +256,7 @@ public class CasambiDriverSocket {
             try {
                 queue.put(msg.toString());
             } catch (InterruptedException e) {
-                logger.error("onText: Exception {}", e);
+                logger.error("onText: Exception {}", e.getMessage());
             }
 
             logger.warn("onClose: not trying to reopen socket.");
@@ -283,7 +283,7 @@ public class CasambiDriverSocket {
                     logger.debug("onText: null message");
                 }
             } catch (InterruptedException e) {
-                logger.error("onText: Exception {}", e);
+                logger.error("onText: Exception {}", e.getMessage());
             }
         }
 
@@ -306,7 +306,7 @@ public class CasambiDriverSocket {
                     logger.debug("onText: null message");
                 }
             } catch (InterruptedException e) {
-                logger.error("onText: Exception {}", e);
+                logger.error("onText: Exception {}", e.getMessage());
             }
         }
 
@@ -331,7 +331,7 @@ public class CasambiDriverSocket {
             try {
                 queue.put(msg.toString());
             } catch (InterruptedException e) {
-                logger.error("onError: Exception {}", e);
+                logger.error("onError: Exception {}", e.getMessage());
             }
 
             logger.warn("onError: trying to reopen socket.");
@@ -343,7 +343,6 @@ public class CasambiDriverSocket {
         public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException {
             return this.closeLatch.await(duration, unit);
         }
-
     }
 
     // --- Luminary controls -----------------------------------------------------------------------------------------
@@ -356,11 +355,11 @@ public class CasambiDriverSocket {
      *
      * @param unitId
      * @param onOff
-     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     * @throws CasambiSimpleException is thrown on error, e.g. if the socket is not open
      * @throws IOException
      */
-    public void setUnitOnOff(int unitId, boolean onOff) throws CasambiException, IOException {
-        setObjectOnOff(CasambiDriverConstants.methodUnit, CasambiDriverConstants.targetId, unitId, onOff);
+    public void setUnitOnOff(int unitId, boolean onOff) throws CasambiSimpleException, IOException {
+        setObjectOnOff(CasambiSimpleDriverConstants.methodUnit, CasambiSimpleDriverConstants.targetId, unitId, onOff);
     }
 
     /**
@@ -371,11 +370,11 @@ public class CasambiDriverSocket {
      *
      * @param unitId
      * @param onOff
-     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     * @throws CasambiSimpleException is thrown on error, e.g. if the socket is not open
      * @throws IOException
      */
-    public void setSceneOnOff(int unitId, boolean onOff) throws CasambiException, IOException {
-        setObjectOnOff(CasambiDriverConstants.methodScene, CasambiDriverConstants.targetId, unitId, onOff);
+    public void setSceneOnOff(int unitId, boolean onOff) throws CasambiSimpleException, IOException {
+        setObjectOnOff(CasambiSimpleDriverConstants.methodScene, CasambiSimpleDriverConstants.targetId, unitId, onOff);
     }
 
     /**
@@ -386,11 +385,11 @@ public class CasambiDriverSocket {
      *
      * @param unitId
      * @param onOff
-     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     * @throws CasambiSimpleException is thrown on error, e.g. if the socket is not open
      * @throws IOException
      */
-    public void setGroupOnOff(int unitId, boolean onOff) throws CasambiException, IOException {
-        setObjectOnOff(CasambiDriverConstants.methodGroup, CasambiDriverConstants.targetId, unitId, onOff);
+    public void setGroupOnOff(int unitId, boolean onOff) throws CasambiSimpleException, IOException {
+        setObjectOnOff(CasambiSimpleDriverConstants.methodGroup, CasambiSimpleDriverConstants.targetId, unitId, onOff);
     }
 
     /**
@@ -402,16 +401,16 @@ public class CasambiDriverSocket {
      * @param id usually just "id", may be set to "ids", when multiple luminaries are to be switched
      * @param objectId number of the object to be switched
      * @param onOff
-     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     * @throws CasambiSimpleException is thrown on error, e.g. if the socket is not open
      * @throws IOException
      */
     private void setObjectOnOff(String method, @Nullable String id, int objectId, boolean onOff)
-            throws CasambiException, IOException {
+            throws CasambiSimpleException, IOException {
         JsonObject cOnOff = new JsonObject();
-        cOnOff.addProperty(CasambiDriverConstants.controlValue, onOff ? (float) 1.0 : (float) 0.0);
+        cOnOff.addProperty(CasambiSimpleDriverConstants.controlValue, onOff ? (float) 1.0 : (float) 0.0);
 
         JsonObject control = new JsonObject();
-        control.add(CasambiDriverConstants.controlOnOff, cOnOff);
+        control.add(CasambiSimpleDriverConstants.controlOnOff, cOnOff);
         setObjectControl(method, id, objectId, control);
     }
 
@@ -420,11 +419,11 @@ public class CasambiDriverSocket {
      *
      * @param unitId
      * @param dim level, must be between 0 and 1. O is equivalent to off, everything else is on
-     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     * @throws CasambiSimpleException is thrown on error, e.g. if the socket is not open
      * @throws IOException
      */
-    public void setUnitDimmer(int unitId, float dim) throws CasambiException, IOException {
-        setObjectDimmer(CasambiDriverConstants.methodUnit, CasambiDriverConstants.targetId, unitId, dim);
+    public void setUnitDimmer(int unitId, float dim) throws CasambiSimpleException, IOException {
+        setObjectDimmer(CasambiSimpleDriverConstants.methodUnit, CasambiSimpleDriverConstants.targetId, unitId, dim);
     }
 
     /**
@@ -436,16 +435,16 @@ public class CasambiDriverSocket {
      * @param id usually just "id", may be set to "ids", when multiple luminaries are to be switched
      * @param objectId number of the object to be switched
      * @param dim level, between 0 and 1
-     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     * @throws CasambiSimpleException is thrown on error, e.g. if the socket is not open
      * @throws IOException
      */
     private void setObjectDimmer(String method, @Nullable String id, int objectId, float dim)
-            throws CasambiException, IOException {
+            throws CasambiSimpleException, IOException {
         JsonObject dimmer = new JsonObject();
-        dimmer.addProperty(CasambiDriverConstants.controlValue, dim);
+        dimmer.addProperty(CasambiSimpleDriverConstants.controlValue, dim);
 
         JsonObject control = new JsonObject();
-        control.add(CasambiDriverConstants.controlDimmer, dimmer);
+        control.add(CasambiSimpleDriverConstants.controlDimmer, dimmer);
         setObjectControl(method, id, objectId, control);
     }
 
@@ -459,19 +458,19 @@ public class CasambiDriverSocket {
      * @param id usually just "id", may be set to "ids", when multiple luminaries are to be switched
      * @param objectId number of the object to be switched
      * @param control, control part of the message
-     * @throws CasambiException is thrown on error, e.g. if the socket is not open
+     * @throws CasambiSimpleException is thrown on error, e.g. if the socket is not open
      * @throws IOException is thrown if message cannot be sent
      */
     private void setObjectControl(String method, @Nullable String id, int unitId, JsonObject control)
-            throws CasambiException, IOException {
+            throws CasambiSimpleException, IOException {
 
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty(CasambiDriverConstants.controlWire, casambiWireId);
-        reqJson.addProperty(CasambiDriverConstants.controlMethod, method);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, method);
         if (id != null) {
             reqJson.addProperty(id, unitId);
         }
-        reqJson.add(CasambiDriverConstants.controlTargetControls, control);
+        reqJson.add(CasambiSimpleDriverConstants.controlTargetControls, control);
         logger.info("setObjectControl: unit {} control {}", unitId, reqJson.toString());
 
         if (casambiRemote != null) {
@@ -480,34 +479,34 @@ public class CasambiDriverSocket {
         } else {
             final String msg = "setObjectControl: Error - remote endpoint not open.";
             logger.error(msg);
-            throw new CasambiException(msg);
+            throw new CasambiSimpleException(msg);
         }
     }
 
     // This is for scenes, groups and the network
 
-    public void setSceneLevel(int unitId, float dim) throws CasambiException, IOException {
-        setObjectLevel(CasambiDriverConstants.methodScene, CasambiDriverConstants.targetId, unitId, dim);
+    public void setSceneLevel(int unitId, float dim) throws CasambiSimpleException, IOException {
+        setObjectLevel(CasambiSimpleDriverConstants.methodScene, CasambiSimpleDriverConstants.targetId, unitId, dim);
     }
 
-    public void setGroupLevel(int unitId, float dim) throws CasambiException, IOException {
-        setObjectLevel(CasambiDriverConstants.methodGroup, CasambiDriverConstants.targetId, unitId, dim);
+    public void setGroupLevel(int unitId, float dim) throws CasambiSimpleException, IOException {
+        setObjectLevel(CasambiSimpleDriverConstants.methodGroup, CasambiSimpleDriverConstants.targetId, unitId, dim);
     }
 
-    public void setNetworkLevel(float dim) throws CasambiException, IOException {
-        setObjectLevel(CasambiDriverConstants.methodNetwork, null, 0, dim);
+    public void setNetworkLevel(float dim) throws CasambiSimpleException, IOException {
+        setObjectLevel(CasambiSimpleDriverConstants.methodNetwork, null, 0, dim);
     }
 
     private void setObjectLevel(String method, @Nullable String id, int unitId, Float lvl)
-            throws CasambiException, IOException {
+            throws CasambiSimpleException, IOException {
 
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty(CasambiDriverConstants.controlWire, casambiWireId);
-        reqJson.addProperty(CasambiDriverConstants.controlMethod, method);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, method);
         if (id != null) {
             reqJson.addProperty(id, unitId);
         }
-        reqJson.addProperty(CasambiDriverConstants.controlLevel, lvl);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlLevel, lvl);
         logger.info("setObjectLevel: unit {} control {}", unitId, reqJson.toString());
 
         if (casambiRemote != null) {
@@ -516,62 +515,62 @@ public class CasambiDriverSocket {
         } else {
             final String msg = "setObjectLevel: Error - remote endpoint not open.";
             logger.error(msg);
-            throw new CasambiException(msg);
+            throw new CasambiSimpleException(msg);
         }
     }
 
-    public void setUnitHSB(int unitId, float h, float s, float b) throws CasambiException, IOException {
+    public void setUnitHSB(int unitId, float h, float s, float b) throws CasambiSimpleException, IOException {
         logger.info("setUnitHSB: unit {} hsb {},{},{}", unitId, h, s, b);
         JsonObject rgb = new JsonObject();
-        rgb.addProperty(CasambiDriverConstants.controlHue, h);
-        rgb.addProperty(CasambiDriverConstants.controlSat, s);
+        rgb.addProperty(CasambiSimpleDriverConstants.controlHue, h);
+        rgb.addProperty(CasambiSimpleDriverConstants.controlSat, s);
         JsonObject colorsource = new JsonObject();
-        colorsource.addProperty(CasambiDriverConstants.controlSource, CasambiDriverConstants.controlRGB);
+        colorsource.addProperty(CasambiSimpleDriverConstants.controlSource, CasambiSimpleDriverConstants.controlRGB);
 
         JsonObject control = new JsonObject();
-        control.add(CasambiDriverConstants.controlRGB, rgb);
-        control.add(CasambiDriverConstants.controlColorsource, colorsource);
+        control.add(CasambiSimpleDriverConstants.controlRGB, rgb);
+        control.add(CasambiSimpleDriverConstants.controlColorsource, colorsource);
         setUnitControl(unitId, control);
         setUnitDimmer(unitId, b);
     }
 
-    public void setUnitCCT(int unitId, float temp) throws CasambiException, IOException {
+    public void setUnitCCT(int unitId, float temp) throws CasambiSimpleException, IOException {
         JsonObject colorTemperature = new JsonObject();
-        colorTemperature.addProperty(CasambiDriverConstants.controlValue, temp);
+        colorTemperature.addProperty(CasambiSimpleDriverConstants.controlValue, temp);
         JsonObject colorsource = new JsonObject();
-        colorsource.addProperty(CasambiDriverConstants.controlSource, CasambiDriverConstants.controlTW);
+        colorsource.addProperty(CasambiSimpleDriverConstants.controlSource, CasambiSimpleDriverConstants.controlTW);
 
         JsonObject control = new JsonObject();
-        control.add(CasambiDriverConstants.controlColorTemperature, colorTemperature);
-        control.add(CasambiDriverConstants.controlColorsource, colorsource);
+        control.add(CasambiSimpleDriverConstants.controlColorTemperature, colorTemperature);
+        control.add(CasambiSimpleDriverConstants.controlColorsource, colorsource);
         setUnitControl(unitId, control);
     }
 
-    public void setUnitColorBalance(int unitId, float value) throws CasambiException, IOException {
+    public void setUnitColorBalance(int unitId, float value) throws CasambiSimpleException, IOException {
         JsonObject colorBalance = new JsonObject();
-        colorBalance.addProperty(CasambiDriverConstants.controlValue, value);
+        colorBalance.addProperty(CasambiSimpleDriverConstants.controlValue, value);
 
         JsonObject control = new JsonObject();
-        control.add(CasambiDriverConstants.controlColorBalance, colorBalance);
+        control.add(CasambiSimpleDriverConstants.controlColorBalance, colorBalance);
         setUnitControl(unitId, control);
     }
 
-    public void setUnitWhitelevel(int unitId, float value) throws CasambiException, IOException {
+    public void setUnitWhitelevel(int unitId, float value) throws CasambiSimpleException, IOException {
         JsonObject whiteLevel = new JsonObject();
-        whiteLevel.addProperty(CasambiDriverConstants.controlValue, value);
+        whiteLevel.addProperty(CasambiSimpleDriverConstants.controlValue, value);
 
         JsonObject control = new JsonObject();
-        control.add(CasambiDriverConstants.controlWhiteLevel, whiteLevel);
+        control.add(CasambiSimpleDriverConstants.controlWhiteLevel, whiteLevel);
         setUnitControl(unitId, control);
     }
 
-    private void setUnitControl(int unitId, JsonObject control) throws CasambiException, IOException {
+    private void setUnitControl(int unitId, JsonObject control) throws CasambiSimpleException, IOException {
 
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty(CasambiDriverConstants.controlWire, casambiWireId);
-        reqJson.addProperty(CasambiDriverConstants.controlMethod, CasambiDriverConstants.methodUnit);
-        reqJson.addProperty(CasambiDriverConstants.targetId, unitId);
-        reqJson.add(CasambiDriverConstants.controlTargetControls, control);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, CasambiSimpleDriverConstants.methodUnit);
+        reqJson.addProperty(CasambiSimpleDriverConstants.targetId, unitId);
+        reqJson.add(CasambiSimpleDriverConstants.controlTargetControls, control);
         logger.info("setUnitControl: unit {} control {}", unitId, reqJson.toString());
 
         if (casambiRemote != null) {
@@ -580,23 +579,23 @@ public class CasambiDriverSocket {
         } else {
             final String msg = "setUnitControl: Error - remote endpoint not open.";
             logger.error(msg);
-            throw new CasambiException(msg);
+            throw new CasambiSimpleException(msg);
         }
     }
 
     // --- KeepAlive
 
-    public void ping() throws CasambiException, IOException {
+    public void ping() throws CasambiSimpleException, IOException {
         JsonObject reqJson = new JsonObject();
-        reqJson.addProperty(CasambiDriverConstants.controlWire, casambiWireId);
-        reqJson.addProperty(CasambiDriverConstants.controlMethod, "ping");
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
+        reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, "ping");
 
         if (casambiRemote != null) {
             casambiRemote.sendString(reqJson.toString());
         } else {
             final String msg = "ping: Error - Socket not open.";
             logger.error(msg);
-            throw new CasambiException(msg);
+            throw new CasambiSimpleException(msg);
         }
     }
 
@@ -617,14 +616,14 @@ public class CasambiDriverSocket {
     }
 
     // Get message as CasambiMessageEvent structure
-    public @Nullable CasambiMessageEvent receiveMessage() {
+    public @Nullable CasambiSimpleMessageEvent receiveMessage() {
         Gson gson = new Gson();
         String msg = receiveMessageJson();
         if (msg != null) {
             // Write Message to log file
             // dumpJsonWithMessage("+++ receiveMessage +++", msg);
             casambiMessageLogger.flush();
-            CasambiMessageEvent event = gson.fromJson(msg, CasambiMessageEvent.class);
+            CasambiSimpleMessageEvent event = gson.fromJson(msg, CasambiSimpleMessageEvent.class);
             // System.out.println("getUnitState: " + ppJson(unitInfo));
             return event;
         } else {

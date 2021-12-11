@@ -16,7 +16,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiMessageUnitState} is used to parse unit state messages with gson
+ * The {@link CasambiSimpleMessageUnitState} is used to parse unit state messages with gson
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
@@ -24,7 +24,7 @@ import org.eclipse.jdt.annotation.Nullable;
  *          Not really needed - all functionality already provided by CasambiMessgeUnit
  */
 @NonNullByDefault
-public class CasambiMessageUnitState {
+public class CasambiSimpleMessageUnitState {
     public String id;
     public String address;
     public String name;
@@ -42,9 +42,9 @@ public class CasambiMessageUnitState {
     public @Nullable Integer activeSceneId;
     public @Nullable Float dimLevel;
     public String type;
-    public @Nullable CasambiMessageControl @Nullable [][] controls;
+    public @Nullable CasambiSimpleMessageControl @Nullable [][] controls;
 
-    CasambiMessageUnitState() {
+    CasambiSimpleMessageUnitState() {
         id = "";
         name = "";
         address = "";

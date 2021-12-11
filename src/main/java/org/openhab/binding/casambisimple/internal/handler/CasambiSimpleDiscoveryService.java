@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.casambisimple.internal.handler;
 
-import static org.openhab.binding.casambisimple.internal.CasambiBindingConstants.*;
+import static org.openhab.binding.casambisimple.internal.CasambiSimpleBindingConstants.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,12 +21,12 @@ import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.casambisimple.internal.driver.CasambiDriverRest;
-import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageControl;
-import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageGroup;
-import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageNetworkState;
-import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageScene;
-import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageUnit;
+import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverRest;
+import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageControl;
+import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageGroup;
+import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageNetworkState;
+import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageScene;
+import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageUnit;
 import org.openhab.core.config.discovery.AbstractDiscoveryService;
 import org.openhab.core.config.discovery.DiscoveryResult;
 import org.openhab.core.config.discovery.DiscoveryResultBuilder;
@@ -39,31 +39,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link CasambiDiscover} discovers luminaries, switches, scenes and groups on
- * the casambi network
+ * The {@link CasambiSimpleDiscover} discovers luminaries, switches, scenes and groups on
+ * the Casambi network
  *
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiDiscoveryService extends AbstractDiscoveryService implements ThingHandlerService {
+public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService implements ThingHandlerService {
 
-    private static final Logger logger = LoggerFactory.getLogger(CasambiDiscoveryService.class);
+    private static final Logger logger = LoggerFactory.getLogger(CasambiSimpleDiscoveryService.class);
 
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Set.of(THING_TYPE_LUMINARY, THING_TYPE_SCENE);
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Set.of(THING_TYPE_LUMINARY, THING_TYPE_SCENE,
+            THING_TYPE_GROUP);
     private static final int SEARCH_TIME = 10;
 
-    private @Nullable CasambiBridgeHandler bridgeHandler;
+    private @Nullable CasambiSimpleBridgeHandler bridgeHandler;
     private @Nullable ThingUID bridgeUID;
-
-    // private @Nullable CasambiThingsById luminariesById = null;
-    // private @Nullable CasambiThingsById scenesById = null;
-    // private @Nullable CasambiThingsById groupsById = null;
 
     // --- Constructor ---------------------------------------------------------------------------------------------
 
-    public CasambiDiscoveryService() {
+    public CasambiSimpleDiscoveryService() {
         super(SUPPORTED_THING_TYPES, SEARCH_TIME);
-        logger.trace("CasambiDiscoveryService: 0 arg constructor.");
+        logger.trace("CasambiSimpleDiscoveryService: 0 arg constructor.");
     }
 
     // --- Override superclass methods--------------------------------------------------------------------
@@ -100,24 +97,25 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
     private void doDiscoveryScan() {
         logger.trace("doDiscoveryScan: starting runnable.");
         try {
-            CasambiBridgeHandler bridgeHandlerLocal = bridgeHandler;
+            CasambiSimpleBridgeHandler bridgeHandlerLocal = bridgeHandler;
             if (bridgeHandlerLocal != null) {
-                CasambiDriverRest casambiRestLocal = bridgeHandlerLocal.casambiRest;
+                CasambiSimpleDriverRest casambiRestLocal = bridgeHandlerLocal.casambiRest;
                 if (casambiRestLocal != null) {
-                    CasambiMessageNetworkState networkState = casambiRestLocal.getNetworkState();
+                    CasambiSimpleMessageNetworkState networkState = casambiRestLocal.getNetworkState();
                     if (networkState != null) {
 
                         // Initialize list of existing things and new units
-                        CasambiDiscoverySet oldNewThings = new CasambiDiscoverySet(bridgeHandlerLocal.thingsById);
+                        CasambiSimpleDiscoverySet oldNewThings = new CasambiSimpleDiscoverySet(
+                                bridgeHandlerLocal.thingsById);
                         Set<String> oldThings = oldNewThings.getOldThings();
                         logger.debug("doDiscoveryScan: oldThings before scan {}", oldThings);
 
                         if (networkState.units != null) {
                             // Loop through luminaries removing from existing things and adding to new units
-                            for (Entry<Integer, CasambiMessageUnit> unit : networkState.units.entrySet()) {
+                            for (Entry<Integer, CasambiSimpleMessageUnit> unit : networkState.units.entrySet()) {
                                 Integer id = unit.getValue().id;
                                 Integer fixtureId = unit.getValue().fixtureId;
-                                String uid = CasambiLuminaryHandler.getUidFromFixtureId(fixtureId);
+                                String uid = CasambiSimpleLuminaryHandler.getUidFromFixtureId(fixtureId);
                                 logger.trace("doDiscoveryScan: got unit id {}, uid {}, name {}", id, uid,
                                         unit.getValue().name);
                                 oldNewThings.updateOldNew(uid, id);
@@ -125,9 +123,9 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
                         }
                         if (networkState.scenes != null) {
                             // Loop through scenes removing from existing things and adding to new units
-                            for (Entry<Integer, CasambiMessageScene> scene : networkState.scenes.entrySet()) {
+                            for (Entry<Integer, CasambiSimpleMessageScene> scene : networkState.scenes.entrySet()) {
                                 Integer id = scene.getValue().id;
-                                String uid = CasambiSceneHandler.getUidFromId(id);
+                                String uid = CasambiSimpleSceneHandler.getUidFromId(id);
                                 logger.trace("doDiscoveryScan: got scene id {}, uid {}, name {}", id, uid,
                                         scene.getValue().name);
                                 oldNewThings.updateOldNew(uid, id);
@@ -136,9 +134,9 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
 
                         if (networkState.groups != null) {
                             // Loop through scenes removing from existing things and adding to new units
-                            for (Entry<Integer, CasambiMessageGroup> group : networkState.groups.entrySet()) {
+                            for (Entry<Integer, CasambiSimpleMessageGroup> group : networkState.groups.entrySet()) {
                                 Integer id = group.getValue().id;
-                                String uid = CasambiGroupHandler.getUidFromId(id);
+                                String uid = CasambiSimpleGroupHandler.getUidFromId(id);
                                 logger.trace("doDiscoveryScan: got group id {}, uid {}, name {}", id, uid,
                                         group.getValue().name);
                                 oldNewThings.updateOldNew(uid, id);
@@ -154,20 +152,20 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
                             Integer id = bridgeHandlerLocal.thingsById.getId(uidId);
                             ThingTypeUID type = bridgeHandlerLocal.thingsById.getType(uidId);
                             // FIXME: this will have to add different thing types
-                            CasambiMessageNetworkState networkStateLocal = networkState;
+                            CasambiSimpleMessageNetworkState networkStateLocal = networkState;
                             if (networkStateLocal != null) {
                                 if (THING_TYPE_LUMINARY.equals(type) && networkStateLocal.units != null) {
-                                    CasambiMessageUnit unit = networkStateLocal.units.get(id);
+                                    CasambiSimpleMessageUnit unit = networkStateLocal.units.get(id);
                                     if (unit != null) {
                                         addDiscoveredLuminary(unit);
                                     }
                                 } else if (THING_TYPE_SCENE.equals(type) && networkStateLocal.scenes != null) {
-                                    CasambiMessageScene scene = networkStateLocal.scenes.get(id);
+                                    CasambiSimpleMessageScene scene = networkStateLocal.scenes.get(id);
                                     if (scene != null) {
                                         addDiscoveredScene(scene);
                                     }
                                 } else if (THING_TYPE_GROUP.equals(type) && networkStateLocal.groups != null) {
-                                    CasambiMessageGroup scene = networkStateLocal.groups.get(id);
+                                    CasambiSimpleMessageGroup scene = networkStateLocal.groups.get(id);
                                     if (scene != null) {
                                         addDiscoveredGroup(scene);
                                     }
@@ -185,17 +183,18 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
                             if (thing != null) {
                                 ThingTypeUID type = bridgeHandlerLocal.thingsById.getType(uidId);
                                 if (THING_TYPE_LUMINARY.equals(type)) {
-                                    CasambiLuminaryHandler handler = (CasambiLuminaryHandler) thing.getHandler();
+                                    CasambiSimpleLuminaryHandler handler = (CasambiSimpleLuminaryHandler) thing
+                                            .getHandler();
                                     if (handler != null) {
                                         handler.dispose();
                                     }
                                 } else if (THING_TYPE_SCENE.equals(type)) {
-                                    CasambiSceneHandler handler = (CasambiSceneHandler) thing.getHandler();
+                                    CasambiSimpleSceneHandler handler = (CasambiSimpleSceneHandler) thing.getHandler();
                                     if (handler != null) {
                                         handler.dispose();
                                     }
                                 } else if (THING_TYPE_GROUP.equals(type)) {
-                                    CasambiGroupHandler handler = (CasambiGroupHandler) thing.getHandler();
+                                    CasambiSimpleGroupHandler handler = (CasambiSimpleGroupHandler) thing.getHandler();
                                     if (handler != null) {
                                         handler.dispose();
                                     }
@@ -217,11 +216,11 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
         logger.trace("doDiscoveryScan: done.");
     }
 
-    private void addDiscoveredLuminary(CasambiMessageUnit unit) {
+    private void addDiscoveredLuminary(CasambiSimpleMessageUnit unit) {
         try {
-            if (bridgeUID != null) {
-                ThingUID localBridgeUID = bridgeUID;
-                String uniqueID = CasambiLuminaryHandler.getUidFromFixtureId(unit.fixtureId);
+            String uniqueID = CasambiSimpleLuminaryHandler.getUidFromFixtureId(unit.fixtureId);
+            ThingUID localBridgeUID = bridgeUID;
+            if (localBridgeUID != null) {
                 ThingUID thingUID = new ThingUID(THING_TYPE_LUMINARY, localBridgeUID, uniqueID);
                 logger.debug("addDiscoveredLuminary: tUID: {}, id {}, name {}, uid {}", thingUID, unit.id, unit.name,
                         unit.fixtureId);
@@ -230,7 +229,7 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
                 properties.put(LUMINARY_ID, unit.id);
                 properties.put(LUMINARY_UID, uniqueID);
                 if (unit.controls != null) {
-                    for (CasambiMessageControl control : unit.controls[0]) {
+                    for (CasambiSimpleMessageControl control : unit.controls[0]) {
                         if (control != null) {
                             if (control.isDimmer()) {
                                 properties.put(LUMINARY_HAS_DIMMER, true);
@@ -263,15 +262,15 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
                 logger.warn("addDiscoveredLuminary: bridgeUID is null");
             }
         } catch (Exception e) {
-            logger.warn("addDiscoveredLuminary: Exception {}", e);
+            logger.warn("addDiscoveredLuminary: Exception {}", e.getMessage());
         }
     }
 
-    private void addDiscoveredScene(CasambiMessageScene scene) {
+    private void addDiscoveredScene(CasambiSimpleMessageScene scene) {
         try {
-            if (bridgeUID != null) {
-                ThingUID localBridgeUID = bridgeUID;
-                String uniqueID = CasambiSceneHandler.getUidFromId(scene.id);
+            String uniqueID = CasambiSimpleSceneHandler.getUidFromId(scene.id);
+            ThingUID localBridgeUID = bridgeUID;
+            if (localBridgeUID != null) {
                 ThingUID thingUID = new ThingUID(THING_TYPE_LUMINARY, localBridgeUID, uniqueID);
                 logger.debug("addDiscoveredScene: tUID: {}, id {}, name {}, uid {}", thingUID, scene.id, scene.name,
                         uniqueID);
@@ -290,15 +289,15 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
                 logger.warn("addDiscoveredScene: bridgeUID is null");
             }
         } catch (Exception e) {
-            logger.warn("addDiscoveredScene: Exception {}", e);
+            logger.warn("addDiscoveredScene: Exception {}", e.getMessage());
         }
     }
 
-    private void addDiscoveredGroup(CasambiMessageGroup group) {
+    private void addDiscoveredGroup(CasambiSimpleMessageGroup group) {
         try {
-            if (bridgeUID != null) {
-                ThingUID localBridgeUID = bridgeUID;
-                String uniqueID = CasambiGroupHandler.getUidFromId(group.id);
+            String uniqueID = CasambiSimpleGroupHandler.getUidFromId(group.id);
+            ThingUID localBridgeUID = bridgeUID;
+            if (localBridgeUID != null) {
                 ThingUID thingUID = new ThingUID(THING_TYPE_LUMINARY, localBridgeUID, uniqueID);
                 logger.debug("addDiscoveredGroup: tUID: {}, id {}, name {}, uid {}", thingUID, group.id, group.name,
                         uniqueID);
@@ -317,15 +316,15 @@ public class CasambiDiscoveryService extends AbstractDiscoveryService implements
                 logger.warn("addDiscoveredGroup: bridgeUID is null");
             }
         } catch (Exception e) {
-            logger.warn("addDiscoveredGroup: Exception {}", e);
+            logger.warn("addDiscoveredGroup: Exception {}", e.getMessage());
         }
     }
 
     @Override
     public void setThingHandler(ThingHandler handler) {
         logger.trace("setThingHandler: ");
-        if (handler instanceof CasambiBridgeHandler) {
-            bridgeHandler = (CasambiBridgeHandler) handler;
+        if (handler instanceof CasambiSimpleBridgeHandler) {
+            bridgeHandler = (CasambiSimpleBridgeHandler) handler;
             bridgeUID = handler.getThing().getUID();
         }
     }

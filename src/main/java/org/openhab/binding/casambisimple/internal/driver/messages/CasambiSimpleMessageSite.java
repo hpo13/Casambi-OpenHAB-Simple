@@ -12,25 +12,28 @@
  */
 package org.openhab.binding.casambisimple.internal.driver.messages;
 
+import java.util.Map;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiMessageGroup} is used to parse group structures with gson
+ * The {@link CasambiSimpleMessageSite} is used to parse single site structures with gson
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiMessageGroup {
+public class CasambiSimpleMessageSite {
     public String name;
-    public Integer id;
-    public @Nullable Integer position;
-    public @Nullable CasambiMessageUnitShort @Nullable [] units;
+    public String address;
+    public String role;
+    public @Nullable Map<String, CasambiSimpleMessageNetwork> networks;
 
-    CasambiMessageGroup() {
+    CasambiSimpleMessageSite() {
         name = "";
-        id = 0;
-        // units = null;
+        address = "";
+        role = "";
+        networks = null;
     }
 }

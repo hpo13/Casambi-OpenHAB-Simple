@@ -12,11 +12,11 @@
  */
 package org.openhab.binding.casambisimple.internal.handler;
 
-import static org.openhab.binding.casambisimple.internal.CasambiBindingConstants.*;
+import static org.openhab.binding.casambisimple.internal.CasambiSimpleBindingConstants.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.casambisimple.internal.driver.CasambiDriverSocket;
+import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverSocket;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.PercentType;
 import org.openhab.core.thing.Bridge;
@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link CasambiGroupHandler} allows to control groups of devices
+ * The {@link CasambiSimpleGroupHandler} allows to control groups of devices
  *
  * Groups of devices as defined by the Casambi system can be controlled through
  * OpenHAB things. Only one dimmer channel is supported which controls the dim level
@@ -43,16 +43,16 @@ import org.slf4j.LoggerFactory;
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiGroupHandler extends BaseThingHandler {
+public class CasambiSimpleGroupHandler extends BaseThingHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(CasambiGroupHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(CasambiSimpleGroupHandler.class);
 
     private Integer groupId = 0;
     private String groupUid = "";
 
     // private @Nullable CasambiTestConfiguration config;
 
-    public CasambiGroupHandler(Thing thing) {
+    public CasambiSimpleGroupHandler(Thing thing) {
         super(thing);
         groupId = Integer.valueOf(thing.getConfiguration().get(GROUP_ID).toString());
         groupUid = getUidFromId(groupId);
@@ -70,10 +70,10 @@ public class CasambiGroupHandler extends BaseThingHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
-        CasambiBridgeHandler bridgeHandler = getBridgeHandler();
+        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         boolean doRefresh = false;
         if (bridgeHandler != null) {
-            CasambiDriverSocket casambiSocketLocal = bridgeHandler.casambiSocket;
+            CasambiSimpleDriverSocket casambiSocketLocal = bridgeHandler.casambiSocket;
             if (casambiSocketLocal != null) {
                 if (GROUP_CHANNEL_ONOFF.equals(channelUID.getId())) {
                     try {
@@ -142,9 +142,12 @@ public class CasambiGroupHandler extends BaseThingHandler {
     public void handleRemoval() {
         logger.debug("handleRemoval: removing group");
         logger.debug("  removing from thingsById");
-        CasambiThingsById thingsById = getBridgeHandler().thingsById;
-        thingsById.remove(thingsById.uidIdCombine(groupUid, groupId));
-        updateStatus(ThingStatus.REMOVED);
+        CasambiSimpleBridgeHandler localBridgeHandler = getBridgeHandler();
+        if (localBridgeHandler != null) {
+            CasambiSimpleThingsById thingsById = localBridgeHandler.thingsById;
+            thingsById.remove(thingsById.uidIdCombine(groupUid, groupId));
+            updateStatus(ThingStatus.REMOVED);
+        }
     }
 
     @Override
@@ -167,7 +170,7 @@ public class CasambiGroupHandler extends BaseThingHandler {
     }
 
     @Nullable
-    protected CasambiBridgeHandler getBridgeHandler() {
+    protected CasambiSimpleBridgeHandler getBridgeHandler() {
         BridgeHandler handler;
         Bridge bridge = this.getBridge();
         if (bridge != null) {
@@ -175,7 +178,7 @@ public class CasambiGroupHandler extends BaseThingHandler {
         } else {
             handler = null;
         }
-        return (CasambiBridgeHandler) handler;
+        return (CasambiSimpleBridgeHandler) handler;
     }
 
     @Override

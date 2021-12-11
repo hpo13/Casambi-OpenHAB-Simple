@@ -12,11 +12,11 @@
  */
 package org.openhab.binding.casambisimple.internal.handler;
 
-import static org.openhab.binding.casambisimple.internal.CasambiBindingConstants.*;
+import static org.openhab.binding.casambisimple.internal.CasambiSimpleBindingConstants.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.casambisimple.internal.driver.CasambiDriverSocket;
+import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverSocket;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.PercentType;
 import org.openhab.core.thing.Bridge;
@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link CasambiSceneHandler} allows to control groups of scenes
+ * The {@link CasambiSimpleSceneHandler} allows to control groups of scenes
  *
  * Scenes as defined by the Casambi system can be controlled through OpenHAB
  * things. Only one dimmer channel is supported which controls the dim level
@@ -43,16 +43,16 @@ import org.slf4j.LoggerFactory;
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiSceneHandler extends BaseThingHandler {
+public class CasambiSimpleSceneHandler extends BaseThingHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(CasambiSceneHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(CasambiSimpleSceneHandler.class);
 
     private Integer sceneId = 0;
     private String sceneUid = "";
 
     // private @Nullable CasambiTestConfiguration config;
 
-    public CasambiSceneHandler(Thing thing) {
+    public CasambiSimpleSceneHandler(Thing thing) {
         super(thing);
         sceneId = Integer.valueOf(thing.getConfiguration().get(SCENE_ID).toString());
         sceneUid = getUidFromId(sceneId);
@@ -62,10 +62,10 @@ public class CasambiSceneHandler extends BaseThingHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
-        CasambiBridgeHandler bridgeHandler = getBridgeHandler();
+        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         boolean doRefresh = false;
         if (bridgeHandler != null) {
-            CasambiDriverSocket casambiSocketLocal = bridgeHandler.casambiSocket;
+            CasambiSimpleDriverSocket casambiSocketLocal = bridgeHandler.casambiSocket;
             if (casambiSocketLocal != null) {
                 if (SCENE_CHANNEL_ONOFF.equals(channelUID.getId())) {
                     try {
@@ -134,7 +134,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
     public void handleRemoval() {
         logger.debug("handleRemoval: removing scene");
         logger.debug("  removing from thingsById");
-        CasambiThingsById thingsById = getBridgeHandler().thingsById;
+        CasambiSimpleThingsById thingsById = getBridgeHandler().thingsById;
         thingsById.remove(thingsById.uidIdCombine(sceneUid, sceneId));
         updateStatus(ThingStatus.REMOVED);
     }
@@ -159,7 +159,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
     }
 
     @Nullable
-    protected CasambiBridgeHandler getBridgeHandler() {
+    protected CasambiSimpleBridgeHandler getBridgeHandler() {
         BridgeHandler handler;
         Bridge bridge = this.getBridge();
         if (bridge != null) {
@@ -167,7 +167,7 @@ public class CasambiSceneHandler extends BaseThingHandler {
         } else {
             handler = null;
         }
-        return (CasambiBridgeHandler) handler;
+        return (CasambiSimpleBridgeHandler) handler;
     }
 
     @Override

@@ -18,29 +18,29 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiMessageNetworkState} is used to parse network state messages with gson
+ * The {@link CasambiSimpleMessageNetworkState} is used to parse network state messages with gson
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiMessageNetworkState {
+public class CasambiSimpleMessageNetworkState {
     public String id;
     public String name;
     public @Nullable Integer revision;
     public @Nullable String grade;
     public String address;
-    public @Nullable CasambiMessageGateway gateway;
+    public @Nullable CasambiSimpleMessageGateway gateway;
     public String type;
     public @Nullable String timezone;
     public @Nullable Float dimLevel;
     public @Nullable Integer @Nullable [] activeScenes;
-    public @Nullable CasambiMessagePhoto @Nullable [] photos;
-    public @Nullable Map<Integer, CasambiMessageUnit> units;
-    public @Nullable Map<Integer, CasambiMessageScene> scenes;
-    public @Nullable Map<Integer, CasambiMessageGroup> groups;
+    public @Nullable CasambiSimpleMessagePhoto @Nullable [] photos;
+    public @Nullable Map<Integer, CasambiSimpleMessageUnit> units;
+    public @Nullable Map<Integer, CasambiSimpleMessageScene> scenes;
+    public @Nullable Map<Integer, CasambiSimpleMessageGroup> groups;
 
-    CasambiMessageNetworkState() {
+    CasambiSimpleMessageNetworkState() {
         id = "";
         name = "";
         address = "";

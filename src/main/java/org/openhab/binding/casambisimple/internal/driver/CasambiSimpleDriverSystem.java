@@ -15,6 +15,7 @@ package org.openhab.binding.casambisimple.internal.driver;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,19 +24,17 @@ import org.slf4j.LoggerFactory;
  *
  * @author Hein Osenberg - Initial contribution
  */
-
-public class CasambiDriverSystem {
+@NonNullByDefault
+public class CasambiSimpleDriverSystem {
 
     private static Boolean enabled = false;
     private static String command = " ";
 
-    final static Logger logger = LoggerFactory.getLogger(CasambiDriverSystem.class);
+    final static Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverSystem.class);
 
     public static final void sendSshCommand() {
-
         if (enabled) {
             logger.debug("sendSshCommand: sending command {}", command);
-
             try {
                 Process process = Runtime.getRuntime().exec(command);
                 BufferedReader stdout = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -50,7 +49,7 @@ public class CasambiDriverSystem {
                     logger.debug("sendSshCommand: err {}", eStr);
                 }
             } catch (Exception e) {
-                logger.error("sendSshCommand: exception {}", e);
+                logger.error("sendSshCommand: exception {}", e.getMessage());
             }
         }
     }

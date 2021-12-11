@@ -12,15 +12,15 @@
  */
 package org.openhab.binding.casambisimple.internal.handler;
 
-import static org.openhab.binding.casambisimple.internal.CasambiBindingConstants.*;
+import static org.openhab.binding.casambisimple.internal.CasambiSimpleBindingConstants.*;
 
 import java.math.BigDecimal;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.casambisimple.internal.driver.CasambiDriverRest;
-import org.openhab.binding.casambisimple.internal.driver.CasambiDriverSocket;
-import org.openhab.binding.casambisimple.internal.driver.messages.CasambiMessageUnit;
+import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverRest;
+import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverSocket;
+import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageUnit;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.HSBType;
 import org.openhab.core.library.types.OnOffType;
@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link CasambiLuminary Handler} allows to control luminary devices
+ * The {@link CasambiSimpleLuminary Handler} allows to control luminary devices
  *
  * Luminaries as defined by the Casambi system can be controlled through OpenHAB
  * things. Several channels are supportet for brightness, color, color temperature
@@ -53,11 +53,11 @@ import org.slf4j.LoggerFactory;
  * @version V0.5 211105@hpo Discovery working (with removal), added class to handle uid-id combinations
  */
 @NonNullByDefault
-public class CasambiLuminaryHandler extends BaseThingHandler {
+public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
 
-    public CasambiLuminaryConfiguration config;
+    public CasambiSimpleLuminaryConfiguration config;
 
-    private final Logger logger = LoggerFactory.getLogger(CasambiLuminaryHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(CasambiSimpleLuminaryHandler.class);
 
     private Integer deviceId = 0;
     private String deviceUid = "";
@@ -70,9 +70,9 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
      *
      * @param thing thing for the luminary
      */
-    public CasambiLuminaryHandler(Thing thing) {
+    public CasambiSimpleLuminaryHandler(Thing thing) {
         super(thing);
-        config = getConfigAs(CasambiLuminaryConfiguration.class);
+        config = getConfigAs(CasambiSimpleLuminaryConfiguration.class);
         deviceId = Integer.valueOf(thing.getConfiguration().get(LUMINARY_ID).toString());
         deviceUid = thing.getConfiguration().get(LUMINARY_UID).toString();
         logger.info("constructor: luminary uid {}, id {}", deviceUid, deviceId);
@@ -108,10 +108,10 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
     public void handleCommand(ChannelUID channelUID, Command command) {
         boolean commandHandled = false;
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
-        CasambiBridgeHandler bridgeHandler = getBridgeHandler();
+        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         if (bridgeHandler != null) {
-            CasambiDriverRest casambiRestCopy = bridgeHandler.casambiRest;
-            CasambiDriverSocket casambiSocketCopy = bridgeHandler.casambiSocket;
+            CasambiSimpleDriverRest casambiRestCopy = bridgeHandler.casambiRest;
+            CasambiSimpleDriverSocket casambiSocketCopy = bridgeHandler.casambiSocket;
             if (casambiSocketCopy != null && casambiRestCopy != null) {
                 try {
                     if (!(command instanceof RefreshType)) {
@@ -181,7 +181,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
                     // Send refresh command here
                     try {
                         logger.trace("handleCommand: uid {} get unit state", channelUID);
-                        CasambiMessageUnit unitState = casambiRestCopy.getUnitState(deviceId);
+                        CasambiSimpleMessageUnit unitState = casambiRestCopy.getUnitState(deviceId);
                         if (unitState != null) {
                             updateLuminaryState(unitState);
                         } else {
@@ -212,7 +212,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
         deviceId = ((BigDecimal) this.thing.getConfiguration().get(LUMINARY_ID)).intValueExact();
         deviceUid = this.thing.getConfiguration().get(LUMINARY_UID).toString();
 
-        CasambiBridgeHandler bridgeHandler = getBridgeHandler();
+        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         if (bridgeHandler != null) {
 
             bridgeHandler.thingsById.put(bridgeHandler.thingsById.uidIdCombine(deviceUid, deviceId), this.thing);
@@ -280,9 +280,9 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
         // }
         // updateThing(tb.build());
         logger.debug("  removing from thingsById");
-        CasambiBridgeHandler bridgeHandler = getBridgeHandler();
+        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         if (bridgeHandler != null) {
-            CasambiThingsById thingsById = bridgeHandler.thingsById;
+            CasambiSimpleThingsById thingsById = bridgeHandler.thingsById;
             thingsById.remove(thingsById.uidIdCombine(deviceUid, deviceId));
         }
         updateStatus(ThingStatus.REMOVED);
@@ -327,7 +327,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
      * @return bridge handler or null (should not happen)
      */
     @Nullable
-    protected CasambiBridgeHandler getBridgeHandler() {
+    protected CasambiSimpleBridgeHandler getBridgeHandler() {
         BridgeHandler handler;
         Bridge bridge = this.getBridge();
         if (bridge != null) {
@@ -335,7 +335,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
         } else {
             handler = null;
         }
-        return (CasambiBridgeHandler) handler;
+        return (CasambiSimpleBridgeHandler) handler;
     }
 
     /**
@@ -356,7 +356,7 @@ public class CasambiLuminaryHandler extends BaseThingHandler {
      * @param state unit structure with state information
      *            FIXME: update other channels as well
      */
-    public void updateLuminaryState(CasambiMessageUnit state) {
+    public void updateLuminaryState(CasambiSimpleMessageUnit state) {
         Float lvl = (state.dimLevel != null) ? state.dimLevel : 0;
         logger.trace("updateLuminaryState: id {} dimLevel {} online {}", deviceId, lvl, state.online);
         if (state.online != null && state.online) {

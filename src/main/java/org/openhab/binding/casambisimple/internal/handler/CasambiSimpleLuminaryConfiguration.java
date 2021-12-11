@@ -15,18 +15,16 @@ package org.openhab.binding.casambisimple.internal.handler;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
- * The {@link CasambiBridgeConfiguration} class contains fields mapping thing configuration parameters.
+ * The {@link CasambiSimpleLuminaryConfiguration} class contains fields mapping thing configuration parameters.
  *
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiBridgeConfiguration {
-    public String apiKey = "";
-    public String userId = "";
-    public String userPassword = "";
-    public String networkPassword = "";
-    public Boolean logMessages = false;
-    public String logDir = "";
-    public Boolean useRemCmd = false;
-    public String remCmdStr = "";
+public class CasambiSimpleLuminaryConfiguration {
+    public Boolean hasDimmer = false;
+    public Boolean hasColor = false;
+    public Boolean hasCCT = false;
+    public Boolean hasColorbalance = false;
+    public Float tempMin = (float) 0;
+    public Float tempMax = (float) 0;
 }

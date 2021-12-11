@@ -16,13 +16,13 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiMessageUnit} is used to parse single unit structures with gson
+ * The {@link CasambiSimpleMessageUnit} is used to parse single unit structures with gson
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiMessageUnit {
+public class CasambiSimpleMessageUnit {
     public Integer id;
     public String address;
     public String name;
@@ -37,13 +37,13 @@ public class CasambiMessageUnit {
     public @Nullable Integer conditon;
     public @Nullable String status;
     public @Nullable Integer activeSceneId;
-    public @Nullable CasambiMessageControl @Nullable [][] controls;
+    public @Nullable CasambiSimpleMessageControl @Nullable [][] controls;
     // public Detail details;
     public @Nullable Float dimLevel;
     // public Set<String> labels;
     public String type;
 
-    CasambiMessageUnit() {
+    CasambiSimpleMessageUnit() {
         id = -1;
         name = "";
         address = "";

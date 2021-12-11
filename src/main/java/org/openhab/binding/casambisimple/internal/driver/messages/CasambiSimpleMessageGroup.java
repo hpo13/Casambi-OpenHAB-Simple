@@ -16,27 +16,21 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiMessageNetwork} is used to parse control structures with gson
+ * The {@link CasambiSimpleMessageGroup} is used to parse group structures with gson
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiMessageNetwork {
-    public String id;
-    public String address;
+public class CasambiSimpleMessageGroup {
     public String name;
-    public String type;
-    public String grade;
-    public @Nullable String role;
-    public @Nullable String sessionId;
-    public @Nullable Integer revision;
+    public Integer id;
+    public @Nullable Integer position;
+    public @Nullable CasambiSimpleMessageUnitShort @Nullable [] units;
 
-    CasambiMessageNetwork() {
-        id = "";
-        address = "";
+    CasambiSimpleMessageGroup() {
         name = "";
-        type = "";
-        grade = "";
+        id = 0;
+        // units = null;
     }
 }

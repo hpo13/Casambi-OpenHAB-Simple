@@ -15,28 +15,18 @@ package org.openhab.binding.casambisimple.internal.handler;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
- * The {@link CasambiException} signals exceptions within the Casambi binding
+ * The {@link CasambiSimpleBridgeConfiguration} class contains fields mapping thing configuration parameters.
  *
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiException extends Exception {
-
-    private static final long serialVersionUID = 1L;
-
-    public CasambiException() {
-        super();
-    }
-
-    public CasambiException(String message) {
-        super(message);
-    }
-
-    public CasambiException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public CasambiException(Throwable cause) {
-        super(cause);
-    }
+public class CasambiSimpleBridgeConfiguration {
+    public String apiKey = "";
+    public String userId = "";
+    public String userPassword = "";
+    public String networkPassword = "";
+    public Boolean logMessages = false;
+    public String logDir = "";
+    public Boolean useRemCmd = false;
+    public String remCmdStr = "";
 }

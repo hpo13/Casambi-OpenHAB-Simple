@@ -16,16 +16,19 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiMessageGateway} is used to parse gateway structures with gson
+ * The {@link CasambiSimpleMessagePhoto} is used to parse photo structures with gson
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiMessageGateway {
+public class CasambiSimpleMessagePhoto {
     public @Nullable String name;
+    public CasambiSimpleMessageControl @Nullable [] controls;
+    public @Nullable String image;
+    public @Nullable Integer position;
 
-    CasambiMessageGateway() {
+    CasambiSimpleMessagePhoto() {
         name = "";
     }
 }

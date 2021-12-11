@@ -18,22 +18,26 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiMessageSite} is used to parse single site structures with gson
+ * The {@link CasambiSimpleMessageScene} is used to parse scene structures with gson
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiMessageSite {
+public class CasambiSimpleMessageScene {
     public String name;
-    public String address;
-    public String role;
-    public @Nullable Map<String, CasambiMessageNetwork> networks;
+    public Integer id;
+    public @Nullable Integer position;
+    public @Nullable Integer icon;
+    public @Nullable String color;
+    public String type;
+    public Boolean hidden;
+    public @Nullable Map<Integer, CasambiSimpleMessageUnit> units;
 
-    CasambiMessageSite() {
+    CasambiSimpleMessageScene() {
         name = "";
-        address = "";
-        role = "";
-        networks = null;
+        id = 0;
+        type = "";
+        hidden = false;
     }
 }

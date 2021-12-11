@@ -1,4 +1,5 @@
-/* Copyright (c) 2010-2021 Contributors to the openHAB project
+/**
+ * Copyright (c) 2010-2021 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -11,16 +12,19 @@
  */
 package org.openhab.binding.casambisimple.internal.driver;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+
 /**
- * Casambi driver - interface to Casambi websocket API
+ * Casambi driver - interface to Casambi API
  *
  * @author Hein Osenberg - Initial contribution
  */
-public class CasambiException extends Exception {
+@NonNullByDefault
+public class CasambiSimpleException extends Exception {
     final static long serialVersionUID = 210829110214L; // Use dateTime
     public String message;
 
-    public CasambiException(String msg) {
+    public CasambiSimpleException(String msg) {
         super(msg);
         message = msg;
     }

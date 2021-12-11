@@ -26,7 +26,7 @@ import org.openhab.core.thing.ThingTypeUID;
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiBindingConstants {
+public class CasambiSimpleBindingConstants {
 
     public static final String BINDING_ID = "casambisimple";
 

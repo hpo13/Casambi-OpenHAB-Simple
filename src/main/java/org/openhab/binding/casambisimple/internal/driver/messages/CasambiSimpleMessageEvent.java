@@ -16,13 +16,13 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiMessageEvent} is used to parse event messages with gson
+ * The {@link CasambiSimpleMessageEvent} is used to parse event messages with gson
  *
  * @author Hein Osenberg - Initial contribution
  * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiMessageEvent {
+public class CasambiSimpleMessageEvent {
 
     public static enum messageType {
         unitChanged,
@@ -53,12 +53,12 @@ public class CasambiMessageEvent {
     // public ComplicatedStructure details;
     public @Nullable Boolean on;
     public @Nullable String status;
-    public @Nullable CasambiMessageControl @Nullable [] controls;
+    public @Nullable CasambiSimpleMessageControl @Nullable [] controls;
     public @Nullable String ref;
     public @Nullable String wireStatus;
     public @Nullable String response;
 
-    CasambiMessageEvent() {
+    CasambiSimpleMessageEvent() {
         id = 0;
         name = "";
         address = "";

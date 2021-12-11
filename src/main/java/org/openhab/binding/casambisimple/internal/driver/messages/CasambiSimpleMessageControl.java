@@ -22,7 +22,7 @@ import org.eclipse.jdt.annotation.Nullable;
  * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiMessageControl {
+public class CasambiSimpleMessageControl {
     public @Nullable String type; // missing from Photo
     public @Nullable Float value; // Dimmer, CCT, Colorbalance
     public @Nullable String source; // Colorsource
@@ -46,12 +46,12 @@ public class CasambiMessageControl {
     public @Nullable Integer id; // Button, Dimmer, Rgb, Temperature, Colorsource, Slider
     public @Nullable Boolean readonly;// Button, Dimmer, Rgb, Temperature, Colorsource, Slider
 
-    CasambiMessageControl() {
+    CasambiSimpleMessageControl() {
         type = "";
     }
 
     public Boolean isDimmer() {
-        return type != null && type.equals("Dimmer");
+        return type != null && "Dimmer".equals(type);
     }
 
     public Boolean isColor() {
@@ -63,7 +63,7 @@ public class CasambiMessageControl {
     }
 
     public Boolean isColorbalance() {
-        return type != null && type.equals("ColorBalance");
+        return type != null && "ColorBalance".equals(type);
     }
 
     public Boolean isWhiteDimmer() {
@@ -71,16 +71,18 @@ public class CasambiMessageControl {
     }
 
     public Float getMin() {
-        if (min != null) {
-            return min;
+        Float localMin = min;
+        if (localMin != null) {
+            return localMin;
         } else {
             return (float) 0;
         }
     }
 
     public Float getMax() {
-        if (max != null) {
-            return max;
+        Float localMax = max;
+        if (localMax != null) {
+            return localMax;
         } else {
             return (float) 0;
         }

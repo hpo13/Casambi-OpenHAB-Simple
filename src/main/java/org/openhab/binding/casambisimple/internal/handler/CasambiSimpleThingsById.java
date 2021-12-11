@@ -1,20 +1,39 @@
+/**
+ * Copyright (c) 2010-2021 Contributors to the openHAB project
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
 package org.openhab.binding.casambisimple.internal.handler;
 
-import static org.openhab.binding.casambisimple.internal.CasambiBindingConstants.*;
+import static org.openhab.binding.casambisimple.internal.CasambiSimpleBindingConstants.*;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingTypeUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CasambiThingsById {
+/**
+ * The {@link CasambiSimpleThingsById} maps things to ids and uidIds
+ *
+ * @author Hein Osenberg - Initial contribution
+ */
+@NonNullByDefault
+public class CasambiSimpleThingsById {
 
-    final Logger logger = LoggerFactory.getLogger(CasambiThingsById.class);
+    final Logger logger = LoggerFactory.getLogger(CasambiSimpleThingsById.class);
 
     // Mapping from uids to things
     public Map<String, Thing> map = new HashMap<>();
@@ -41,7 +60,7 @@ public class CasambiThingsById {
             for (Entry<String, Thing> uidIdThing : map.entrySet()) {
                 String uid = uidIdThing.getKey();
                 // UnitUidIdSet.logger.debug("getFirstThingById: looking for {}, got {}", id, uid);
-                if (getId(uid) == id) {
+                if (getId(uid).equals(id)) {
                     return uidIdThing.getValue();
                 }
             }
@@ -50,7 +69,7 @@ public class CasambiThingsById {
         return null;
     }
 
-    public boolean remove(String uidId) {
+    public boolean remove(@Nullable String uidId) {
         if (getThing(uidId) != null) {
             map.remove(uidId);
             return true;
@@ -64,7 +83,7 @@ public class CasambiThingsById {
             for (Entry<String, Thing> uidIdThing : map.entrySet()) {
                 String uid = uidIdThing.getKey();
                 // UnitUidIdSet.logger.debug("getFirstThingById: looking for {}, got {}", id, uid);
-                if (getId(uid) == id) {
+                if (getId(uid).equals(id)) {
                     return uidIdThing.getValue();
                 }
             }

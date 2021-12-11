@@ -10,21 +10,23 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.casambisimple.internal.handler;
+package org.openhab.binding.casambisimple.internal.driver.messages;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link CasambiLuminaryConfiguration} class contains fields mapping thing configuration parameters.
+ * The {@link CasambiSimpleMessageUnitShort} is used to parse group structures with gson
  *
  * @author Hein Osenberg - Initial contribution
+ * @version V0.1 210827@hpo First version, setup IDE
  */
 @NonNullByDefault
-public class CasambiLuminaryConfiguration {
-    public Boolean hasDimmer = false;
-    public Boolean hasColor = false;
-    public Boolean hasCCT = false;
-    public Boolean hasColorbalance = false;
-    public Float tempMin = (float) 0;
-    public Float tempMax = (float) 0;
+public class CasambiSimpleMessageUnitShort {
+    public Integer id;
+    public @Nullable Integer position;
+
+    CasambiSimpleMessageUnitShort() {
+        id = 0;
+    }
 }

@@ -38,13 +38,13 @@ import com.google.gson.JsonParser;
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
-public class CasambiDriverLogger {
+public class CasambiSimpleDriverLogger {
 
     private static @Nullable PrintWriter writer;
 
-    final Logger logger = LoggerFactory.getLogger(CasambiDriverLogger.class);
+    final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverLogger.class);
 
-    public CasambiDriverLogger(Boolean activate, String logPath, String logFile) {
+    public CasambiSimpleDriverLogger(Boolean activate, String logPath, String logFile) {
         writer = null;
         PrintWriter writerLocal;
         if (activate) {
@@ -101,7 +101,7 @@ public class CasambiDriverLogger {
             logger.warn("dumpJson: Exception dumping JSON: {}", e.toString());
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            logger.debug(sw.toString());
+            logger.debug("{}", sw.toString());
         }
     }
 
