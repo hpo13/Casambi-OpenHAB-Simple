@@ -31,16 +31,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 /**
- * Casambi driver - interface to Casambi websocket API
- *
- * Based on casambi-master by Olof Hellquist https://github.com/awahlig/casambi-master
+ * CasambiSimpleDriverLogger - logs messages from the Casambi server, used for debugging and development
  *
  * @author Hein Osenberg - Initial contribution
  */
 @NonNullByDefault
 public class CasambiSimpleDriverLogger {
 
-    private static @Nullable PrintWriter writer;
+    public @Nullable PrintWriter writer;
 
     final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverLogger.class);
 

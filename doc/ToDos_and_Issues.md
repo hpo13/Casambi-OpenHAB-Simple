@@ -3,17 +3,17 @@
 ## To Do's
 
 * General Cleanup
-    * Javadoc for all classes and methods
-    * Add tests
-    * Code checks
-        * Thread safety
-    * Restructure Casambi message classes (e.g. super- and subclasses)
-    * More Attributes for things and channels
-    * is childHandlerDispose() needed?
-    * Cleanup parameters for bridge and things
-        * Remove unneeded paramaters 
-        * Make select parameters readonly
-    * More robust error handling
+  * Javadoc for all classes and methods
+  * Add tests
+  * Code checks
+      * Thread safety
+  * Restructure Casambi message classes (e.g. super- and subclasses)
+  * More Attributes for things and channels
+  * is childHandlerDispose() needed?
+  * Cleanup parameters for bridge and things
+      * Remove unneeded parameters 
+      * Make select parameters read-only
+  * More robust error handling
 
 ## Functions
 
@@ -21,15 +21,15 @@
   * Don't generate a thing for each scene/group, just add channels to a single scene/group thing
   * Support more than one network (network/wire as a thing? or one bridge per network?)
   * Check that values are read back correctly. E.g. luminary dim level after a scene has been activated
-  * Autogenerate items from channels?
+  * Auto-generate items from channels?
   * Primary channel for equipment groups
   * Really remove things on discovery?
   
 ## Issues
 
 * Channel definitions
-    * Define the needed channels directly in the code instead of defining all possible channels in things.xml and deleting unneeded channels
-    * Is it necessarry to setup channels with every 'initialize()' or is it sufficient do this on definition only
+  * Define the needed channels directly in the code instead of defining all possible channels in things.xml and deleting unneeded channels
+  * Is it necessary to setup channels with every 'initialize()' or is it sufficient do this on definition only
 * Correct handling of pong failures (restart websocket?)
 * Bundle shutdown and restart without errors (e.g. no updating of disposed channels)
 * 'Online Status' channel doesn't work
@@ -41,7 +41,7 @@
 
 ## Production preparation
 
-* Internationalisation (e.g. English and German)
+* Internationalization (e.g. English and German)
 * Use OpenHAB supplied factories for HttpClient and WebSocket (See Coding Guidelines)
 * Add binding to the OpenHAB source tree
 * Do 'mvn clean install' and 'mvn spotless:apply'

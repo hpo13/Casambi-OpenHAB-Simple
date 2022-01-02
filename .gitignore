@@ -1,4 +1,6 @@
-/target
+!/target/
+/target/*
+!/target/org.openhab.binding.casambisimple-3.2.0-SNAPSHOT.jar
 /bin
 /.classpath
 /.settings
