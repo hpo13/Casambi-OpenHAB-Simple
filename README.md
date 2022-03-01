@@ -172,6 +172,7 @@ The following is the controls section for a single device as part of a Casambi N
         ]
       ],
 ```
+
 Included are four controls for brightness (Dimmer), color (Color), white leve (White Dimmer) and color temperature (CCT). Some of the information seems to be vendor dependent. It remains to be seen how much the structure varies between different vendors and how this affects operation of the driver
 
 ## Known bugs

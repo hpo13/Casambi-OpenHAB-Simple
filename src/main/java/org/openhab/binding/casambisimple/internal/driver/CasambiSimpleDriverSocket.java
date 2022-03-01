@@ -19,6 +19,9 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -44,7 +47,7 @@ import com.google.gson.JsonObject;
  * It sets up the connection, sends commands to luminaries, scenes and groups and
  * processes messages from the system.
  *
- * Based on casambi-master by Olof Hellquist https://github.com/awahlig/casambi-master and
+ * Based on casambi-master (Python) by Olof Hellquist https://github.com/awahlig/casambi-master and
  * the Casambi documentation at https://developer.casambi.com/
  *
  * @author Hein Osenberg - Initial contribution
@@ -53,7 +56,6 @@ import com.google.gson.JsonObject;
 public class CasambiSimpleDriverSocket {
 
     private String casambiSocketStatus = "null";
-    private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
 
     private String apiKey;
     private String casambiNetworkId;
@@ -64,12 +66,34 @@ public class CasambiSimpleDriverSocket {
     private @Nullable WebSocketClient casambiSocket;
     private @Nullable Session casambiSession;
     private @Nullable RemoteEndpoint casambiRemote;
-    private Object socketFlag = new Object();
+    private boolean socketClose = false;
+
+    private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
+    private int openErrorCount = 0;
+    private Lock socketLock = new ReentrantLock();
+    private Condition socketCondition = socketLock.newCondition();
 
     final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverSocket.class);
 
     private final String socketUrl = "wss://door.casambi.com/v1/bridge/";
+    private final int mSec = 1000;
 
+    /**
+     * CasambiSimpleDriverSocket constructor sets up the web-socket connection to the Casambi server. This is done
+     * asynchronously so that the actual open for the socket can only proceed when an onOpen event has been received by
+     * the listener.
+     *
+     * @param key
+     * @param sessionId
+     * @param networkId
+     * @param wireId
+     * @param messageLogger
+     * @param webSocketClient
+     *
+     *            Also sets up the listener that handles the events on the web-socket.
+     *
+     *            FIXME: catch errors here or transmit them to caller?
+     */
     CasambiSimpleDriverSocket(String key, String sessionId, String networkId, Integer wireId,
             CasambiSimpleDriverLogger messageLogger, WebSocketClient webSocketClient) {
         apiKey = key;
@@ -81,74 +105,101 @@ public class CasambiSimpleDriverSocket {
         casambiSocket = webSocketClient;
         casambiSession = null;
         casambiRemote = null;
-
-        CasambiListener listener = new CasambiListener();
-        if (casambiSocket != null) {
-            try {
-                // logger.trace("CasambiSimpleDriverSocket: before casambiSocket.start");
-                casambiSocket.start();
-                final URI casambiURI = new URI(socketUrl);
-                ClientUpgradeRequest request = new ClientUpgradeRequest();
-                request.setSubProtocols(apiKey);
-                // logger.trace("CasambiSimpleDriverSocket: before casambiSocket.connect");
-                casambiSocket.connect(listener, casambiURI, request);
-            } catch (Exception e) {
-                logger.error("CasambiSimpleDriverSocket: Exception setting up session - {}", e.getMessage());
-            }
-        } else {
-            logger.error("CasambiSimpleDriverSocket: casambiSocket is null");
-        }
     }
 
-    // import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverConstants.*;
-
     /**
-     * open initialises the websocket connection. Needs networkId and wireId from the REST session.
-     *
-     * It is an error to open a websocket, when it is already open.
+     * open initializes the websocket connection. Needs networkId and wireId from the REST session. Waits for an onOpen
+     * event from the listener before sending the actual open request.
      *
      * @return true if websocket was opened successfully
      */
     public Boolean open() {
 
         boolean socketOk = false;
-        logger.debug("casambiOpen: opening socket for casambi communication");
-        UUID uuid = UUID.randomUUID();
+        logger.info("casambiOpen: opening socket for casambi communication");
+
+        logger.info("casambiOpen: setting up socket");
+        casambiRemote = null;
+        CasambiListener listener = new CasambiListener();
+        try {
+            final URI casambiURI = new URI(socketUrl);
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            request.setSubProtocols(apiKey);
+            if (casambiSocket != null) {
+                WebSocketClient casambiSocketLocal = casambiSocket;
+                casambiSocketLocal.start();
+                casambiSocketLocal.connect(listener, casambiURI, request);
+            } else {
+                logger.error("CasambiSimpleDriverSocket: casambiSocket is null");
+            }
+        } catch (Exception e) {
+            logger.error("CasambiSimpleDriverSocket: Exception setting up session - {}", e.getMessage());
+        }
+
+        logger.info("casambiOpen: waiting for socketCondition");
+        boolean keepWaiting = true;
+        socketLock.lock();
+        try {
+            while (casambiRemote == null && keepWaiting) {
+                if (socketCondition.await(20L, TimeUnit.SECONDS)) {
+                    logger.info("casambiOpen: got signal, opened casambiRemote '{}'", casambiRemote);
+                } else {
+                    keepWaiting = false;
+                    logger.warn("casambiOpen: timeout opening casambiRemote '{}'", casambiRemote);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("casambiOpen: Exception during await - {}", e.getMessage());
+        } finally {
+            socketLock.unlock();
+        }
 
         JsonObject reqJson = new JsonObject();
         reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, "open");
         reqJson.addProperty(CasambiSimpleDriverConstants.targetId, casambiNetworkId);
         reqJson.addProperty("session", casambiSessionId);
-        reqJson.addProperty("ref", uuid.toString());
+        reqJson.addProperty("ref", UUID.randomUUID().toString());
         reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
         reqJson.addProperty("type", 1);
 
-        logger.trace("casambiOpen: waiting for casambiRemote");
-        try {
-            synchronized (socketFlag) {
-                while (casambiRemote == null) {
-                    socketFlag.wait();
-                    // logger.trace("casambiOpen: wait is over");
-                }
-            }
-        } catch (InterruptedException e) {
-            logger.error("casambiOpen: Exception during wait - {}", e.getMessage());
-            // e.printStackTrace();
-        }
-
+        // No need to reopen in case of an error, this will be done by the listener (or will it?)
         if (casambiRemote != null) {
             try {
-                // logger.trace("open: before casambiRemote.sendString");
                 casambiRemote.sendString(reqJson.toString());
                 casambiMessageLogger.dumpMessage("+++ Socket casambiOpen +++");
+                logger.info("casambiOpen: socket ok!");
                 socketOk = true;
             } catch (Exception e) {
                 logger.error("casambiOpen: Exception opening remote connection {}", e.getMessage());
             }
         } else {
-            logger.error("casambiOpen: Error - remote connection null.");
+            logger.error("casambiOpen: Error - remote connection null");
         }
+        openErrorCount = 0;
         return socketOk;
+    }
+
+    /**
+     * reopen - tries to reopen the socket on error or close. Rate limited
+     */
+    private void reopen() {
+        openErrorCount++;
+        logger.info("casambiSocket:reopen, count {}", openErrorCount);
+        try {
+            if (openErrorCount <= 3) {
+                Thread.sleep(1 * mSec);
+            } else if (openErrorCount <= 10) {
+                Thread.sleep(60 * mSec);
+            } else {
+                Thread.sleep(3600 * mSec);
+
+            }
+            if (!open()) {
+                logger.error("ocasambiSocket:reopen - Error reopening socket");
+            }
+        } catch (Exception e) {
+            logger.warn("casambiSocket:reopen - sleep interrupted");
+        }
     }
 
     /**
@@ -159,8 +210,9 @@ public class CasambiSimpleDriverSocket {
      * @return true if socket was closed successfully
      */
     public Boolean close() {
-
         boolean socketOk = false;
+
+        socketClose = true;
         casambiMessageLogger.close();
 
         JsonObject reqJson = new JsonObject();
@@ -170,12 +222,9 @@ public class CasambiSimpleDriverSocket {
         if (casambiRemote != null) {
             try {
                 casambiRemote.sendString(reqJson.toString());
-                casambiRemote = null;
                 if (casambiSession != null) {
                     casambiSession.close();
-                    casambiSession = null;
                 }
-                casambiSocket = null;
                 socketOk = true;
             } catch (IOException e) {
                 logger.error("casambiClose: Exception closing session {}", e.getMessage());
@@ -183,10 +232,16 @@ public class CasambiSimpleDriverSocket {
         } else {
             logger.error("casambiClose: Error - remote connection not open.");
         }
+        casambiRemote = null;
+        casambiSession = null;
         return socketOk;
     }
 
-    // Getter for socket_status
+    /**
+     * Getter for socket_status
+     *
+     * @return casambiSocketStatus as set by the listener
+     */
     public String getSocketStatus() {
         return casambiSocketStatus;
     }
@@ -200,23 +255,24 @@ public class CasambiSimpleDriverSocket {
         /**
          * opConnect handles the session open events.
          *
-         * Here a message is put into the queue to inform the bridge handler.
+         * Here the open method is notified and a message is put into the queue to inform the bridge handler.
          *
          * @param session is the actual session opened on the socket
          */
         @OnWebSocketConnect
         public void onConnect(Session session) throws IOException {
-            logger.debug("CasambiSocket.onConnect called");
+            logger.info("CasambiSocket.onConnect called, session {}", session);
 
             casambiSession = session;
+            casambiRemote = casambiSession.getRemote();
+            logger.info("CasambiSocket.onConnect signaling");
+            socketLock.lock();
             try {
-                casambiRemote = casambiSession.getRemote();
-                synchronized (socketFlag) {
-                    socketFlag.notifyAll();
-                }
+                socketCondition.signal();
             } catch (Exception e) {
-                logger.error("onConnect: Exception {}", e.getMessage());
-                // e.printStackTrace();
+                logger.error("onConnect: signal exception {}", e.getMessage());
+            } finally {
+                socketLock.unlock();
             }
 
             casambiMessageLogger.dumpMessage(" +++ Socket onOpen +++");
@@ -237,15 +293,15 @@ public class CasambiSimpleDriverSocket {
          * onClose handles the session close events
          *
          * Here a message is queued for the bridge handler and the session is not reopened
-         * FIXME: Reopen the session if it was not closed by close()
          *
          * @param status code
          * @param reason
          */
         @OnWebSocketClose
         public void onClose(Session session, int statusCode, String reason) {
-            logger.debug("onClose: status {}, reason {}", statusCode, reason);
+            logger.warn("onClose: session {}, status {}, reason {}", session, statusCode, reason);
 
+            // Put 'closed' message into queue
             casambiMessageLogger.dumpMessage("+++ Socket onClose +++");
             casambiSocketStatus = "closed";
             JsonObject msg = new JsonObject();
@@ -259,14 +315,21 @@ public class CasambiSimpleDriverSocket {
                 logger.error("onText: Exception {}", e.getMessage());
             }
 
-            logger.warn("onClose: not trying to reopen socket.");
-            casambiSocket = null;
+            casambiRemote = null;
+            casambiSession = null;
             closeLatch.countDown();
-            // open();
+
+            if (socketClose) {
+                logger.info("onClose: socket being closed, not reopening");
+                socketClose = false;
+            } else {
+                logger.warn("onClose: socket closed unexpectedly, reopening");
+                reopen();
+            }
         }
 
         /**
-         * onMessage handles text data from the websocket. Used for messages by the casambi system
+         * onText handles text data from the websocket. Not actually used by the Casambi system
          *
          * Messages are put into the queue for the bridge handler to process.
          *
@@ -288,7 +351,7 @@ public class CasambiSimpleDriverSocket {
         }
 
         /**
-         * onMessage handles binary data from the websocket. Used for messages by the casambi system
+         * onBinary handles binary data from the websocket. Used for messages by the casambi system
          *
          * Messages are put into the queue for the bridge handler to process.
          *
@@ -313,14 +376,18 @@ public class CasambiSimpleDriverSocket {
         /**
          * onError handles the session error events
          *
-         * Here a message is queued for the bridge handler and the session is reopened
+         * Here a message is queued for the bridge handler and the session is (not) reopened
+         * FIXME: reopen session or maybe reinitialize bridge
          *
          * @param session is the actual session
          * @param cause is the error record
          */
         @OnWebSocketError
         public void onError(Session session, Throwable cause) {
-            logger.error("onError {}", session);
+            logger.error("onError: session {}, condition {}, response {}", session, cause.hashCode(),
+                    cause.getMessage());
+
+            // Put 'error' message into queue
             casambiMessageLogger.dumpMessage("+++ Socket onError +++");
             casambiSocketStatus = "error";
             JsonObject msg = new JsonObject();
@@ -335,11 +402,21 @@ public class CasambiSimpleDriverSocket {
             }
 
             logger.warn("onError: trying to reopen socket.");
-            // close();
-            casambiSession = null;
-            open();
+            // FIXME: maybe do a complete reinitialisation of the bridge
+            // evtl. neues runnable, mit variabler Wartezeit, das die Verbindung komplett neu initialisiert
+            // (initCasambiSession)
+            reopen();
+
         }
 
+        /**
+         * awaitClose is not currently used
+         *
+         * @param duration
+         * @param unit
+         * @return
+         * @throws InterruptedException
+         */
         public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException {
             return this.closeLatch.await(duration, unit);
         }
@@ -485,18 +562,52 @@ public class CasambiSimpleDriverSocket {
 
     // This is for scenes, groups and the network
 
+    /**
+     * setSceneLevel sets the dim level for a scene
+     *
+     * @param unitId - id of the scene
+     * @param dim - dim level
+     * @throws CasambiSimpleException
+     * @throws IOException
+     */
     public void setSceneLevel(int unitId, float dim) throws CasambiSimpleException, IOException {
         setObjectLevel(CasambiSimpleDriverConstants.methodScene, CasambiSimpleDriverConstants.targetId, unitId, dim);
     }
 
+    /**
+     * setGroupLevel sets the dim level for a group
+     *
+     * @param unitId - id of the group
+     * @param dim - dim level
+     * @throws CasambiSimpleException
+     * @throws IOException
+     */
     public void setGroupLevel(int unitId, float dim) throws CasambiSimpleException, IOException {
         setObjectLevel(CasambiSimpleDriverConstants.methodGroup, CasambiSimpleDriverConstants.targetId, unitId, dim);
     }
 
+    /**
+     * setNetworkLevel sets the dim level for the whole network
+     *
+     * @param dim - dim level
+     * @throws CasambiSimpleException
+     * @throws IOException
+     *             FIXME: allow for multiple networks
+     */
     public void setNetworkLevel(float dim) throws CasambiSimpleException, IOException {
         setObjectLevel(CasambiSimpleDriverConstants.methodNetwork, null, 0, dim);
     }
 
+    /**
+     * setObjectLevel sets the dim level for an object (scene, group, network). Helper method for the above methods
+     *
+     * @param method - object to be dimmed (scene, group, network)
+     * @param id - string: "id" or "ids" as appropriate
+     * @param unitId - id to be dimmed
+     * @param lvl - dim level (0-100)
+     * @throws CasambiSimpleException
+     * @throws IOException
+     */
     private void setObjectLevel(String method, @Nullable String id, int unitId, Float lvl)
             throws CasambiSimpleException, IOException {
 
@@ -519,6 +630,16 @@ public class CasambiSimpleDriverSocket {
         }
     }
 
+    /**
+     * setUnitHSB sets Hue, Saturation and Brightness for a unit
+     *
+     * @param unitId - unit to be set
+     * @param h - hue (0-360)
+     * @param s - saturation (0-100)
+     * @param b - brightness (0-100)
+     * @throws CasambiSimpleException
+     * @throws IOException
+     */
     public void setUnitHSB(int unitId, float h, float s, float b) throws CasambiSimpleException, IOException {
         logger.info("setUnitHSB: unit {} hsb {},{},{}", unitId, h, s, b);
         JsonObject rgb = new JsonObject();
@@ -534,6 +655,15 @@ public class CasambiSimpleDriverSocket {
         setUnitDimmer(unitId, b);
     }
 
+    /**
+     * setUnitCCT sets the color temperature for a unit
+     *
+     * @param unitId - unit to be set
+     * @param temp - color temperature (between minimum and maximum temperature in degrees centigrade as specified by
+     *            the device)
+     * @throws CasambiSimpleException
+     * @throws IOException
+     */
     public void setUnitCCT(int unitId, float temp) throws CasambiSimpleException, IOException {
         JsonObject colorTemperature = new JsonObject();
         colorTemperature.addProperty(CasambiSimpleDriverConstants.controlValue, temp);
@@ -546,6 +676,15 @@ public class CasambiSimpleDriverSocket {
         setUnitControl(unitId, control);
     }
 
+    /**
+     * setUnitColorBalance sets the balance between color and white channels for a unit
+     * FIXME: this may be obsolete, is not currently being used
+     *
+     * @param unitId - unit to be set
+     * @param value - balance value (0-100)
+     * @throws CasambiSimpleException
+     * @throws IOException
+     */
     public void setUnitColorBalance(int unitId, float value) throws CasambiSimpleException, IOException {
         JsonObject colorBalance = new JsonObject();
         colorBalance.addProperty(CasambiSimpleDriverConstants.controlValue, value);
@@ -555,6 +694,15 @@ public class CasambiSimpleDriverSocket {
         setUnitControl(unitId, control);
     }
 
+    /**
+     * setUnitWhiteLevel sets the level of the white channel for a unit
+     * FIXME: this may be obsolete, is not currently being used
+     *
+     * @param unitId - unit to be set
+     * @param value - level value (0-100)
+     * @throws CasambiSimpleException
+     * @throws IOException
+     */
     public void setUnitWhitelevel(int unitId, float value) throws CasambiSimpleException, IOException {
         JsonObject whiteLevel = new JsonObject();
         whiteLevel.addProperty(CasambiSimpleDriverConstants.controlValue, value);
@@ -564,6 +712,14 @@ public class CasambiSimpleDriverSocket {
         setUnitControl(unitId, control);
     }
 
+    /**
+     * setUnitControl helper method to execute the HSB, CCT, ColorBalance and WhiteLevel commands above
+     *
+     * @param unitId - unit to be set
+     * @param control - Json control record (see above)
+     * @throws CasambiSimpleException
+     * @throws IOException
+     */
     private void setUnitControl(int unitId, JsonObject control) throws CasambiSimpleException, IOException {
 
         JsonObject reqJson = new JsonObject();
@@ -583,8 +739,12 @@ public class CasambiSimpleDriverSocket {
         }
     }
 
-    // --- KeepAlive
-
+    /**
+     * ping sends keepalive message to the Casambi websocket
+     *
+     * @throws CasambiSimpleException
+     * @throws IOException
+     */
     public void ping() throws CasambiSimpleException, IOException {
         JsonObject reqJson = new JsonObject();
         reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
@@ -599,10 +759,14 @@ public class CasambiSimpleDriverSocket {
         }
     }
 
-    // Get messages off the queue
+    // Get messages from the queue
 
-    // Get raw message
-    public @Nullable String receiveMessageJson() {
+    /**
+     * Get raw message from the message queue (blocking)
+     *
+     * @return message as string
+     */
+    public @Nullable String receiveMessageRaw() {
         String res = null;
         do {
             try {
@@ -615,16 +779,18 @@ public class CasambiSimpleDriverSocket {
         return res;
     }
 
-    // Get message as CasambiMessageEvent structure
+    /**
+     * receiveMessage gets message from the queue as CasambiMessageEvent structure.
+     *
+     * @return CasambiSimpleMessageEvent structure
+     */
     public @Nullable CasambiSimpleMessageEvent receiveMessage() {
         Gson gson = new Gson();
-        String msg = receiveMessageJson();
+        String msg = receiveMessageRaw();
         if (msg != null) {
-            // Write Message to log file
-            // dumpJsonWithMessage("+++ receiveMessage +++", msg);
+            // FIXME: why flush here?
             casambiMessageLogger.flush();
             CasambiSimpleMessageEvent event = gson.fromJson(msg, CasambiSimpleMessageEvent.class);
-            // System.out.println("getUnitState: " + ppJson(unitInfo));
             return event;
         } else {
             return null;

@@ -134,8 +134,11 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
     public void handleRemoval() {
         logger.debug("handleRemoval: removing scene");
         logger.debug("  removing from thingsById");
-        CasambiSimpleThingsById thingsById = getBridgeHandler().thingsById;
-        thingsById.remove(thingsById.uidIdCombine(sceneUid, sceneId));
+        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
+        if (bridgeHandler != null) {
+            CasambiSimpleThingsById thingsById = bridgeHandler.thingsById;
+            thingsById.remove(thingsById.uidIdCombine(sceneUid, sceneId));
+        }
         updateStatus(ThingStatus.REMOVED);
     }
 
@@ -176,25 +179,6 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
         super.updateState(chan, state);
     }
 
-    // Map Luminary ids to things. Needed to update thing status based on casambi message content
-
-    // // Get thing corresponding to id
-    // public static @Nullable Thing getSceneById(@Nullable Integer id) {
-    // if (id != null) {
-    // return scenesById.get(id);
-    // } else {
-    // return null;
-    // }
-    // }
-    //
-    // // Add a (new) thing to the mapping
-    // private void putSceneById(@Nullable Integer id) {
-    // logger.debug("putThingById: id {}", id);
-    // if (id != null) {
-    // scenesById.putIfAbsent(id, this.thing);
-    // }
-    // }
-    //
     public static String getUidFromId(Integer id) {
         return "scn" + id.toString();
     }

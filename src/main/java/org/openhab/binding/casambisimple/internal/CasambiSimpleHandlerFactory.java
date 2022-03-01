@@ -48,9 +48,6 @@ public class CasambiSimpleHandlerFactory extends BaseThingHandlerFactory {
 
     private final Logger logger = LoggerFactory.getLogger(CasambiSimpleHandlerFactory.class);
 
-    // private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_BRIDGE,
-    // THING_TYPE_LUMINARY,
-    // THING_TYPE_SCENE);
     private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = CasambiSimpleBindingConstants.SUPPORTED_DEVICE_THING_TYPES_UIDS;
     private final HttpClientFactory httpClientFactory;
     private final WebSocketFactory webSocketFactory;

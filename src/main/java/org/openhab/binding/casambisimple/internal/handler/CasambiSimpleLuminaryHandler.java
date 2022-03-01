@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * The {@link CasambiSimpleLuminary Handler} allows to control luminary devices
  *
  * Luminaries as defined by the Casambi system can be controlled through OpenHAB
- * things. Several channels are supportet for brightness, color, color temperature
+ * things. Several channels are supported for brightness, color, color temperature
  * and white level.
  *
  * @author Hein Osenberg - Initial contribution
@@ -357,20 +357,25 @@ public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
      *            FIXME: update other channels as well
      */
     public void updateLuminaryState(CasambiSimpleMessageUnit state) {
-        Float lvl = (state.dimLevel != null) ? state.dimLevel : 0;
-        logger.trace("updateLuminaryState: id {} dimLevel {} online {}", deviceId, lvl, state.online);
-        if (state.online != null && state.online) {
-            updateStatus(ThingStatus.ONLINE);
+        if (state.online != null) {
+            if (state.online) {
+                updateStatus(ThingStatus.ONLINE);
+                logger.trace("updateLuminaryState: id {} online {}", deviceId, state.online);
+            } else {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                        String.format("Unit %d status offline", deviceId));
+            }
         } else {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                    String.format("Unit %d status offline", deviceId));
+                    String.format("Unit %d state.online is null", deviceId));
+
         }
-        if (state.dimLevel == 0) {
-            // updateState(LUMINARY_CHANNEL_SWITCH, OnOffType.OFF);
-            updateState(LUMINARY_CHANNEL_DIMMER, new PercentType(0));
+        if (state.dimLevel != null) {
+            updateState(LUMINARY_CHANNEL_DIMMER, new PercentType(Math.round(state.dimLevel * 100)));
+            logger.trace("updateLuminaryState: id {} dimLevel {}", deviceId, state.dimLevel);
         } else {
-            // updateState(LUMINARY_CHANNEL_SWITCH, OnOffType.ON);
-            updateState(LUMINARY_CHANNEL_DIMMER, new PercentType(Math.round(lvl * 100)));
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    String.format("Unit %d state.dimLevel is null", deviceId));
         }
     }
 
@@ -390,7 +395,12 @@ public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
      */
     @Nullable
     public String getUid() {
-        return this.thing.getConfiguration().getProperties().get(LUMINARY_UID).toString();
+        Object uid = this.thing.getConfiguration().getProperties().get(LUMINARY_UID);
+        if (uid != null) {
+            return uid.toString();
+        } else {
+            return null;
+        }
     }
 
     // --- Static methods ----------------------------------------------------------------------------------

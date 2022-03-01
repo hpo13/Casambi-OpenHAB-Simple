@@ -50,7 +50,7 @@ import com.google.gson.reflect.TypeToken;
  * It creates the user and network session, and sends information requests to the
  * Casambi system.
  *
- * Based on casambi-master by Olof Hellquist https://github.com/awahlig/casambi-master and
+ * Based on casambi-master (Python) by Olof Hellquist https://github.com/awahlig/casambi-master and
  * the Casambi documentation at https://developer.casambi.com/
  *
  * @author Hein Osenberg - Initial contribution
@@ -65,7 +65,6 @@ public class CasambiSimpleDriverRest {
     private String userPassword;
     private String networkPassword;
     private String apiKey;
-    // FIXME: possibly needs to be converted to asynchronous http calls
     private final HttpClient httpClient;
     private final WebSocketClient webSocketClient;
 
@@ -78,7 +77,21 @@ public class CasambiSimpleDriverRest {
 
     final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverRest.class);
 
-    // Constructor, needs developer key, email (user id), user and network passwords
+    /**
+     * CasambiSimpleDriverRest constructor sets up the REST interface and calls setup of the Socket interface. The
+     * methods handle the REST calls and replies.
+     *
+     * @param key - Casambi (developer) access key, request from Casambi for user id
+     * @param user - Casambi (developer) user id, setup with Casambi app
+     * @param usrPw - Casambi (developer) user password, setup with Casambi app
+     * @param netPw - Casambi (developer) network password, setup with Casambi app
+     * @param msgLogger - class to (optionally) log messages received from the Casambi cloud
+     * @param webSocketClient - from the OpenHAB webSocketClientFactory, used by the socket driver
+     * @param httpClient - from the OpenHAB httpClientFactory, used by the REST driver
+     *
+     *            FIXME: not all Casambi REST API endpoints are implemented. Missing are: get groups, get unit icon, get
+     *            network gallery, get network image, get fixture icon
+     */
     public CasambiSimpleDriverRest(String key, String user, String usrPw, String netPw,
             CasambiSimpleDriverLogger msgLogger, WebSocketClient webSocketClient, HttpClient httpClient) {
         try {
@@ -93,10 +106,8 @@ public class CasambiSimpleDriverRest {
         this.httpClient = httpClient;
         this.webSocketClient = webSocketClient;
         try {
-            logger.trace("CasambiDriverRest: before httpClient.start");
             httpClient.start();
         } catch (Exception e) {
-            // FIXME: stop this on shutdown
             logger.error("CasambiDriverRest: httpClient.start - exception {}", e.getMessage());
             casaServer = null;
         }
@@ -107,11 +118,21 @@ public class CasambiSimpleDriverRest {
         networkPassword = netPw;
     }
 
+    /**
+     * getSocket returns a new webSocket. Uses the parameters form the REST constructor.
+     *
+     * @return the the web-socket
+     */
     public CasambiSimpleDriverSocket getSocket() {
         return new CasambiSimpleDriverSocket(apiKey, casambiSessionId, casambiNetworkId, casambiWireId, messageLogger,
                 webSocketClient);
     }
 
+    /**
+     * close the REST interface.
+     *
+     * FIXME: should this close the web-socket interface as well?
+     */
     public void close() {
         try {
             httpClient.stop();
@@ -123,6 +144,15 @@ public class CasambiSimpleDriverRest {
 
     // --- REST section -----------------------------------------------------------------------------------------------
 
+    /**
+     * checkHttpResponse checks the response from a http GET or POST request. Writes
+     * the response to the message logger.
+     *
+     * @param functionName - name of the function calling checkHttpResponse. Used for an error message if needed.
+     * @param url - url used in the GET or POST request. Used for an error message if needed.
+     * @param response - the response information from the GET or POST request.
+     * @throws CasambiSimpleException - if response is not ok (response == null or status != 200)
+     */
     private void checkHttpResponse(String functionName, URL url, @Nullable ContentResponse response)
             throws CasambiSimpleException {
         if (response == null) {
@@ -134,13 +164,21 @@ public class CasambiSimpleDriverRest {
             logger.error(msg);
             throw new CasambiSimpleException(msg);
         } else {
-            // logger.trace("{} - success", functionName);
-            // logger.trace("{} - response - {}", functionName, response.getContentAsString());
             messageLogger.dumpJsonWithMessage("+++ " + functionName + " +++", response.getContentAsString());
         }
     }
 
-    // Creates user session and returns session info
+    /**
+     * createUserSession creates user session and returns session info.
+     *
+     * @return the session info as returned by the Casambi cloud service
+     * @throws URISyntaxException
+     * @throws CasambiSimpleException
+     * @throws TimeoutException
+     * @throws ExecutionException
+     * @throws MalformedURLException
+     * @throws InterruptedException
+     */
     public @Nullable CasambiSimpleMessageSession createUserSession() throws URISyntaxException, CasambiSimpleException,
             TimeoutException, ExecutionException, MalformedURLException, InterruptedException {
         URL url = new URL(casaServer, "/v1/users/session");
@@ -148,7 +186,6 @@ public class CasambiSimpleDriverRest {
         reqJson.addProperty("email", userId);
         reqJson.addProperty("password", userPassword);
 
-        // logger.trace("createUserSession: before sending request");
         ContentResponse response = null;
         try {
             response = httpClient.POST(url.toString()).header("Content-Type", "application/json")
@@ -157,7 +194,6 @@ public class CasambiSimpleDriverRest {
             checkHttpResponse("createUserSesssion", url, response);
         } catch (Exception e) {
             logger.trace("createUserSession: Exception {}", e.getMessage());
-            // logger.trace(e.getStackTrace().toString());
         }
         if (response != null) {
             Gson gson = new Gson();
@@ -172,7 +208,17 @@ public class CasambiSimpleDriverRest {
         }
     }
 
-    // Creates network session and returns network info
+    /**
+     * Creates network session and returns network info
+     *
+     * @return network info as returned by the Casambi cloud service
+     * @throws URISyntaxException
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws CasambiSimpleException
+     * @throws TimeoutException
+     * @throws ExecutionException
+     */
     public @Nullable Map<String, CasambiSimpleMessageNetwork> createNetworkSession() throws URISyntaxException,
             IOException, InterruptedException, CasambiSimpleException, TimeoutException, ExecutionException {
         URL url = new URL(casaServer, "/v1/networks/session");
@@ -208,12 +254,28 @@ public class CasambiSimpleDriverRest {
         }
     }
 
+    /**
+     * makeHttpGet sets up a Casambi REST GET request. The request type and the parameters are contained in the URL.
+     * Authentication and context information is added.
+     *
+     * @param url - request url, contains the request type
+     * @return a REST request
+     */
     private Request makeHttpGet(URL url) {
         return httpClient.newRequest(url.toString()).method(HttpMethod.GET).header("Content-Type", "application/json")
                 .header("X-Casambi-Key", apiKey).header("X-Casambi-Session", casambiSessionId);
     }
 
-    // Queries network and returns network information
+    /**
+     * getNetworkInformation queries the network and returns network information
+     *
+     * @return network information as returned by the Casambi cloud service. FIXME: this is a generic JSON object.
+     * @throws MalformedURLException
+     * @throws InterruptedException
+     * @throws TimeoutException
+     * @throws ExecutionException
+     * @throws CasambiSimpleException
+     */
     public @Nullable JsonObject getNetworkInformation() throws MalformedURLException, InterruptedException,
             TimeoutException, ExecutionException, CasambiSimpleException {
         URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId);
@@ -223,6 +285,19 @@ public class CasambiSimpleDriverRest {
         return networkInfo;
     }
 
+    /**
+     * getNetworkState queries the luminaries, scenes and groups on the network
+     *
+     * @return network state data as returned by the Casambi cloud service.
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws URISyntaxException
+     * @throws CasambiSimpleException
+     * @throws TimeoutException
+     * @throws ExecutionException
+     *
+     *             This is called by the pollUnitStatus job in the bridge class
+     */
     public @Nullable CasambiSimpleMessageNetworkState getNetworkState() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
         URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/state");
@@ -235,7 +310,22 @@ public class CasambiSimpleDriverRest {
         return networkState;
     }
 
-    // FIXME: convert to message object
+    /**
+     * getNetworkDatapoints queries data from a sensor type on the Casambi network.
+     *
+     * @param from - starting time for sensor data
+     * @param to - end time for sensor data
+     * @param sensorType - integer for sensor type
+     * @return sensor data as returned by the Casambi cloud service. FIXME: this is a generic JSON object.
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws URISyntaxException
+     * @throws CasambiSimpleException
+     * @throws TimeoutException
+     * @throws ExecutionException
+     *
+     *             FIXME: untested
+     */
     public JsonObject getNetworkDatapoints(LocalDateTime from, LocalDateTime to, int sensorType) throws IOException,
             InterruptedException, URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMddhhmmss");
@@ -252,6 +342,17 @@ public class CasambiSimpleDriverRest {
         return networkDataPoints;
     }
 
+    /**
+     * getUnitList returns the units on the Casambi network
+     *
+     * @return unit data
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws URISyntaxException
+     * @throws CasambiSimpleException
+     * @throws TimeoutException
+     * @throws ExecutionException
+     */
     public @Nullable Map<String, CasambiSimpleMessageUnit> getUnitList() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
         URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units");
@@ -265,6 +366,18 @@ public class CasambiSimpleDriverRest {
         return unitList;
     }
 
+    /**
+     * getUnitState returns state information for a single unit
+     *
+     * @param unitId as assigned by the Casambi sytem
+     * @return unitState information
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws URISyntaxException
+     * @throws CasambiSimpleException
+     * @throws TimeoutException
+     * @throws ExecutionException
+     */
     public @Nullable CasambiSimpleMessageUnit getUnitState(int unitId) throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
         URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units/" + unitId + "/state");
@@ -277,6 +390,17 @@ public class CasambiSimpleDriverRest {
         return unitState;
     }
 
+    /**
+     * getScenes returns information about the scenes defined in the Casambi network
+     *
+     * @return structure with scenes and information about the scenes
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws URISyntaxException
+     * @throws CasambiSimpleException
+     * @throws TimeoutException
+     * @throws ExecutionException
+     */
     public @Nullable Map<String, CasambiSimpleMessageScene> getScenes() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
         URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/scenes");
@@ -290,11 +414,23 @@ public class CasambiSimpleDriverRest {
         return scenes;
     }
 
-    // FIXME: convert to message object
-    public JsonObject getFixtureInfo(int unitId) throws IOException, InterruptedException, URISyntaxException,
+    /**
+     * getFixtureInfo gets detailed information about a single fixture
+     *
+     * @param fixtureId as defined by the Casambi system
+     * @return fixture information. FIXME: convert to message object
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws URISyntaxException
+     * @throws CasambiSimpleException
+     * @throws TimeoutException
+     * @throws ExecutionException
+     */
+    public JsonObject getFixtureInfo(int fixtureId) throws IOException, InterruptedException, URISyntaxException,
             CasambiSimpleException, TimeoutException, ExecutionException {
-        URL url = new URL(casaServer, "/v1/fixtures/" + unitId);
+        URL url = new URL(casaServer, "/v1/fixtures/" + fixtureId);
         ContentResponse response = makeHttpGet(url).send();
+
         checkHttpResponse("getFixtureInfo", url, response);
 
         JsonObject fixtureInfo = JsonParser.parseString(response.getContentAsString()).getAsJsonObject();
