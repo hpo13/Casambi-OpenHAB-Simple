@@ -54,7 +54,7 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
 
     public CasambiSimpleSceneHandler(Thing thing) {
         super(thing);
-        sceneId = Integer.valueOf(thing.getConfiguration().get(SCENE_ID).toString());
+        sceneId = Float.valueOf(thing.getConfiguration().get(SCENE_ID).toString()).intValue();
         sceneUid = getUidFromId(sceneId);
         // logger.debug("constructor: scene");
     }

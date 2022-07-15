@@ -54,7 +54,7 @@ public class CasambiSimpleGroupHandler extends BaseThingHandler {
 
     public CasambiSimpleGroupHandler(Thing thing) {
         super(thing);
-        groupId = Integer.valueOf(thing.getConfiguration().get(GROUP_ID).toString());
+        groupId = Float.valueOf(thing.getConfiguration().get(GROUP_ID).toString()).intValue();
         groupUid = getUidFromId(groupId);
         // logger.debug("constructor: group");
     }
