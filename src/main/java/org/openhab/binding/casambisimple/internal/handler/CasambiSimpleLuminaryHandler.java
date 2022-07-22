@@ -73,7 +73,7 @@ public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
     public CasambiSimpleLuminaryHandler(Thing thing) {
         super(thing);
         config = getConfigAs(CasambiSimpleLuminaryConfiguration.class);
-        deviceId = Integer.valueOf(thing.getConfiguration().get(LUMINARY_ID).toString());
+        deviceId = Float.valueOf(thing.getConfiguration().get(LUMINARY_ID).toString()).intValue();
         deviceUid = thing.getConfiguration().get(LUMINARY_UID).toString();
         logger.info("constructor: luminary uid {}, id {}", deviceUid, deviceId);
     }
