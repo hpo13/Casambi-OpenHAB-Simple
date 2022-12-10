@@ -193,7 +193,7 @@ public class CasambiSimpleDriverRest {
                     .content(new StringContentProvider(reqJson.toString()), "application/json").send();
             checkHttpResponse("createUserSesssion", url, response);
         } catch (Exception e) {
-            logger.trace("createUserSession: Exception {}", e.getMessage());
+            logger.warn("createUserSession: Exception {}", e.getMessage());
         }
         if (response != null) {
             Gson gson = new Gson();
@@ -201,6 +201,9 @@ public class CasambiSimpleDriverRest {
                     CasambiSimpleMessageSession.class);
             if (sessObj != null) {
                 casambiSessionId = sessObj.sessionId;
+            } else {
+                logger.warn("createUserSession: Session object is null. HTTP response was '{}'",
+                        response.getContentAsString());
             }
             return sessObj;
         } else {

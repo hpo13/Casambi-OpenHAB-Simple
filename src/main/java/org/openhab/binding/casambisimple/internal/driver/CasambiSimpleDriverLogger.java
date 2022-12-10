@@ -95,7 +95,7 @@ public class CasambiSimpleDriverLogger {
      */
     public void dumpJsonWithMessage(String msg, @Nullable String json) {
         if (writer != null) {
-            writer.println(getTimeStamp() + " '" + msg + "'");
+            writer.println(getTimeStamp() + " " + msg);
             if (json != null) {
                 dumpJson(json);
             }
@@ -191,6 +191,7 @@ public class CasambiSimpleDriverLogger {
         try {
             PrintWriter writerLocal = writer;
             if (writerLocal != null && json != null) {
+                // FIXME: use indent once we get pass Java11
                 String jStr = ppJson(json);
                 writerLocal.println(jStr);
             }

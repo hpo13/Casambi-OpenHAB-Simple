@@ -275,7 +275,7 @@ public class CasambiSimpleDriverSocket {
                 socketLock.unlock();
             }
 
-            casambiMessageLogger.dumpMessage(" +++ Socket onOpen +++");
+            casambiMessageLogger.dumpMessage("+++ Socket onOpen +++");
             casambiSocketStatus = "open";
             JsonObject msg = new JsonObject();
             msg.addProperty(CasambiSimpleDriverConstants.controlMethod, "socketChanged");
@@ -292,8 +292,10 @@ public class CasambiSimpleDriverSocket {
         /**
          * onClose handles the session close events
          *
-         * Here a message is queued for the bridge handler and the session is not reopened
+         * Here a message is queued for the bridge handler. The session is not reopened
+         * after a scheduled close (socketClose == true), else it is reopened.
          *
+         * @param session
          * @param status code
          * @param reason
          */
@@ -320,7 +322,7 @@ public class CasambiSimpleDriverSocket {
             closeLatch.countDown();
 
             if (socketClose) {
-                logger.info("onClose: socket being closed, not reopening");
+                logger.info("onClose: socket being closed intentionally, not reopening");
                 socketClose = false;
             } else {
                 logger.warn("onClose: socket closed unexpectedly, reopening");
@@ -333,6 +335,7 @@ public class CasambiSimpleDriverSocket {
          *
          * Messages are put into the queue for the bridge handler to process.
          *
+         * @param session
          * @param message is the actual message
          */
         @OnWebSocketMessage
@@ -355,7 +358,10 @@ public class CasambiSimpleDriverSocket {
          *
          * Messages are put into the queue for the bridge handler to process.
          *
-         * @param message is the actual message
+         * @param session
+         * @param payload is the actual message
+         * @param offset
+         * @param length
          */
         @OnWebSocketMessage
         public void onBinary(Session session, byte[] payload, int offset, int length) {
@@ -401,11 +407,15 @@ public class CasambiSimpleDriverSocket {
                 logger.error("onError: Exception {}", e.getMessage());
             }
 
-            logger.warn("onError: trying to reopen socket.");
             // FIXME: maybe do a complete reinitialisation of the bridge
             // evtl. neues runnable, mit variabler Wartezeit, das die Verbindung komplett neu initialisiert
             // (initCasambiSession)
-            reopen();
+            // logger.warn("onError: trying to reopen socket.");
+            // reopen();
+
+            // Reopening should not be done here, will be handled by 'onClose'. Else there will be multiple open sockets
+            logger.warn("onError: not reopening socket.");
+            // reopen();
 
         }
 

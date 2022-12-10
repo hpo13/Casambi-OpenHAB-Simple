@@ -116,12 +116,14 @@ public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
                 try {
                     if (!(command instanceof RefreshType)) {
                         if (LUMINARY_CHANNEL_ONOFF.equals(channelUID.getId())) {
+                            logger.info("handleCommand: got ONOFF channel command {}", command);
                             // Set dim level (0-100)
                             if (command instanceof OnOffType) {
                                 casambiSocketCopy.setUnitOnOff(deviceId, command.equals(OnOffType.ON));
                                 commandHandled = true;
                             }
                         } else if (LUMINARY_CHANNEL_DIMMER.equals(channelUID.getId())) {
+                            logger.info("handleCommand: got DIMMER channel command {}", command);
                             // Set dim level (0-100)
                             if (command instanceof PercentType) {
                                 casambiSocketCopy.setUnitDimmer(deviceId, ((PercentType) command).floatValue() / 100);
@@ -129,7 +131,7 @@ public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
                             }
                         } else if (LUMINARY_CHANNEL_COLOR.equals(channelUID.getId())) {
                             // Set hue (0-360), saturation (0-100) and brightness (0-100)
-                            logger.info("handleCommand: got color channel command {}", command);
+                            logger.info("handleCommand: got COLOR channel command {}", command);
                             if (command instanceof HSBType) {
                                 String[] hsb = ((HSBType) command).toString().split(",");
                                 if (hsb.length == 3) {
@@ -147,7 +149,7 @@ public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
                             }
                         } else if (LUMINARY_CHANNEL_CCT.equals(channelUID.getId())) {
                             // Set color temperature (e.g. 2000 - 6500)
-                            logger.info("handleCommand: got cct channel command {}", command);
+                            logger.info("handleCommand: got CCT channel command {}", command);
                             if (command instanceof DecimalType) {
                                 float slider = ((PercentType) command).floatValue() / 100;
                                 Float tMin = config.tempMin;
@@ -158,7 +160,7 @@ public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
                             }
                         } else if (LUMINARY_CHANNEL_WHITELEVEL.equals(channelUID.getId())) {
                             // Set color balance color (0-100) and white (0-100)
-                            logger.info("handleCommand: got whitelevel channel command {}", command);
+                            logger.info("handleCommand: got WHITELEVEL channel command {}", command);
                             if (command instanceof PercentType) {
                                 Float slider = ((PercentType) command).floatValue();
                                 casambiSocketCopy.setUnitWhitelevel(deviceId, slider);

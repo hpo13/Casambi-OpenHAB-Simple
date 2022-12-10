@@ -135,19 +135,28 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
     /**
      * handleCommand handles channel commands to the bridge
      *
-     * @param channelUID - currently only LUMINARY_CHANNEL_DIMM is supported for network wide dimming
-     * @param command - currently dim level is the only meaningful command
-     *            FIXME: maybe add channel for peer recovery and bridge reinitialization
+     * @param channelUID - BRIDGE_CHANNEL_DIM and BRIDGE_CHANNEL_RESTART
+     * @param command - PercentType for network level dimming, OnOffType for bridge restart
      */
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand: (Bridge) channel uid {}, command {}", channelUID, command);
         CasambiSimpleDriverSocket casambiSocketLocal = casambiSocket;
-        if (casambiSocketLocal != null) {
+        if (BRIDGE_CHANNEL_RESTART.equals(channelUID.getId())) {
+            // restart the bridge
+            if (command instanceof OnOffType) {
+                logger.warn("handleCommand: bridgeRestart - stopping the bridge, connections and runnables");
+                dispose();
+                logger.warn("handleCommand: bridgeRestart - initializing the bridge");
+                initialize();
+            } else {
+                logger.warn("handleCommand: channel {}, unexpected command type {}", channelUID, command.getClass());
+            }
+        } else if (casambiSocketLocal != null) {
             if (command instanceof RefreshType) {
                 logger.trace("handleCommand: (Bridge) doRefresh NOP");
-            } else if (LUMINARY_CHANNEL_DIMMER.equals(channelUID.getId())) {
-                // Set dim level (0-100)
+            } else if (BRIDGE_CHANNEL_DIM.equals(channelUID.getId())) {
+                // Set network dim level (0-100)
                 if (command instanceof PercentType) {
                     try {
                         casambiSocketLocal.setNetworkLevel(((PercentType) command).floatValue() / 100);
@@ -170,8 +179,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
 
     /**
      * initialize gets bridge initialization going. The actual work is done asynchronously with initCasambiSession.
-     * Additionally, the
-     * discovery service is set up
+     * Additionally, the discovery service is set up
      */
     @Override
     public void initialize() {
@@ -187,7 +195,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
         CasambiSimpleDiscoveryService localCasambiDiscover = casambiDiscover;
         if (bridgeHandler != null && localCasambiDiscover != null) {
             localCasambiDiscover.setThingHandler(bridgeHandler);
-            logger.debug("initialize: setting bridgeHandler in discovery handler");
+            logger.debug("initialize: bridgeHandler set up");
         }
     }
 
@@ -429,8 +437,8 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                                     updateStatus(ThingStatus.OFFLINE);
                                     bridgeOnline = false;
                                     if (!peerRecoveryJobRunning) {
-                                        logger.info("handleCasambiMessages: trying to recover");
                                         if (config.useRemCmd) {
+                                            logger.info("handleCasambiMessages: trying to recover");
                                             peerRecoveryJob = scheduler.submit(doPeerRecovery);
                                         }
                                     } else {
@@ -455,8 +463,12 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                                 logger.warn("handleCasambiMessages: wireStatusError: {}", msg.wireStatus);
                                 // FIXME: What to do?
                                 break;
+                            case networkLog:
+                                logger.warn("handleCasambiMessages: networkLog: {}", msg.message);
+                                // FIXME: What to do?
+                                break;
                             case keepAlive:
-                                logger.trace("handleCasambiMessages: keepAlive got pong");
+                                logger.debug("handleCasambiMessages: keepAlive got pong");
                                 missedPong = 0;
                                 break;
                             default:
@@ -590,7 +602,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                             }
                         }
                     }
-                    logger.trace("sendKeepAlive:");
+                    logger.debug("sendKeepAlive:");
                     if (casambiSocket != null) {
                         casambiSocket.ping();
                         missedPong++;
@@ -619,8 +631,8 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
     private Runnable doPeerRecovery = new Runnable() {
         @Override
         public void run() {
-            logger.info("doPeerRecovery: starting.");
             peerRecoveryJobRunning = true;
+            logger.info("doPeerRecovery: starting.");
             try {
                 Thread.sleep(2 * min);
                 if (bridgeOnline) {

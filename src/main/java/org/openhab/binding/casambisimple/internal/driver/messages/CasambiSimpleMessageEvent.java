@@ -29,6 +29,7 @@ public class CasambiSimpleMessageEvent {
         peerChanged,
         networkUpdated,
         socketChanged, // Driver message (not Casambi message)
+        networkLog,
         wireStatusOk,
         wireStatusError,
         keepAlive,
@@ -57,6 +58,7 @@ public class CasambiSimpleMessageEvent {
     public @Nullable String ref;
     public @Nullable String wireStatus;
     public @Nullable String response;
+    public @Nullable String message;
 
     CasambiSimpleMessageEvent() {
         id = 0;
@@ -75,6 +77,8 @@ public class CasambiSimpleMessageEvent {
                 return messageType.networkUpdated;
             } else if ("socketChanged".equals(method)) {
                 return messageType.socketChanged;
+            } else if ("networkLog".equals(method)) {
+                return messageType.networkLog;
             } else {
                 return messageType.unknownMessage;
             }

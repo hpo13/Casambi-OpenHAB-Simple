@@ -12,6 +12,7 @@
 			<channel id="peer" typeId="casambiOnline"/>
 			<channel id="message" typeId="casambiMessage"/>
 			<channel id="dim" typeId="casambiDim"/>
+			<channel id="restart" typeId="casambiRestart"/>
 		</channels>
 		<config-description>
 			<parameter-group name="connection">
