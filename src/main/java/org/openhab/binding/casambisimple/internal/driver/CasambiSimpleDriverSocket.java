@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.platform.commons.logging.LoggerFactory;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageEvent;
+import org.slf4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -72,7 +73,7 @@ public class CasambiSimpleDriverSocket {
     private Lock socketLock = new ReentrantLock();
     private Condition socketCondition = socketLock.newCondition();
 
-    final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverSocket.class);
+    final Logger logger = (Logger) LoggerFactory.getLogger(CasambiSimpleDriverSocket.class);
 
     private final String socketUrl = "wss://door.casambi.com/v1/bridge/";
     private final int mSec = 1000;

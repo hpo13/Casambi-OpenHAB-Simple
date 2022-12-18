@@ -14,8 +14,6 @@ package org.openhab.binding.casambisimple.internal.handler;
 
 import static org.openhab.binding.casambisimple.internal.CasambiSimpleBindingConstants.*;
 
-import java.net.http.HttpClient;
-import java.nio.channels.Channel;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,6 +23,7 @@ import java.util.concurrent.Future;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.platform.commons.logging.LoggerFactory;
 import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverLogger;
@@ -53,6 +52,7 @@ import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.thing.binding.ThingHandlerService;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
+import org.slf4j.Logger;
 
 /**
  * The {@link CasambiSimpleBridgeHandler} manages to connection to the Casambi system
@@ -69,7 +69,7 @@ import org.openhab.core.types.RefreshType;
 @NonNullByDefault
 public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(CasambiSimpleBridgeHandler.class);
+    private final Logger logger = (Logger) LoggerFactory.getLogger(CasambiSimpleBridgeHandler.class);
 
     private CasambiSimpleBridgeConfiguration config;
 
@@ -110,7 +110,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
      *
      * @param bridge - bridge as a thing
      * @param webSocketClient - from the webSocketFactory (OpenHAB infrastructure)
-     * @param httpClient - from the httpClientFactory (OpenHAB infrastructure)
+     * @param httpClient2 - from the httpClientFactory (OpenHAB infrastructure)
      *
      *            Just a couple of variable assignments. The actual initialization is done by the initialize() method
      */
@@ -412,7 +412,8 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                                                 logger.warn("handleCasambiMessages: status OFFLINE, id {}", msg.id);
                                                 thingHandler.updateLuminaryStatus(ThingStatus.OFFLINE);
                                             }
-                                            Channel channel = thing.getChannel(LUMINARY_CHANNEL_DIMMER);
+                                            org.openhab.core.thing.Channel channel = thing
+                                                    .getChannel(LUMINARY_CHANNEL_DIMMER);
                                             if (channel != null) {
                                                 Float lvl = (msg.dimLevel != null) ? msg.dimLevel : 0;
                                                 thingHandler.updateState(channel.getUID(),
