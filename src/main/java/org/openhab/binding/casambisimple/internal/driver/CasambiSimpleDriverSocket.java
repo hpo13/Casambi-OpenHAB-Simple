@@ -34,9 +34,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.junit.platform.commons.logging.LoggerFactory;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -184,7 +183,7 @@ public class CasambiSimpleDriverSocket {
      */
     private void reopen() {
         openErrorCount++;
-        logger.info("casambiSocket:reopen, count {}", openErrorCount);
+        logger.info("casambiSocket:reopen, openErrorCount {}", openErrorCount);
         try {
             if (openErrorCount <= 3) {
                 Thread.sleep(1 * mSec);
@@ -294,6 +293,8 @@ public class CasambiSimpleDriverSocket {
          *
          * Here a message is queued for the bridge handler. The session is not reopened
          * after a scheduled close (socketClose == true), else it is reopened.
+         *
+         * FIXME: do not try to reopen socket when bridge is being taken down
          *
          * @param session
          * @param status code

@@ -14,6 +14,8 @@ package org.openhab.binding.casambisimple.internal.handler;
 
 import static org.openhab.binding.casambisimple.internal.CasambiSimpleBindingConstants.*;
 
+import java.net.http.HttpClient;
+import java.nio.channels.Channel;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,8 +25,8 @@ import java.util.concurrent.Future;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.junit.platform.commons.logging.LoggerFactory;
 import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverLogger;
 import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverRest;
 import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverSocket;
@@ -41,7 +43,6 @@ import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.PercentType;
 import org.openhab.core.library.types.StringType;
 import org.openhab.core.thing.Bridge;
-import org.openhab.core.thing.Channel;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;
@@ -52,8 +53,6 @@ import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.thing.binding.ThingHandlerService;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The {@link CasambiSimpleBridgeHandler} manages to connection to the Casambi system
@@ -206,7 +205,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
      */
     @Override
     public void dispose() {
-        logger.debug("dispose: tear down bridge");
+        logger.info("dispose: tear down bridge");
         if (pollMessageJob != null) {
             pollMessageJob.cancel(true);
             pollMessageJobRunning = false;
@@ -223,15 +222,16 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
             peerRecoveryJob.cancel(true);
             peerRecoveryJobRunning = false;
         }
-        try {
-            if (casambiSocket != null) {
-                casambiSocket.close();
-            }
-        } catch (Exception e) {
-            logger.error("dispose: Exception {}", e.toString());
-        } finally {
-            casambiSocket = null;
+        // FIXME: braucht es hier try/catch?
+        // try {
+        if (casambiSocket != null) {
+            casambiSocket.close();
         }
+        // } catch (Exception e) {
+        // logger.error("dispose: Exception {}", e.toString());
+        // } finally {
+        // casambiSocket = null;
+        // }
         if (casambiRest != null) {
             casambiRest.close();
             casambiRest = null;
@@ -243,7 +243,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
     // Optional method, for development only, not production
     @Override
     public void childHandlerInitialized(ThingHandler handler, Thing thing) {
-        logger.trace("childHandlerInitialized: NOP!");
+        logger.info("childHandlerInitialized: Thing {}, NOP!", thing);
         // Das ist Quatsch hier - nur implementieren, wenn auch etwas sinnvolles passiert (mit dem thing!)
         // updateStatus(ThingStatus.ONLINE);
     }
@@ -251,7 +251,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
     // Optional method, for development only, not production
     @Override
     public void childHandlerDisposed(ThingHandler handler, Thing thing) {
-        logger.trace("childHandlerDispose: NOP!");
+        logger.info("childHandlerDispose: Thing {}, NOP!", thing);
         // Das ist Quatsch hier - nur implementieren, wenn auch etwas sinnvolles passiert (mit dem thing!)
         // updateStatus(ThingStatus.REMOVED);
     }
@@ -263,10 +263,12 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
     }
 
     public void registerDiscoveryListener(CasambiSimpleDiscoveryService discoveryHandler) {
+        logger.info("registerDiscoveryListener:");
         casambiDiscover = discoveryHandler;
     }
 
     public void unregisterDiscoveryListener() {
+        logger.info("unregisterDiscoveryListener:");
         casambiDiscover = null;
     }
 
@@ -331,7 +333,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                         if (!pollUnitStatusJobRunning) {
                             pollUnitStatusJob = scheduler.submit(pollUnitStatus);
                         }
-                        casambiSocket = casambiRestLocal.getSocket();
+                        casambiSocket = casambiRestLocal.getNewCasambiSocket();
                         if (/* casambiSocket != null && */ casambiSocket.open()) {
                             bridgeOnline = true;
                             updateStatus(ThingStatus.ONLINE);
@@ -514,7 +516,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                 try {
                     // Poll the unit status every 10 Minutes
                     Thread.sleep(600 * mSec);
-                    logger.trace("pollUnitStatus:");
+                    logger.debug("pollUnitStatus:");
                     if (casambiRest != null) {
                         CasambiSimpleMessageNetworkState networkState = casambiRest.getNetworkState();
                         if (networkState != null) {

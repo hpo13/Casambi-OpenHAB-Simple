@@ -17,6 +17,7 @@ import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.http.HttpClient;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -25,19 +26,16 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.junit.platform.commons.logging.LoggerFactory;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageNetwork;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageNetworkState;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageScene;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageSession;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -97,7 +95,7 @@ public class CasambiSimpleDriverRest {
         try {
             casaServer = new URL("https://door.casambi.com/");
         } catch (Exception e) {
-            logger.error("CasambiDriverJson: new URL - exception", e);
+            logger.error("CasambiDriverRest: new URL - exception", e);
             casaServer = null;
         }
         casambiWireId = 1;
@@ -123,7 +121,7 @@ public class CasambiSimpleDriverRest {
      *
      * @return the the web-socket
      */
-    public CasambiSimpleDriverSocket getSocket() {
+    public CasambiSimpleDriverSocket getNewCasambiSocket() {
         return new CasambiSimpleDriverSocket(apiKey, casambiSessionId, casambiNetworkId, casambiWireId, messageLogger,
                 webSocketClient);
     }
@@ -134,6 +132,8 @@ public class CasambiSimpleDriverRest {
      * FIXME: should this close the web-socket interface as well?
      */
     public void close() {
+        // Close socket together with REST client
+        // boolean socketOk = webSocketClient.close();
         try {
             httpClient.stop();
         } catch (Exception e) {
