@@ -31,13 +31,13 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.platform.commons.logging.LoggerFactory;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageNetwork;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageNetworkState;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageScene;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageSession;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageUnit;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -75,7 +75,7 @@ public class CasambiSimpleDriverRest {
     private String casambiSessionId;
     private int casambiWireId;
 
-    final Logger logger = (Logger) LoggerFactory.getLogger(CasambiSimpleDriverRest.class);
+    final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverRest.class);
 
     /**
      * CasambiSimpleDriverRest constructor sets up the REST interface and calls setup of the Socket interface. The
@@ -94,10 +94,12 @@ public class CasambiSimpleDriverRest {
      */
     public CasambiSimpleDriverRest(String key, String user, String usrPw, String netPw,
             CasambiSimpleDriverLogger msgLogger, WebSocketClient webSocketClient, HttpClient httpClient) {
+        logger.debug("CasambiSimpleDriverRest:constructor webSocketClient {}, httpClient {}", webSocketClient,
+                httpClient);
         try {
             casaServer = new URL("https://door.casambi.com/");
         } catch (Exception e) {
-            logger.error("CasambiDriverRest: new URL - exception", e);
+            logger.error("CasambiDriverRest:constructor new URL - exception", e);
             casaServer = null;
         }
         casambiWireId = 1;
@@ -105,12 +107,13 @@ public class CasambiSimpleDriverRest {
         casambiNetworkId = "";
         this.httpClient = httpClient;
         this.webSocketClient = webSocketClient;
-        try {
-            httpClient.start();
-        } catch (Exception e) {
-            logger.error("CasambiDriverRest: httpClient.start - exception {}", e.getMessage());
-            casaServer = null;
-        }
+        // No need to start shared httpClient
+        // try {
+        // httpClient.start();
+        // } catch (Exception e) {
+        // logger.error("CasambiDriverRest:constructor httpClient.start exception {}", e.getMessage());
+        // casaServer = null;
+        // }
         messageLogger = msgLogger;
         apiKey = key;
         userId = user;
@@ -124,6 +127,7 @@ public class CasambiSimpleDriverRest {
      * @return the the web-socket
      */
     public CasambiSimpleDriverSocket getNewCasambiSocket() {
+        logger.debug("casambiRest:getNewCasabmiSocket");
         return new CasambiSimpleDriverSocket(apiKey, casambiSessionId, casambiNetworkId, casambiWireId, messageLogger,
                 webSocketClient);
     }
@@ -136,11 +140,12 @@ public class CasambiSimpleDriverRest {
     public void close() {
         // Close socket together with REST client
         // boolean socketOk = webSocketClient.close();
-        try {
-            httpClient.stop();
-        } catch (Exception e) {
-            logger.error("CasambiDriverRest.close: httpClient.stop - exception {}", e.getMessage());
-        }
+        logger.debug("casambiRest:close - don't stop anything, we are using the shared client");
+        // try {
+        // httpClient.stop();
+        // } catch (Exception e) {
+        // logger.error("casambiRest:close httpClient.stop - exception {}", e.getMessage());
+        // }
         casaServer = null;
     }
 
@@ -201,12 +206,15 @@ public class CasambiSimpleDriverRest {
             Gson gson = new Gson();
             CasambiSimpleMessageSession sessObj = gson.fromJson(response.getContentAsString(),
                     CasambiSimpleMessageSession.class);
-            if (sessObj != null) {
-                casambiSessionId = sessObj.sessionId;
-            } else {
-                logger.warn("createUserSession: Session object is null. HTTP response was '{}'",
-                        response.getContentAsString());
-            }
+            casambiSessionId = sessObj.sessionId;
+            /*
+             * if (sessObj != null) {
+             * casambiSessionId = sessObj.sessionId;
+             * } else {
+             * logger.warn("createUserSession: Session object is null. HTTP response was '{}'",
+             * response.getContentAsString());
+             * }
+             */
             return sessObj;
         } else {
             return null;

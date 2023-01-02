@@ -25,7 +25,6 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.platform.commons.logging.LoggerFactory;
 import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverLogger;
 import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverRest;
 import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverSocket;
@@ -53,6 +52,7 @@ import org.openhab.core.thing.binding.ThingHandlerService;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The {@link CasambiSimpleBridgeHandler} manages to connection to the Casambi system
@@ -69,7 +69,7 @@ import org.slf4j.Logger;
 @NonNullByDefault
 public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
 
-    private final Logger logger = (Logger) LoggerFactory.getLogger(CasambiSimpleBridgeHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(CasambiSimpleBridgeHandler.class);
 
     private CasambiSimpleBridgeConfiguration config;
 
@@ -81,6 +81,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
     private @Nullable Future<?> socketKeepAliveJob;
     private @Nullable Future<?> pollUnitStatusJob;
     private @Nullable Future<?> peerRecoveryJob;
+    private @Nullable Future<?> initSessionJob;
     // private @Nullable CasambiSimpleDriverLogger messageLogger;
 
     private volatile boolean bridgeOnline = false;
@@ -116,6 +117,8 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
      */
     public CasambiSimpleBridgeHandler(Bridge bridge, WebSocketClient webSocketClient, HttpClient httpClient) {
         super(bridge);
+        logger.debug("CasambiSimpleBridgeHandler:constructor webSocketClient {}, httpClient {}", webSocketClient,
+                httpClient);
         this.httpClient = httpClient;
         this.webSocketClient = webSocketClient;
         config = getConfigAs(CasambiSimpleBridgeConfiguration.class);
@@ -143,6 +146,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
         CasambiSimpleDriverSocket casambiSocketLocal = casambiSocket;
         if (BRIDGE_CHANNEL_RESTART.equals(channelUID.getId())) {
             // restart the bridge
+            // FIXME: this needs to be tested (has a channel been defined?)
             if (command instanceof OnOffType) {
                 logger.warn("handleCommand: bridgeRestart - stopping the bridge, connections and runnables");
                 dispose();
@@ -185,9 +189,11 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
         logger.debug("initialize: setting up bridge");
 
         // Setup REST & WebSocket interface and start jobs
-        if (!initSessionJobRunning) {
-            scheduler.execute(initCasambiSession);
+        if (initSessionJob != null) {
+            initSessionJob.cancel(true);
         }
+        initSessionJobRunning = false;
+        initSessionJob = scheduler.submit(initCasambiSession);
 
         // Discovery Handler
         BridgeHandler bridgeHandler = this.getThing().getHandler();
@@ -209,41 +215,42 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
         if (pollMessageJob != null) {
             pollMessageJob.cancel(true);
             pollMessageJobRunning = false;
+            logger.debug("casambiBridge:dispose pollJob stopped");
         }
         if (socketKeepAliveJob != null) {
             socketKeepAliveJob.cancel(true);
             socketKeepAliveJobRunning = false;
+            logger.debug("casambiBridge:dispose keepAlive stopped");
         }
         if (pollUnitStatusJob != null) {
             pollUnitStatusJob.cancel(true);
             pollUnitStatusJobRunning = false;
+            logger.debug("casambiBridge:dispose pollStatus stopped");
         }
         if (peerRecoveryJob != null) {
             peerRecoveryJob.cancel(true);
             peerRecoveryJobRunning = false;
+            logger.debug("casambiBridge:dispose peerRecovery stopped");
         }
-        // FIXME: braucht es hier try/catch?
-        // try {
         if (casambiSocket != null) {
             casambiSocket.close();
+            logger.debug("casambiBridge:dispose socket closed");
         }
-        // } catch (Exception e) {
-        // logger.error("dispose: Exception {}", e.toString());
-        // } finally {
-        // casambiSocket = null;
-        // }
+        // FIXME: wait for socket to be closed before closing REST?
         if (casambiRest != null) {
             casambiRest.close();
             casambiRest = null;
+            logger.debug("casambiBridge:dispose REST closed");
         }
         bridgeOnline = false;
         super.dispose();
+        logger.debug("casambiBridge:dispose done");
     }
 
     // Optional method, for development only, not production
     @Override
     public void childHandlerInitialized(ThingHandler handler, Thing thing) {
-        logger.info("childHandlerInitialized: Thing {}, NOP!", thing);
+        // logger.info("childHandlerInitialized: Thing {}, NOP!", thing);
         // Das ist Quatsch hier - nur implementieren, wenn auch etwas sinnvolles passiert (mit dem thing!)
         // updateStatus(ThingStatus.ONLINE);
     }
@@ -251,7 +258,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
     // Optional method, for development only, not production
     @Override
     public void childHandlerDisposed(ThingHandler handler, Thing thing) {
-        logger.info("childHandlerDispose: Thing {}, NOP!", thing);
+        // logger.info("childHandlerDispose: Thing {}, NOP!", thing);
         // Das ist Quatsch hier - nur implementieren, wenn auch etwas sinnvolles passiert (mit dem thing!)
         // updateStatus(ThingStatus.REMOVED);
     }
@@ -298,16 +305,23 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
 
             if (pollUnitStatusJob != null) {
                 pollUnitStatusJob.cancel(true);
-                pollUnitStatusJobRunning = false;
             }
+            pollUnitStatusJobRunning = false;
+
             if (pollMessageJob != null) {
                 pollMessageJob.cancel(true);
-                pollMessageJobRunning = false;
             }
+            pollMessageJobRunning = false;
+
             if (socketKeepAliveJob != null) {
                 socketKeepAliveJob.cancel(true);
-                socketKeepAliveJobRunning = false;
             }
+            socketKeepAliveJobRunning = false;
+
+            if (peerRecoveryJob != null) {
+                peerRecoveryJob.cancel(true);
+            }
+            peerRecoveryJobRunning = false;
 
             casambiSocket = null;
             casambiRest = null;
@@ -484,7 +498,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                         }
                     }
                 } else {
-                    logger.warn("+++ handleCasambiMessages: casambi driver is null. Exiting.");
+                    logger.warn("handleCasambiMessages: casambi driver is null. Exiting.");
                     updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Casambi driver is null");
                     pollMessageJobRunning = false;
                     return;
@@ -567,10 +581,11 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                         return;
                     }
                 } catch (Exception e) {
-                    logger.warn("pollUnitStatus: exception {}. Continuing.", e.getMessage());
-                    // logger.error("pollUnitStatus: exception {}. Exiting.", e.getMessage());
-                    // pollUnitStatusJobRunning = false;
-                    // return;
+                    // logger.warn("pollUnitStatus: exception {}. Continuing.", e.getMessage());
+                    // "sleep interrupted" exception on bundle:stop
+                    logger.warn("pollUnitStatus: exception {}. Exiting.", e.getMessage());
+                    pollUnitStatusJobRunning = false;
+                    return;
                 }
             }
         };
@@ -615,10 +630,11 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                         return;
                     }
                 } catch (Exception e) {
-                    logger.warn("sendKeepAlive: exception {}. Continuing.", e.getMessage());
-                    // logger.error("sendKeepAlive: exception {}. Exiting.", e.getMessage());
-                    // socketKeepAliveJobRunning = false;
-                    // return;
+                    // logger.warn("sendKeepAlive: exception {}. Continuing.", e.getMessage());
+                    // "sleep interrupted" exception on bundle:stop
+                    logger.warn("sendKeepAlive: exception {}. Exiting.", e.getMessage());
+                    socketKeepAliveJobRunning = false;
+                    return;
                 }
             }
         }

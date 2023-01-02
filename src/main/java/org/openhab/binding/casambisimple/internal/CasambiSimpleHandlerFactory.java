@@ -72,6 +72,7 @@ public class CasambiSimpleHandlerFactory extends BaseThingHandlerFactory {
 
         if (THING_TYPE_BRIDGE.equals(thingTypeUID)) {
             Bridge bridge = (Bridge) thing;
+            // Using shared clients here - no starting or stopping
             return new CasambiSimpleBridgeHandler(bridge, webSocketFactory.getCommonWebSocketClient(),
                     httpClientFactory.getCommonHttpClient());
         }
