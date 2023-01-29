@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2021 Contributors to the openHAB project
+ * Copyright (c) 2010-2022 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -17,7 +17,6 @@ import static org.openhab.binding.casambisimple.internal.CasambiSimpleBindingCon
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Future;
 
@@ -32,10 +31,8 @@ import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleDriverSyst
 import org.openhab.binding.casambisimple.internal.driver.CasambiSimpleException;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageEvent;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageEvent.messageType;
-import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageNetwork;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageNetworkState;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageScene;
-import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageSession;
 import org.openhab.binding.casambisimple.internal.driver.messages.CasambiSimpleMessageUnit;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.PercentType;
@@ -337,11 +334,11 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                 CasambiSimpleDriverSystem.enableSshCommand(config.useRemCmd, config.remCmdStr);
                 CasambiSimpleDriverRest casambiRestLocal = casambiRest;
                 if (casambiRestLocal != null) {
-                    CasambiSimpleMessageSession userSession;
-                    Map<String, CasambiSimpleMessageNetwork> networkSession;
-                    if ((userSession = casambiRestLocal.createUserSession()) == null) {
+                    // CasambiSimpleMessageSession userSession;
+                    // Map<String, CasambiSimpleMessageNetwork> networkSession;
+                    if ((/* userSession = */ casambiRestLocal.createUserSession()) == null) {
                         throw new CasambiSimpleException("User session could not be initialized");
-                    } else if ((networkSession = casambiRestLocal.createNetworkSession()) == null) {
+                    } else if (( /* networkSession = */ casambiRestLocal.createNetworkSession()) == null) {
                         throw new CasambiSimpleException("Network session could not be initialized");
                     } else {
                         if (!pollUnitStatusJobRunning) {
