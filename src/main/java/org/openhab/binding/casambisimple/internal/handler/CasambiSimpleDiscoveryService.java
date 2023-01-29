@@ -242,12 +242,12 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
                                 properties.put(LUMINARY_TEMPERATURE_MIN, control.getMin());
                                 properties.put(LUMINARY_TEMPERATURE_MAX, control.getMax());
                             }
-                            if (control.isColorbalance()) {
-                                properties.put(LUMINARY_HAS_COLORBALANCE, true);
-                            }
-                            if (control.isWhiteDimmer()) {
-                                properties.put(LUMINARY_HAS_WHITELEVEL, true);
-                            }
+                            // if (control.isColorbalance()) {
+                            // properties.put(LUMINARY_HAS_COLORBALANCE, true);
+                            // }
+                            // if (control.isWhiteDimmer()) {
+                            // properties.put(LUMINARY_HAS_WHITELEVEL, true);
+                            // }
                         }
                     }
                 }

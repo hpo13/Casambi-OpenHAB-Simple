@@ -49,14 +49,23 @@ public class CasambiSimpleHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(CasambiSimpleHandlerFactory.class);
 
     private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = CasambiSimpleBindingConstants.SUPPORTED_DEVICE_THING_TYPES_UIDS;
-    private final HttpClientFactory httpClientFactory;
-    private final WebSocketFactory webSocketFactory;
+    // Do these need to be final? Or do we want to set them to null on deactivation?
+    private @Nullable HttpClientFactory httpClientFactory;
+    private @Nullable WebSocketFactory webSocketFactory;
 
     @Activate
     public CasambiSimpleHandlerFactory(@Reference WebSocketFactory webSocketFactory,
             @Reference HttpClientFactory httpClientFactory) {
         this.httpClientFactory = httpClientFactory;
         this.webSocketFactory = webSocketFactory;
+    }
+
+    // Check if deactivate helps reduce message count during shutdown
+    public void deactivate() {
+        logger.debug("handlerFactory:deactivate called.");
+        // Do we actually need to do anything here?
+        this.httpClientFactory = null;
+        this.webSocketFactory = null;
     }
 
     @Override

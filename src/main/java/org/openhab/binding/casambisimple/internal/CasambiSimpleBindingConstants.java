@@ -56,18 +56,19 @@ public class CasambiSimpleBindingConstants {
     public static final String LUMINARY_HAS_DIMMER = "hasDimmer";
     public static final String LUMINARY_HAS_COLOR = "hasColor";
     public static final String LUMINARY_HAS_CCT = "hasCCT";
-    public static final String LUMINARY_HAS_COLORBALANCE = "hasColorbalance";
-    public static final String LUMINARY_HAS_WHITELEVEL = "hasWhitelevel";
+    // public static final String LUMINARY_HAS_COLORBALANCE = "hasColorbalance";
+    // public static final String LUMINARY_HAS_WHITELEVEL = "hasWhitelevel";
     public static final String LUMINARY_TEMPERATURE_MIN = "tempMin";
     public static final String LUMINARY_TEMPERATURE_MAX = "tempMax";
 
     // Channels
+    // FIXME: do we need 'onoff' channels?
     public static final String LUMINARY_CHANNEL_ONOFF = "onoff";
     public static final String LUMINARY_CHANNEL_DIMMER = "dim";
     public static final String LUMINARY_CHANNEL_COLOR = "color";
     public static final String LUMINARY_CHANNEL_CCT = "cct";
-    public static final String LUMINARY_CHANNEL_COLORBALANCE = "colorbalance";
-    public static final String LUMINARY_CHANNEL_WHITELEVEL = "whitelevel";
+    // public static final String LUMINARY_CHANNEL_COLORBALANCE = "colorbalance";
+    // public static final String LUMINARY_CHANNEL_WHITELEVEL = "whitelevel";
 
     // Scene constants
     // Parameters
@@ -75,6 +76,7 @@ public class CasambiSimpleBindingConstants {
     public static final String SCENE_UID = "sceneUID";
     public static final String SCENE_NAME = "sceneName";
     // Channels
+    // FIXME: do we need 'onoff' channels?
     public static final String SCENE_CHANNEL_ONOFF = "onoff";
     public static final String SCENE_CHANNEL_DIM = "dim";
 
@@ -84,6 +86,7 @@ public class CasambiSimpleBindingConstants {
     public static final String GROUP_UID = "groupUID";
     public static final String GROUP_NAME = "groupName";
     // Channels
+    // FIXME: do we need 'onoff' channels?
     public static final String GROUP_CHANNEL_ONOFF = "onoff";
     public static final String GROUP_CHANNEL_DIM = "dim";
 }

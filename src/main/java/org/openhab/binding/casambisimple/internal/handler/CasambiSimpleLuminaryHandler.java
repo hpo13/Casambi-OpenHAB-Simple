@@ -158,14 +158,14 @@ public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
                                 casambiSocketCopy.setUnitCCT(deviceId, temp);
                                 commandHandled = true;
                             }
-                        } else if (LUMINARY_CHANNEL_WHITELEVEL.equals(channelUID.getId())) {
-                            // Set color balance color (0-100) and white (0-100)
-                            logger.info("handleCommand: got WHITELEVEL channel command {}", command);
-                            if (command instanceof PercentType) {
-                                Float slider = ((PercentType) command).floatValue();
-                                casambiSocketCopy.setUnitWhitelevel(deviceId, slider);
-                                commandHandled = true;
-                            }
+                            // } else if (LUMINARY_CHANNEL_WHITELEVEL.equals(channelUID.getId())) {
+                            // // Set color balance color (0-100) and white (0-100)
+                            // logger.info("handleCommand: got WHITELEVEL channel command {}", command);
+                            // if (command instanceof PercentType) {
+                            // Float slider = ((PercentType) command).floatValue();
+                            // casambiSocketCopy.setUnitWhitelevel(deviceId, slider);
+                            // commandHandled = true;
+                            // }
                         } else {
                             logger.warn("handleCommand: unexpected channel id {}", channelUID.getId());
                         }
@@ -226,10 +226,11 @@ public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
             boolean hasBri = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINARY_HAS_DIMMER));
             boolean hasCo = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINARY_HAS_COLOR));
             boolean hasCoTe = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINARY_HAS_CCT));
-            boolean hasWhLv = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINARY_HAS_WHITELEVEL));
+            // boolean hasWhLv = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINARY_HAS_WHITELEVEL));
 
-            logger.info("Thing {}: hasBri {}, hasCo {}, hasCoTe {}, hasWhLv {}", deviceUid, hasBri, hasCo, hasCoTe,
-                    hasWhLv);
+            // logger.info("Thing {}: hasBri {}, hasCo {}, hasCoTe {}, hasWhLv {}", deviceUid, hasBri, hasCo, hasCoTe,
+            // hasWhLv);
+            logger.info("Thing {}: hasBri {}, hasCo {}, hasCoTe {}", deviceUid, hasBri, hasCo, hasCoTe);
 
             // Remove channels that have no corresponding control in the device
             ThingBuilder tb = editThing();
@@ -254,12 +255,12 @@ public class CasambiSimpleLuminaryHandler extends BaseThingHandler {
                         tb.withoutChannel(ch.getUID());
                     }
                 }
-                if (LUMINARY_CHANNEL_WHITELEVEL.equals(ch.getUID().getId())) {
-                    if (!hasWhLv) {
-                        logger.info("Thing: {} Removing WHITELEVEL channel {}", deviceUid, ch.getUID());
-                        tb.withoutChannel(ch.getUID());
-                    }
-                }
+                // if (LUMINARY_CHANNEL_WHITELEVEL.equals(ch.getUID().getId())) {
+                // if (!hasWhLv) {
+                // logger.info("Thing: {} Removing WHITELEVEL channel {}", deviceUid, ch.getUID());
+                // tb.withoutChannel(ch.getUID());
+                // }
+                // }
             }
             updateThing(tb.build());
 
