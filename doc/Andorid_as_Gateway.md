@@ -6,7 +6,7 @@ For testing I used an old Android 6 device that was still working well, but had 
 
 ## Problems with the setup
 
-A number of problems had to be overcome for the device to be (more or less) useable.
+A number of problems had to be overcome for the device to be (more or less) usable.
 
 * Android battery optimisation - by default, Android will terminate app after a while, when it things that it is not used any more
 * Keeping the Casambi app in the foreground - some apps will try to push themselves to the foreground from time to time
@@ -48,18 +48,22 @@ In the end it is probably easiest to first set up SSH on the Android phone (see 
 The script to acquire the wakelock in `/data/data/com.termux/files/home/.termux/boot` is:
 
 ```
-      #!/data/data/com.termux/files/usr/bin/sh
-      termux-wake-lock
-      ssh
+    #!/data/data/com.termux/files/usr/bin/sh
+    # Set the wake-lock to keep termux from sleeping 
+    /data/data/com.termux/files/usr/bin/termux-wake-lock
+    # Start the ssh-server on port 8022
+    /data/data/com.termux/files/usr/bin/sshd
+    # Start the Casambi App and bring it to the foreground
+    /data/data/com.termux/files/home/bin/casa_start.sh
 ```
 
 The `ssh` line is only needed if you want to enable SSH access to your Android device (see section below).
 
-The script to start the Casambi app in `/data/data/com.termux/files/home/bin` is:
+The script `casa_start.sh` to start the Casambi app in `/data/data/com.termux/files/home/bin` is:
 
 ```
-      #!/data/data/com.termux/files/usr/bin/bash
-      /data/data/com.termux/files/usr/bin/am start casambi.ambi/.ui.Casa
+    #!/data/data/com.termux/files/usr/bin/bash
+    /data/data/com.termux/files/usr/bin/am start casambi.ambi/.ui.Casa
 ```
 This should make sure that the Casambi App is started automatically and put into the foreground when the device boots. 
 
