@@ -187,7 +187,7 @@ public class CasambiSimpleGroupHandler extends BaseThingHandler {
         super.updateState(chan, state);
     }
 
-    // Map Luminary ids to things. Needed to update thing status based on casambi message content
+    // Map Luminaire ids to things. Needed to update thing status based on casambi message content
 
     // // Get thing corresponding to id
     // public static @Nullable Thing getGroupById(@Nullable Integer id) {

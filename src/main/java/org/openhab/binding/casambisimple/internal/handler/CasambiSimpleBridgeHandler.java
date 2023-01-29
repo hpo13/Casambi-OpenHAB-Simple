@@ -82,7 +82,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
     // private @Nullable CasambiSimpleDriverLogger messageLogger;
 
     private volatile boolean bridgeOnline = false;
-    private volatile boolean initSessionJobRunning = false;
+    // private volatile boolean initSessionJobRunning = false;
     private volatile boolean peerRecoveryJobRunning = false;
     private volatile boolean pollUnitStatusJobRunning = false;
     private volatile boolean pollMessageJobRunning = false;
@@ -189,7 +189,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
         if (initSessionJob != null) {
             initSessionJob.cancel(true);
         }
-        initSessionJobRunning = false;
+        // initSessionJobRunning = false;
         initSessionJob = scheduler.submit(initCasambiSession);
 
         // Discovery Handler
@@ -298,7 +298,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
         @Override
         public void run() {
             logger.debug("initCasambiSession: initializing Casambi session and jobs");
-            initSessionJobRunning = true;
+            // initSessionJobRunning = true;
 
             if (pollUnitStatusJob != null) {
                 pollUnitStatusJob.cancel(true);
@@ -374,7 +374,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                         "Exception during session initialisation: " + e.getMessage());
             }
-            initSessionJobRunning = false;
+            // initSessionJobRunning = false;
         }; // run()
     };
 
@@ -411,20 +411,20 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                                     logger.debug("handleCasambiMessages: unitChanged id {}, online {}, on {}, dim {}",
                                             msg.id, msg.online, msg.on, msg.dimLevel);
 
-                                    Thing thing = thingsById.getFirstLuminary(msg.id);
+                                    Thing thing = thingsById.getFirstLuminaire(msg.id);
                                     if (thing != null) {
-                                        CasambiSimpleLuminaryHandler thingHandler = (CasambiSimpleLuminaryHandler) thing
+                                        CasambiSimpleLuminaireHandler thingHandler = (CasambiSimpleLuminaireHandler) thing
                                                 .getHandler();
                                         if (thingHandler != null) {
                                             // Update online status
                                             if (msg.online != null && msg.online) {
-                                                thingHandler.updateLuminaryStatus(ThingStatus.ONLINE);
+                                                thingHandler.updateLuminaireStatus(ThingStatus.ONLINE);
                                             } else {
                                                 logger.warn("handleCasambiMessages: status OFFLINE, id {}", msg.id);
-                                                thingHandler.updateLuminaryStatus(ThingStatus.OFFLINE);
+                                                thingHandler.updateLuminaireStatus(ThingStatus.OFFLINE);
                                             }
                                             org.openhab.core.thing.Channel channel = thing
-                                                    .getChannel(LUMINARY_CHANNEL_DIMMER);
+                                                    .getChannel(LUMINAIRE_CHANNEL_DIMMER);
                                             if (channel != null) {
                                                 Float lvl = (msg.dimLevel != null) ? msg.dimLevel : 0;
                                                 thingHandler.updateState(channel.getUID(),
@@ -509,7 +509,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
      * accordingly. Runs as long as the bridge is active. Polling is done every 10 minutes (FIXME: should be
      * configurable).
      *
-     * Currently only the state of luminaries is updated (by calling the appropriate thing handler).
+     * Currently only the state of luminaires is updated (by calling the appropriate thing handler).
      *
      * Scene and group status does not get updated. It is not quite clear, how the scene and group status can be defined
      * in a meaningful way.
@@ -533,17 +533,17 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                         CasambiSimpleMessageNetworkState networkState = casambiRest.getNetworkState();
                         if (networkState != null) {
 
-                            // Get status of luminaries
+                            // Get status of luminaires
                             if (networkState.units != null) {
 
                                 for (Entry<Integer, CasambiSimpleMessageUnit> unit : networkState.units.entrySet()) {
-                                    Thing thing = thingsById.getFirstLuminary(unit.getKey());
+                                    Thing thing = thingsById.getFirstLuminaire(unit.getKey());
                                     if (thing != null) {
-                                        CasambiSimpleLuminaryHandler thingHandler = (CasambiSimpleLuminaryHandler) thing
+                                        CasambiSimpleLuminaireHandler thingHandler = (CasambiSimpleLuminaireHandler) thing
                                                 .getHandler();
                                         CasambiSimpleMessageUnit unitState = unit.getValue();
                                         if (thingHandler != null) {
-                                            thingHandler.updateLuminaryState(unitState);
+                                            thingHandler.updateLuminaireState(unitState);
                                         }
                                     } else {
                                         logger.warn("pollUnitStatus: got status for unknown id {}, name {}",

@@ -206,15 +206,14 @@ public class CasambiSimpleDriverRest {
             Gson gson = new Gson();
             CasambiSimpleMessageSession sessObj = gson.fromJson(response.getContentAsString(),
                     CasambiSimpleMessageSession.class);
-            casambiSessionId = sessObj.sessionId;
-            /*
-             * if (sessObj != null) {
-             * casambiSessionId = sessObj.sessionId;
-             * } else {
-             * logger.warn("createUserSession: Session object is null. HTTP response was '{}'",
-             * response.getContentAsString());
-             * }
-             */
+            // casambiSessionId = sessObj.sessionId;
+            if (sessObj != null) {
+                casambiSessionId = sessObj.sessionId;
+            } else {
+                logger.warn("createUserSession: Session object is null. HTTP response was '{}'",
+                        response.getContentAsString());
+            }
+
             return sessObj;
         } else {
             return null;
@@ -299,7 +298,7 @@ public class CasambiSimpleDriverRest {
     }
 
     /**
-     * getNetworkState queries the luminaries, scenes and groups on the network
+     * getNetworkState queries the luminaires, scenes and groups on the network
      *
      * @return network state data as returned by the Casambi cloud service.
      * @throws IOException
@@ -337,7 +336,9 @@ public class CasambiSimpleDriverRest {
      * @throws TimeoutException
      * @throws ExecutionException
      *
-     *             FIXME: untested
+     *             FIXME: uses deprecated api.
+     *             FIXME: use new url "https://door.casambi.com/datapoints/networks/NETWORK-ID-HERE/datapoints" + filter
+     *             FIXME: see https://developer.casambi.com/#rest-api-request-network-datapoints
      */
     public JsonObject getNetworkDatapoints(LocalDateTime from, LocalDateTime to, int sensorType) throws IOException,
             InterruptedException, URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
@@ -347,7 +348,7 @@ public class CasambiSimpleDriverRest {
         URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/datapoints?sensorType=" + sensorType
                 + "&from=" + fromTime + "&to=" + toTime);
         ContentResponse response = makeHttpGet(url).send();
-        checkHttpResponse("getNetworkState", url, response);
+        checkHttpResponse("getNetworkDatapoints", url, response);
 
         // Wrap response into object because gson does not seem to like naked json-arrays
         String res = "{\"datapoints\":" + response.getContentAsString() + "}";
@@ -382,7 +383,7 @@ public class CasambiSimpleDriverRest {
     /**
      * getUnitState returns state information for a single unit
      *
-     * @param unitId as assigned by the Casambi sytem
+     * @param unitId as assigned by the Casambi system
      * @return unitState information
      * @throws IOException
      * @throws InterruptedException

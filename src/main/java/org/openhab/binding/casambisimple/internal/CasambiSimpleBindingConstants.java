@@ -32,13 +32,13 @@ public class CasambiSimpleBindingConstants {
 
     // List of all Thing Type UIDs
     public static final ThingTypeUID THING_TYPE_BRIDGE = new ThingTypeUID(BINDING_ID, "casambibridge");
-    public static final ThingTypeUID THING_TYPE_LUMINARY = new ThingTypeUID(BINDING_ID, "luminary");
+    public static final ThingTypeUID THING_TYPE_LUMINAIRE = new ThingTypeUID(BINDING_ID, "luminaire");
     public static final ThingTypeUID THING_TYPE_SCENE = new ThingTypeUID(BINDING_ID, "scene");
     public static final ThingTypeUID THING_TYPE_GROUP = new ThingTypeUID(BINDING_ID, "group");
     // public static final ThingTypeUID THING_TYPE_SWITCH = new ThingTypeUID(BINDING_ID, "switch");
 
     public static final Set<ThingTypeUID> SUPPORTED_DEVICE_THING_TYPES_UIDS = new HashSet<>(
-            Arrays.asList(THING_TYPE_BRIDGE, THING_TYPE_LUMINARY, THING_TYPE_SCENE, THING_TYPE_GROUP));
+            Arrays.asList(THING_TYPE_BRIDGE, THING_TYPE_LUMINAIRE, THING_TYPE_SCENE, THING_TYPE_GROUP));
 
     // Bridge constants
     // Bridge channels
@@ -47,28 +47,28 @@ public class CasambiSimpleBindingConstants {
     public static final String BRIDGE_CHANNEL_DIM = "dim";
     public static final String BRIDGE_CHANNEL_RESTART = "restart";
 
-    // Luminary constants
+    // Luminaire constants
     // Parameters
-    public static final String LUMINARY_ID = "luminaryId";
-    public static final String LUMINARY_UID = "luminaryUID";
-    public static final String LUMINARY_NAME = "luminaryName";
+    public static final String LUMINAIRE_ID = "luminaireId";
+    public static final String LUMINAIRE_UID = "luminaireUID";
+    public static final String LUMINAIRE_NAME = "luminaireName";
 
-    public static final String LUMINARY_HAS_DIMMER = "hasDimmer";
-    public static final String LUMINARY_HAS_COLOR = "hasColor";
-    public static final String LUMINARY_HAS_CCT = "hasCCT";
-    // public static final String LUMINARY_HAS_COLORBALANCE = "hasColorbalance";
-    // public static final String LUMINARY_HAS_WHITELEVEL = "hasWhitelevel";
-    public static final String LUMINARY_TEMPERATURE_MIN = "tempMin";
-    public static final String LUMINARY_TEMPERATURE_MAX = "tempMax";
+    public static final String LUMINAIRE_HAS_DIMMER = "hasDimmer";
+    public static final String LUMINAIRE_HAS_COLOR = "hasColor";
+    public static final String LUMINAIRE_HAS_CCT = "hasCCT";
+    // public static final String LUMINAIRE_HAS_COLORBALANCE = "hasColorbalance";
+    // public static final String LUMINAIRE_HAS_WHITELEVEL = "hasWhitelevel";
+    public static final String LUMINAIRE_TEMPERATURE_MIN = "tempMin";
+    public static final String LUMINAIRE_TEMPERATURE_MAX = "tempMax";
 
     // Channels
     // FIXME: do we need 'onoff' channels?
-    public static final String LUMINARY_CHANNEL_ONOFF = "onoff";
-    public static final String LUMINARY_CHANNEL_DIMMER = "dim";
-    public static final String LUMINARY_CHANNEL_COLOR = "color";
-    public static final String LUMINARY_CHANNEL_CCT = "cct";
-    // public static final String LUMINARY_CHANNEL_COLORBALANCE = "colorbalance";
-    // public static final String LUMINARY_CHANNEL_WHITELEVEL = "whitelevel";
+    public static final String LUMINAIRE_CHANNEL_ONOFF = "onoff";
+    public static final String LUMINAIRE_CHANNEL_DIMMER = "dim";
+    public static final String LUMINAIRE_CHANNEL_COLOR = "color";
+    public static final String LUMINAIRE_CHANNEL_CCT = "cct";
+    // public static final String LUMINAIRE_CHANNEL_COLORBALANCE = "colorbalance";
+    // public static final String LUMINAIRE_CHANNEL_WHITELEVEL = "whitelevel";
 
     // Scene constants
     // Parameters

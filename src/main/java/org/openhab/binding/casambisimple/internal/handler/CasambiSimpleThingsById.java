@@ -27,11 +27,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The {@link CasambiSimpleThingsById} maps between OpenHAB things and Casambi ids and uidIds.
- * Casambi assignes integer 'id's to luminaries, scenes and groups. Most of the time a simple
- * mapping beween OpenHAB things and Casambi id's is sufficient. However when a luminary is removed
+ * Casambi assignes integer 'id's to luminaires, scenes and groups. Most of the time a simple
+ * mapping beween OpenHAB things and Casambi id's is sufficient. However when a luminaire is removed
  * from the Casambi system and later re-added it gets a new id. To account for this, luminaires are
  * tracked through their fixture-id's which do not change. This is used for a more stable mapping for
- * luminaries. This does not work for scenes and groups, because these do not have unique identifiers.
+ * luminaires. This does not work for scenes and groups, because these do not have unique identifiers.
  *
  * FIXME: are we really using the fixture id as intended? Check discovery.
  *
@@ -48,7 +48,7 @@ public class CasambiSimpleThingsById {
     /**
      * put - Add a (new) thing to the mapping if it does not already exist
      *
-     * @param uidId - combination of uid and id. uid is fixture id for luminaries and scn/grp for scenes and groups. id
+     * @param uidId - combination of uid and id. uid is fixture id for luminaires and scn/grp for scenes and groups. id
      *            is the Casambi id.
      * @param thing - Casambi thing object
      */
@@ -62,7 +62,7 @@ public class CasambiSimpleThingsById {
     /**
      * getThing returns a thing corresponding to uidId combination
      *
-     * @param uidId - combination of uid and id. uid is fixture id for luminaries and scnXX/grpXX for scenes and groups.
+     * @param uidId - combination of uid and id. uid is fixture id for luminaires and scnXX/grpXX for scenes and groups.
      *            id is the Casambi id.
      * @return thing - Casambi thing object or null if not found
      */
@@ -76,7 +76,7 @@ public class CasambiSimpleThingsById {
 
     /**
      * getFirstThing returns a thing based on the id only (without) uid. There may be more than one thing corresponding
-     * to an id. Id's for luminaries, scenes and groups are treated seperately (prefix), so there is no confusion
+     * to an id. Id's for luminaires, scenes and groups are treated seperately (prefix), so there is no confusion
      * between the three categories.
      *
      * @param id - id as specified by the casambi system
@@ -99,7 +99,7 @@ public class CasambiSimpleThingsById {
     /**
      * remove deletes a mapping based on the uidId combination
      *
-     * @param uidId - combination of uid and id. uid is fixture id for luminaries and scn/grp for scenes and groups. id
+     * @param uidId - combination of uid and id. uid is fixture id for luminaires and scn/grp for scenes and groups. id
      *            is the Casambi id.
      * @return true, if something was actually removed, false if nothing was found (and removed)
      */
@@ -123,7 +123,7 @@ public class CasambiSimpleThingsById {
      *         FIXME: is this needed? See getFirstThing()
      */
 
-    public @Nullable Thing getFirstLuminary(@Nullable Integer id) {
+    public @Nullable Thing getFirstLuminaire(@Nullable Integer id) {
         if (id != null) {
             for (Entry<String, Thing> uidIdThing : map.entrySet()) {
                 String uid = uidIdThing.getKey();
@@ -165,11 +165,11 @@ public class CasambiSimpleThingsById {
      * getType returns the type (lumiary, scene or group) of a uid
      *
      * @param uid - see above
-     * @return type for a uid (luminary, scene, group)
+     * @return type for a uid (luminaire, scene, group)
      */
     public @Nullable ThingTypeUID getType(String uid) {
         if (uid.startsWith("lum")) {
-            return THING_TYPE_LUMINARY;
+            return THING_TYPE_LUMINAIRE;
         } else if (uid.startsWith("scn")) {
             return THING_TYPE_SCENE;
         } else if (uid.startsWith("grp")) {

@@ -44,7 +44,7 @@ import com.google.gson.JsonObject;
 /**
  * The {@link CasambiSimpleDriverSocket} manages the Websocket connection to the Casambi system
  *
- * It sets up the connection, sends commands to luminaries, scenes and groups and
+ * It sets up the connection, sends commands to luminaires, scenes and groups and
  * processes messages from the system.
  *
  * Based on casambi-master (Python) by Olof Hellquist https://github.com/awahlig/casambi-master and
@@ -443,10 +443,10 @@ public class CasambiSimpleDriverSocket {
         }
     }
 
-    // --- Luminary controls -----------------------------------------------------------------------------------------
+    // --- luminaire controls -----------------------------------------------------------------------------------------
 
     /**
-     * setUnitOnOff switches a Casambi luminary on or off
+     * setUnitOnOff switches a Casambi luminaire on or off
      *
      * Currently works by setting brightness to 0 or 1
      * FIXME: might remember the last brightness of the device and restore that when switched on
@@ -491,12 +491,12 @@ public class CasambiSimpleDriverSocket {
     }
 
     /**
-     * setObjectOnOff does the actual switching for luminaries, scenes and groups
+     * setObjectOnOff does the actual switching for luminaires, scenes and groups
      *
      * Works by setting brightness to 0 or 1
      *
-     * @method selects luminary, group or scene (method attribute of the JSON message)
-     * @param id usually just "id", may be set to "ids", when multiple luminaries are to be switched
+     * @method selects luminaire, group or scene (method attribute of the JSON message)
+     * @param id usually just "id", may be set to "ids", when multiple luminaires are to be switched
      * @param objectId number of the object to be switched
      * @param onOff
      * @throws CasambiSimpleException is thrown on error, e.g. if the socket is not open
@@ -513,7 +513,7 @@ public class CasambiSimpleDriverSocket {
     }
 
     /**
-     * setUnitDimmer sets the dim level of a Casambi luminary
+     * setUnitDimmer sets the dim level of a Casambi luminaire
      *
      * @param unitId
      * @param dim level, must be between 0 and 1. O is equivalent to off, everything else is on
@@ -525,12 +525,12 @@ public class CasambiSimpleDriverSocket {
     }
 
     /**
-     * setObjectDimmer assembles the control message to dim luminaries
+     * setObjectDimmer assembles the control message to dim luminaires
      *
-     * Just used for luminaries, because a control-type message is needed.
+     * Just used for luminaires, because a control-type message is needed.
      *
-     * @method selects luminary, group or scene (method attribute of the JSON message)
-     * @param id usually just "id", may be set to "ids", when multiple luminaries are to be switched
+     * @method selects luminaire, group or scene (method attribute of the JSON message)
+     * @param id usually just "id", may be set to "ids", when multiple luminaires are to be switched
      * @param objectId number of the object to be switched
      * @param dim level, between 0 and 1
      * @throws CasambiSimpleException is thrown on error, e.g. if the socket is not open
@@ -549,11 +549,11 @@ public class CasambiSimpleDriverSocket {
     /**
      * setObjectControl puts together the complete message and sends it to the Casambi system
      *
-     * Just used for luminaries, because a control-type message is needed.
+     * Just used for luminaires, because a control-type message is needed.
      * FIXME: use setUnitControl() instead
      *
-     * @method selects luminary, group or scene (method attribute of the JSON message)
-     * @param id usually just "id", may be set to "ids", when multiple luminaries are to be switched
+     * @method selects luminaire, group or scene (method attribute of the JSON message)
+     * @param id usually just "id", may be set to "ids", when multiple luminaires are to be switched
      * @param objectId number of the object to be switched
      * @param control, control part of the message
      * @throws CasambiSimpleException is thrown on error, e.g. if the socket is not open
@@ -665,14 +665,14 @@ public class CasambiSimpleDriverSocket {
         logger.info("setUnitHSB: unit {} hsb {},{},{}", unitId, h, s, b);
 
         JsonObject rgbC = new JsonObject();
-        if (true) {
-            rgbC.addProperty(CasambiSimpleDriverConstants.controlHue, h);
-            rgbC.addProperty(CasambiSimpleDriverConstants.controlSat, s);
-        } else {
-            int[] rgb = hslToRgb(h, s, b);
-            String rgbS = "rgb(" + rgb[0] + ", " + rgb[1] + ", " + rgb[2] + ")";
-            rgbC.addProperty("rgb", rgbS);
-        }
+        rgbC.addProperty(CasambiSimpleDriverConstants.controlHue, h);
+        rgbC.addProperty(CasambiSimpleDriverConstants.controlSat, s);
+
+        // Uses rgb conversion from StackOverflow
+        // int[] rgb = hslToRgb(h, s, b);
+        // String rgbS = "rgb(" + rgb[0] + ", " + rgb[1] + ", " + rgb[2] + ")";
+        // rgbC.addProperty("rgb", rgbS);
+
         JsonObject colorsource = new JsonObject();
         colorsource.addProperty(CasambiSimpleDriverConstants.controlSource, CasambiSimpleDriverConstants.controlRGB);
         JsonObject control = new JsonObject();
@@ -838,43 +838,43 @@ public class CasambiSimpleDriverSocket {
      * @param l The lightness
      * @return int array, the RGB representation
      */
-    public static int[] hslToRgb(float h, float s, float l) {
-        float r, g, b;
-
-        if (s == 0f) {
-            r = g = b = l; // achromatic
-        } else {
-            float q = l < 0.5f ? l * (1 + s) : l + s - l * s;
-            float p = 2 * l - q;
-            r = hueToRgb(p, q, h + 1f / 3f);
-            g = hueToRgb(p, q, h);
-            b = hueToRgb(p, q, h - 1f / 3f);
-        }
-        int[] rgb = { to255(r), to255(g), to255(b) };
-        return rgb;
-    }
-
-    public static int to255(float v) {
-        return (int) Math.min(255, 256 * v);
-    }
-
+    // public static int[] hslToRgb(float h, float s, float l) {
+    // float r, g, b;
+    //
+    // if (s == 0f) {
+    // r = g = b = l; // achromatic
+    // } else {
+    // float q = l < 0.5f ? l * (1 + s) : l + s - l * s;
+    // float p = 2 * l - q;
+    // r = hueToRgb(p, q, h + 1f / 3f);
+    // g = hueToRgb(p, q, h);
+    // b = hueToRgb(p, q, h - 1f / 3f);
+    // }
+    // int[] rgb = { to255(r), to255(g), to255(b) };
+    // return rgb;
+    // }
+    //
+    // public static int to255(float v) {
+    // return (int) Math.min(255, 256 * v);
+    // }
+    //
     /** Helper method that converts hue to rgb */
-    public static float hueToRgb(float p, float q, float t) {
-        if (t < 0f) {
-            t += 1f;
-        }
-        if (t > 1f) {
-            t -= 1f;
-        }
-        if (t < 1f / 6f) {
-            return p + (q - p) * 6f * t;
-        }
-        if (t < 1f / 2f) {
-            return q;
-        }
-        if (t < 2f / 3f) {
-            return p + (q - p) * (2f / 3f - t) * 6f;
-        }
-        return p;
-    }
+    // public static float hueToRgb(float p, float q, float t) {
+    // if (t < 0f) {
+    // t += 1f;
+    // }
+    // if (t > 1f) {
+    // t -= 1f;
+    // }
+    // if (t < 1f / 6f) {
+    // return p + (q - p) * 6f * t;
+    // }
+    // if (t < 1f / 2f) {
+    // return q;
+    // }
+    // if (t < 2f / 3f) {
+    // return p + (q - p) * (2f / 3f - t) * 6f;
+    // }
+    // return p;
+    // }
 }

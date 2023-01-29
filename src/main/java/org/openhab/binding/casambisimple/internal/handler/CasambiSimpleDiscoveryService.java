@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link CasambiSimpleDiscover} discovers luminaries, switches, scenes and groups on
+ * The {@link CasambiSimpleDiscover} discovers luminaires, switches, scenes and groups on
  * the Casambi network
  *
  * @author Hein Osenberg - Initial contribution
@@ -49,7 +49,7 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
 
     private static final Logger logger = LoggerFactory.getLogger(CasambiSimpleDiscoveryService.class);
 
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Set.of(THING_TYPE_LUMINARY, THING_TYPE_SCENE,
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Set.of(THING_TYPE_LUMINAIRE, THING_TYPE_SCENE,
             THING_TYPE_GROUP);
     private static final int SEARCH_TIME = 10;
 
@@ -111,11 +111,11 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
                         logger.debug("doDiscoveryScan: oldThings before scan {}", oldThings);
 
                         if (networkState.units != null) {
-                            // Loop through luminaries removing from existing things and adding to new units
+                            // Loop through luminaires removing from existing things and adding to new units
                             for (Entry<Integer, CasambiSimpleMessageUnit> unit : networkState.units.entrySet()) {
                                 Integer id = unit.getValue().id;
                                 Integer fixtureId = unit.getValue().fixtureId;
-                                String uid = CasambiSimpleLuminaryHandler.getUidFromFixtureId(fixtureId);
+                                String uid = CasambiSimpleLuminaireHandler.getUidFromFixtureId(fixtureId);
                                 logger.trace("doDiscoveryScan: got unit id {}, uid {}, name {}", id, uid,
                                         unit.getValue().name);
                                 oldNewThings.updateOldNew(uid, id);
@@ -154,10 +154,10 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
                             // FIXME: this will have to add different thing types
                             CasambiSimpleMessageNetworkState networkStateLocal = networkState;
                             if (networkStateLocal != null) {
-                                if (THING_TYPE_LUMINARY.equals(type) && networkStateLocal.units != null) {
+                                if (THING_TYPE_LUMINAIRE.equals(type) && networkStateLocal.units != null) {
                                     CasambiSimpleMessageUnit unit = networkStateLocal.units.get(id);
                                     if (unit != null) {
-                                        addDiscoveredLuminary(unit);
+                                        addDiscoveredLuminaire(unit);
                                     }
                                 } else if (THING_TYPE_SCENE.equals(type) && networkStateLocal.scenes != null) {
                                     CasambiSimpleMessageScene scene = networkStateLocal.scenes.get(id);
@@ -182,8 +182,8 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
                             Thing thing = bridgeHandlerLocal.thingsById.getThing(uidId);
                             if (thing != null) {
                                 ThingTypeUID type = bridgeHandlerLocal.thingsById.getType(uidId);
-                                if (THING_TYPE_LUMINARY.equals(type)) {
-                                    CasambiSimpleLuminaryHandler handler = (CasambiSimpleLuminaryHandler) thing
+                                if (THING_TYPE_LUMINAIRE.equals(type)) {
+                                    CasambiSimpleLuminaireHandler handler = (CasambiSimpleLuminaireHandler) thing
                                             .getHandler();
                                     if (handler != null) {
                                         handler.dispose();
@@ -216,53 +216,53 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
         logger.trace("doDiscoveryScan: done.");
     }
 
-    private void addDiscoveredLuminary(CasambiSimpleMessageUnit unit) {
+    private void addDiscoveredLuminaire(CasambiSimpleMessageUnit unit) {
         try {
-            String uniqueID = CasambiSimpleLuminaryHandler.getUidFromFixtureId(unit.fixtureId);
+            String uniqueID = CasambiSimpleLuminaireHandler.getUidFromFixtureId(unit.fixtureId);
             ThingUID localBridgeUID = bridgeUID;
             if (localBridgeUID != null) {
-                ThingUID thingUID = new ThingUID(THING_TYPE_LUMINARY, localBridgeUID, uniqueID);
-                logger.debug("addDiscoveredLuminary: tUID: {}, id {}, name {}, uid {}", thingUID, unit.id, unit.name,
+                ThingUID thingUID = new ThingUID(THING_TYPE_LUMINAIRE, localBridgeUID, uniqueID);
+                logger.debug("addDiscoveredLuminaire: tUID: {}, id {}, name {}, uid {}", thingUID, unit.id, unit.name,
                         unit.fixtureId);
                 Map<String, Object> properties = new HashMap<>();
-                properties.put(LUMINARY_NAME, unit.name);
-                properties.put(LUMINARY_ID, unit.id);
-                properties.put(LUMINARY_UID, uniqueID);
+                properties.put(LUMINAIRE_NAME, unit.name);
+                properties.put(LUMINAIRE_ID, unit.id);
+                properties.put(LUMINAIRE_UID, uniqueID);
                 if (unit.controls != null) {
                     for (CasambiSimpleMessageControl control : unit.controls[0]) {
                         if (control != null) {
                             if (control.isDimmer()) {
-                                properties.put(LUMINARY_HAS_DIMMER, true);
+                                properties.put(LUMINAIRE_HAS_DIMMER, true);
                             }
                             if (control.isColor()) {
-                                properties.put(LUMINARY_HAS_COLOR, true);
+                                properties.put(LUMINAIRE_HAS_COLOR, true);
                             }
                             if (control.isCCT()) {
-                                properties.put(LUMINARY_HAS_CCT, true);
-                                properties.put(LUMINARY_TEMPERATURE_MIN, control.getMin());
-                                properties.put(LUMINARY_TEMPERATURE_MAX, control.getMax());
+                                properties.put(LUMINAIRE_HAS_CCT, true);
+                                properties.put(LUMINAIRE_TEMPERATURE_MIN, control.getMin());
+                                properties.put(LUMINAIRE_TEMPERATURE_MAX, control.getMax());
                             }
                             // if (control.isColorbalance()) {
-                            // properties.put(LUMINARY_HAS_COLORBALANCE, true);
+                            // properties.put(LUMINAIRE_HAS_COLORBALANCE, true);
                             // }
                             // if (control.isWhiteDimmer()) {
-                            // properties.put(LUMINARY_HAS_WHITELEVEL, true);
+                            // properties.put(LUMINAIRE_HAS_WHITELEVEL, true);
                             // }
                         }
                     }
                 }
-                logger.trace("addDiscoveredLuminary: ttUID: {}, bUID {}, label: {}", THING_TYPE_LUMINARY, bridgeUID,
+                logger.trace("addDiscoveredLuminaire: ttUID: {}, bUID {}, label: {}", THING_TYPE_LUMINAIRE, bridgeUID,
                         unit.name);
-                logger.trace("addDiscoveredLuminary: prop: {}", properties);
+                logger.trace("addDiscoveredLuminaire: prop: {}", properties);
                 DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingUID)
-                        .withThingType(THING_TYPE_LUMINARY).withProperties(properties).withBridge(bridgeUID)
-                        .withRepresentationProperty(LUMINARY_UID).withLabel(unit.name).build();
+                        .withThingType(THING_TYPE_LUMINAIRE).withProperties(properties).withBridge(bridgeUID)
+                        .withRepresentationProperty(LUMINAIRE_UID).withLabel(unit.name).build();
                 thingDiscovered(discoveryResult);
             } else {
-                logger.warn("addDiscoveredLuminary: bridgeUID is null");
+                logger.warn("addDiscoveredLuminaire: bridgeUID is null");
             }
         } catch (Exception e) {
-            logger.warn("addDiscoveredLuminary: Exception {}", e.getMessage());
+            logger.warn("addDiscoveredLuminaire: Exception {}", e.getMessage());
         }
     }
 
@@ -271,7 +271,7 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
             String uniqueID = CasambiSimpleSceneHandler.getUidFromId(scene.id);
             ThingUID localBridgeUID = bridgeUID;
             if (localBridgeUID != null) {
-                ThingUID thingUID = new ThingUID(THING_TYPE_LUMINARY, localBridgeUID, uniqueID);
+                ThingUID thingUID = new ThingUID(THING_TYPE_LUMINAIRE, localBridgeUID, uniqueID);
                 logger.debug("addDiscoveredScene: tUID: {}, id {}, name {}, uid {}", thingUID, scene.id, scene.name,
                         uniqueID);
                 Map<String, Object> properties = new HashMap<>();
@@ -298,7 +298,7 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
             String uniqueID = CasambiSimpleGroupHandler.getUidFromId(group.id);
             ThingUID localBridgeUID = bridgeUID;
             if (localBridgeUID != null) {
-                ThingUID thingUID = new ThingUID(THING_TYPE_LUMINARY, localBridgeUID, uniqueID);
+                ThingUID thingUID = new ThingUID(THING_TYPE_LUMINAIRE, localBridgeUID, uniqueID);
                 logger.debug("addDiscoveredGroup: tUID: {}, id {}, name {}, uid {}", thingUID, group.id, group.name,
                         uniqueID);
                 Map<String, Object> properties = new HashMap<>();

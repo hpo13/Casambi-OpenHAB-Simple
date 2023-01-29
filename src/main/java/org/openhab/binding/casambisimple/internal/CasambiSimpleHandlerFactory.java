@@ -20,7 +20,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.casambisimple.internal.handler.CasambiSimpleBridgeHandler;
 import org.openhab.binding.casambisimple.internal.handler.CasambiSimpleGroupHandler;
-import org.openhab.binding.casambisimple.internal.handler.CasambiSimpleLuminaryHandler;
+import org.openhab.binding.casambisimple.internal.handler.CasambiSimpleLuminaireHandler;
 import org.openhab.binding.casambisimple.internal.handler.CasambiSimpleSceneHandler;
 import org.openhab.core.io.net.http.HttpClientFactory;
 import org.openhab.core.io.net.http.WebSocketFactory;
@@ -82,11 +82,17 @@ public class CasambiSimpleHandlerFactory extends BaseThingHandlerFactory {
         if (THING_TYPE_BRIDGE.equals(thingTypeUID)) {
             Bridge bridge = (Bridge) thing;
             // Using shared clients here - no starting or stopping
-            return new CasambiSimpleBridgeHandler(bridge, webSocketFactory.getCommonWebSocketClient(),
-                    httpClientFactory.getCommonHttpClient());
+            final @Nullable HttpClientFactory htf = httpClientFactory;
+            final @Nullable WebSocketFactory wsf = webSocketFactory;
+            if (wsf != null && htf != null) {
+                return new CasambiSimpleBridgeHandler(bridge, wsf.getCommonWebSocketClient(),
+                        htf.getCommonHttpClient());
+            } else {
+                return null;
+            }
         }
-        if (THING_TYPE_LUMINARY.equals(thingTypeUID)) {
-            return new CasambiSimpleLuminaryHandler(thing);
+        if (THING_TYPE_LUMINAIRE.equals(thingTypeUID)) {
+            return new CasambiSimpleLuminaireHandler(thing);
         }
         if (THING_TYPE_SCENE.equals(thingTypeUID)) {
             return new CasambiSimpleSceneHandler(thing);
