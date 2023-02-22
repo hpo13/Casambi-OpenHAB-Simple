@@ -45,7 +45,7 @@ public class CasambiSimpleBindingConstants {
     public static final String BRIDGE_CHANNEL_PEER = "peer";
     public static final String BRIDGE_CHANNEL_MESSAGE = "message";
     public static final String BRIDGE_CHANNEL_DIM = "dim";
-    public static final String BRIDGE_CHANNEL_RESTART = "restart";
+    // public static final String BRIDGE_CHANNEL_RESTART = "restart";
 
     // Luminaire constants
     // Parameters

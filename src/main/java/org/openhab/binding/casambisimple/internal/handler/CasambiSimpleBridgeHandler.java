@@ -141,18 +141,21 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand: (Bridge) channel uid {}, command {}", channelUID, command);
         CasambiSimpleDriverSocket casambiSocketLocal = casambiSocket;
-        if (BRIDGE_CHANNEL_RESTART.equals(channelUID.getId())) {
-            // restart the bridge
-            // FIXME: this needs to be tested (has a channel been defined?)
-            if (command instanceof OnOffType) {
-                logger.warn("handleCommand: bridgeRestart - stopping the bridge, connections and runnables");
-                dispose();
-                logger.warn("handleCommand: bridgeRestart - initializing the bridge");
-                initialize();
-            } else {
-                logger.warn("handleCommand: channel {}, unexpected command type {}", channelUID, command.getClass());
-            }
-        } else if (casambiSocketLocal != null) {
+        /*
+         * if (BRIDGE_CHANNEL_RESTART.equals(channelUID.getId())) {
+         * // restart the bridge
+         * // FIXME: this needs to be tested (has a channel been defined?)
+         * if (command instanceof OnOffType) {
+         * logger.warn("handleCommand: bridgeRestart - stopping the bridge, connections and runnables");
+         * dispose();
+         * logger.warn("handleCommand: bridgeRestart - initializing the bridge");
+         * initialize();
+         * } else {
+         * logger.warn("handleCommand: channel {}, unexpected command type {}", channelUID, command.getClass());
+         * }
+         * } else
+         */
+        if (casambiSocketLocal != null) {
             if (command instanceof RefreshType) {
                 logger.trace("handleCommand: (Bridge) doRefresh NOP");
             } else if (BRIDGE_CHANNEL_DIM.equals(channelUID.getId())) {
@@ -610,7 +613,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                         logger.info("ping: Response missing for last ping.");
                         // FIXME: will this help?
                         if (missedPong > 10) {
-                            if (config.useRemCmd) {
+                            if (config.useRemCmd && casambiSocket != null) {
                                 logger.warn("ping: {} ping responses missing. Sending recovery command.", missedPong);
                                 CasambiSimpleDriverSystem.sendSshCommand();
                                 missedPong = 0;
@@ -622,9 +625,11 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                         casambiSocket.ping();
                         missedPong++;
                     } else {
-                        logger.error("sendKeepAlive: socket is null. Exiting.");
-                        socketKeepAliveJobRunning = false;
-                        return;
+                        // FIXME: do we really want to exit here? or just wait for the socket to come back online?
+                        logger.info("sendKeepAlive: socket is null. Continuing.");
+                        // logger.error("sendKeepAlive: socket is null. Exiting.");
+                        // socketKeepAliveJobRunning = false;
+                        // return;
                     }
                 } catch (Exception e) {
                     // logger.warn("sendKeepAlive: exception {}. Continuing.", e.getMessage());

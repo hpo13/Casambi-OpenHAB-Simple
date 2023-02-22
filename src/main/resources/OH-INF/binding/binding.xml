@@ -4,9 +4,7 @@
 	xsi:schemaLocation="https://openhab.org/schemas/binding/v1.0.0 https://openhab.org/schemas/binding-1.0.0.xsd">
 
 	<name>Simple Casambi Binding</name>
-	<description>Simple binding for casambi, hanldes luminairies, scenes and groups</description>
+	<description>Simple binding for casambi, handles luminaires, scenes and groups</description>
 	<author>Hein Osenberg</author>
-
-
 
 </binding:binding>

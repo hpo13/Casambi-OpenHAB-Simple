@@ -82,13 +82,13 @@
 		</config-description>
 	</bridge-type>
 
-	<!--CasambiLuminary -->
-	<thing-type id="luminary">
+	<!-- CasambiLuminaire -->
+	<thing-type id="luminaire">
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="casambibridge"/>
 		</supported-bridge-type-refs>
-		<label>Casambi Luminary</label>
-		<description>Casambi luminary, on/off/intensity</description>
+		<label>Casambi Luminaire</label>
+		<description>Casambi luminaire, on/off/intensity</description>
 		<category>lightbulb</category>
 		<channels>
 			<!-- <channel id="onoff" typeId="casambiOnOff"/> -->
@@ -98,50 +98,50 @@
 			<!-- <channel id="colorbalance" typeId ="casambiColorbalance"/> -->
 			<channel id="whitelevel" typeId="casambiWhitelevel"/>
 		</channels>
-		<representation-property>luminaryUID</representation-property>
+		<representation-property>luminaireUID</representation-property>
 		<config-description>
 			<parameter-group name="identification">
-				<label>Luminary identification</label>
-				<description>Data for luminary identification (number, name, uid)</description>
+				<label>Luminaire identification</label>
+				<description>Data for luminaire identification (number, name, uid)</description>
 			</parameter-group>
 			<parameter-group name="properties">
-				<label>Luminary properties</label>
+				<label>Luminaire properties</label>
 				<description>Properties (control types, min/max color temperature)</description>
 				<advanced>true</advanced>
 			</parameter-group>
 
-			<parameter name="luminaryId" type="integer" min="0" required="true" readOnly="false" multiple="false"
+			<parameter name="luminaireId" type="integer" min="0" required="true" readOnly="false" multiple="false"
 				groupName="identification">
 				<required>true</required>
-				<label>Casambi luminary Id</label>
-				<description>Luminary id as assigned by the Casambi system</description>
+				<label>Casambi luminaire Id</label>
+				<description>Luminaire id as assigned by the Casambi system</description>
 			</parameter>
-			<parameter name="luminaryName" type="text" required="true" readOnly="false" multiple="false"
+			<parameter name="luminaireName" type="text" required="true" readOnly="false" multiple="false"
 				groupName="identification">
 				<required>true</required>
-				<label>Casambi Luminary Name</label>
-				<description>Luminary name from the casambi system</description>
+				<label>Casambi Luminaire Name</label>
+				<description>Luminaire name from the casambi system</description>
 			</parameter>
-			<parameter name="luminaryUID" type="text" required="true" readOnly="false" multiple="false"
+			<parameter name="luminaireUID" type="text" required="true" readOnly="false" multiple="false"
 				groupName="identification">
 				<required>true</required>
-				<label>Casambi Luminary unique Id</label>
-				<description>Luminary unique id, based on the fixture id.</description>
+				<label>Casambi Luminaire unique Id</label>
+				<description>Luminaire unique id, based on the fixture id.</description>
 			</parameter>
 
 			<parameter name="hasDimmer" type="boolean" required="false" readOnly="false" multiple="false"
 				groupName="properties">
 				<required>false</required>
-				<label>Luminary can be dimmed</label>
-				<description>Luminary brightness can be controlled</description>
+				<label>Luminaire can be dimmed</label>
+				<description>Luminaire brightness can be controlled</description>
 				<advanced>true</advanced>
 			</parameter>
 
 			<parameter name="hasCCT" type="boolean" required="false" readOnly="false" multiple="false"
 				groupName="properties">
 				<required>false</required>
-				<label>Luminary color temperature may be set</label>
-				<description>Luminary color temperature may be set (between min and max values))</description>
+				<label>Luminaire color temperature may be set</label>
+				<description>Luminaire color temperature may be set (between min and max values))</description>
 				<advanced>true</advanced>
 			</parameter>
 			<parameter name="tempMin" type="decimal" required="false" readOnly="false" multiple="false"
@@ -158,12 +158,11 @@
 				<description>Maximum color temperature for CCT setting</description>
 				<advanced>true</advanced>
 			</parameter>
-
 			<parameter name="hasColor" type="boolean" required="false" readOnly="false" multiple="false"
 				groupName="properties">
 				<required>false</required>
-				<label>Luminary color may be set</label>
-				<description>Luminary color may be set (hue, saturation, brigtness)</description>
+				<label>Luminaire color may be set</label>
+				<description>Luminaire color may be set (hue, saturation, brightness)</description>
 				<advanced>true</advanced>
 			</parameter>
 			<!-- <parameter name="hasColorbalance" type="boolean" required="false" readOnly="false" multiple="false" groupName="properties">
@@ -172,13 +171,13 @@
 				<description>Balance between color and white</description>
 				<advanced>true</advanced>
 				</parameter> -->
-			<parameter name="hasWhitelevel" type="boolean" required="false" readOnly="false" multiple="false"
+			<!-- <parameter name="hasWhitelevel" type="boolean" required="false" readOnly="false" multiple="false"
 				groupName="properties">
 				<required>false</required>
 				<label>Level of white component</label>
 				<description>Controls balance between color and white</description>
 				<advanced>true</advanced>
-			</parameter>
+			</parameter> -->
 		</config-description>
 	</thing-type>
 
@@ -190,7 +189,7 @@
 			<bridge-type-ref id="casambibridge"/>
 		</supported-bridge-type-refs>
 		<label>Casambi Scene</label>
-		<description>Casambi Lighting Scene (may include multiple luminaries)</description>
+		<description>Casambi Lighting Scene (may include multiple luminaires)</description>
 		<channels>
 			<!-- <channel id="id" typeId="casambiScene"/> -->
 			<!-- <channel id="onoff" typeId="casambiOnOff"/> -->
@@ -222,7 +221,7 @@
 			<bridge-type-ref id="casambibridge"/>
 		</supported-bridge-type-refs>
 		<label>Casambi Group</label>
-		<description>Casambi luminary group that can be controlled together</description>
+		<description>Casambi luminaire group that can be controlled together</description>
 		<channels>
 			<!-- <channel id="id" typeId="casambiGroup"/> -->
 			<!-- <channel id="onoff" typeId="casambiOnOff"/> -->
@@ -281,20 +280,20 @@
 	</channel-type>
 	<channel-type id="casambiColor">
 		<item-type>Color</item-type>
-		<label>Luminary Color</label>
-		<description>Luminary color specified as HSB (hue, saturation, brightness)</description>
+		<label>Luminaire Color</label>
+		<description>Luminaire color specified as HSB (hue, saturation, brightness)</description>
 		<category>Light</category>
 	</channel-type>
 	<channel-type id="casambiCCT">
 		<item-type>Dimmer</item-type>
-		<label>Luminary Color Temperature</label>
-		<description>Luminary color temperature (between min and max °K) mapped to 0 - 100</description>
+		<label>Luminaire Color Temperature</label>
+		<description>Luminaire color temperature (between min and max °K) mapped to 0 - 100</description>
 		<category>Light</category>
 	</channel-type>
 	<channel-type id="casambiWhitelevel">
 		<item-type>Dimmer</item-type>
-		<label>Luminary White Level</label>
-		<description>Luminary white level. Controls balance between color and white components.</description>
+		<label>Luminaire White Level</label>
+		<description>Luminaire white level. Controls balance between color and white components.</description>
 		<category>Light</category>
 	</channel-type>
 

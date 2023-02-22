@@ -35,10 +35,10 @@
 
     <!-- <config-description uri="thing-type:luminary:casambibridge">
 
-    <parameter name="luninaryNumber" type="integer" min="0" required="true" readOnly="false" multiple="false">
+    <parameter name="luninaireNumber" type="integer" min="0" required="true" readOnly="false" multiple="false">
       <required>true</required>
-      <label>Casambi luninary id</label>
-      <description>Luminary id as assigned by the Casambi system</description>
+      <label>Casambi luninaire id</label>
+      <description>Luminaire id as assigned by the Casambi system</description>
     </parameter>
 
   </config-description> -->
