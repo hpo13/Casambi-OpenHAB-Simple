@@ -61,21 +61,21 @@ public class CasambiSimpleDriverRest {
     // Connection parameters
 
     private @Nullable URL casaServer;
-    private String userId;
-    private String userPassword;
-    private String networkPassword;
-    private String apiKey;
+    private final String userId;
+    private final String userPassword;
+    private final String networkPassword;
+    private final String apiKey;
     private final HttpClient httpClient;
     private final WebSocketClient webSocketClient;
+    private final CasambiSimpleDriverLogger messageLogger;
 
     // Connection status
 
-    private CasambiSimpleDriverLogger messageLogger;
     private String casambiNetworkId;
     private String casambiSessionId;
-    private int casambiWireId;
+    private final int casambiWireId; // only supporting one network here
 
-    final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverRest.class);
+    private final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverRest.class);
 
     /**
      * CasambiSimpleDriverRest constructor sets up the REST interface and calls setup of the Socket interface. The
@@ -188,7 +188,7 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable CasambiSimpleMessageSession createUserSession() throws URISyntaxException, CasambiSimpleException,
             TimeoutException, ExecutionException, MalformedURLException, InterruptedException {
-        URL url = new URL(casaServer, "/v1/users/session");
+        final URL url = new URL(casaServer, "/v1/users/session");
         JsonObject reqJson = new JsonObject();
         reqJson.addProperty("email", userId);
         reqJson.addProperty("password", userPassword);
@@ -233,7 +233,7 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable Map<String, CasambiSimpleMessageNetwork> createNetworkSession() throws URISyntaxException,
             IOException, InterruptedException, CasambiSimpleException, TimeoutException, ExecutionException {
-        URL url = new URL(casaServer, "/v1/networks/session");
+        final URL url = new URL(casaServer, "/v1/networks/session");
         JsonObject reqJson = new JsonObject();
         reqJson.addProperty("email", userId);
         reqJson.addProperty("password", networkPassword);
@@ -290,7 +290,7 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable JsonObject getNetworkInformation() throws MalformedURLException, InterruptedException,
             TimeoutException, ExecutionException, CasambiSimpleException {
-        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId);
+        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId);
         ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getNetworkInformation", url, response);
         JsonObject networkInfo = JsonParser.parseString(response.getContentAsString()).getAsJsonObject();
@@ -312,7 +312,7 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable CasambiSimpleMessageNetworkState getNetworkState() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
-        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/state");
+        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/state");
         ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getNetworkState", url, response);
 
@@ -345,7 +345,7 @@ public class CasambiSimpleDriverRest {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMddhhmmss");
         String fromTime = from.format(fmt);
         String toTime = to.format(fmt);
-        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/datapoints?sensorType=" + sensorType
+        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/datapoints?sensorType=" + sensorType
                 + "&from=" + fromTime + "&to=" + toTime);
         ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getNetworkDatapoints", url, response);
@@ -369,7 +369,7 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable Map<String, CasambiSimpleMessageUnit> getUnitList() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
-        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units");
+        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units");
         ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getUnitList", url, response);
 
@@ -394,7 +394,7 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable CasambiSimpleMessageUnit getUnitState(int unitId) throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
-        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units/" + unitId + "/state");
+        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units/" + unitId + "/state");
         ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getUnitState", url, response);
 
@@ -417,7 +417,7 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable Map<String, CasambiSimpleMessageScene> getScenes() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
-        URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/scenes");
+        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/scenes");
         ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getScenes", url, response);
 
@@ -442,7 +442,7 @@ public class CasambiSimpleDriverRest {
      */
     public JsonObject getFixtureInfo(int fixtureId) throws IOException, InterruptedException, URISyntaxException,
             CasambiSimpleException, TimeoutException, ExecutionException {
-        URL url = new URL(casaServer, "/v1/fixtures/" + fixtureId);
+        final URL url = new URL(casaServer, "/v1/fixtures/" + fixtureId);
         ContentResponse response = makeHttpGet(url).send();
 
         checkHttpResponse("getFixtureInfo", url, response);

@@ -59,13 +59,13 @@ public class CasambiSimpleDriverSocket {
 
     private String casambiSocketStatus = "null";
 
-    private String apiKey;
-    private String casambiNetworkId;
-    private String casambiSessionId;
-    private Integer casambiWireId;
-    private CasambiSimpleDriverLogger casambiMessageLogger;
+    private final String apiKey;
+    private final String casambiNetworkId;
+    private final String casambiSessionId;
+    private final Integer casambiWireId;
+    private final CasambiSimpleDriverLogger casambiMessageLogger;
+    private final WebSocketClient casambiWebSocketClient;
 
-    private @Nullable WebSocketClient casambiSocket;
     private @Nullable Session casambiSession;
     private @Nullable CasambiListener casambiListener;
     private @Nullable RemoteEndpoint casambiRemote;
@@ -73,14 +73,13 @@ public class CasambiSimpleDriverSocket {
 
     private @Nullable Future<?> reopenSocketJob;
     private volatile boolean reopenSocketJobRunning = false;
-    private int openErrorCount = 0;
-    private ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1);
 
-    private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
-    private Lock socketLock = new ReentrantLock();
-    private Condition socketCondition = socketLock.newCondition();
+    private final ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1);
+    private final LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
+    private final Lock socketLock = new ReentrantLock();
+    private final Condition socketCondition = socketLock.newCondition();
 
-    final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverSocket.class);
+    private final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverSocket.class);
 
     private final String socketUrl = "wss://door.casambi.com/v1/bridge/";
     private final int mSec = 1000;
@@ -98,8 +97,6 @@ public class CasambiSimpleDriverSocket {
      * @param webSocketClient
      *
      *            Also sets up the listener that handles the events on the web-socket.
-     *
-     *            FIXME: catch errors here or transmit them to caller?
      */
     CasambiSimpleDriverSocket(String key, String sessionId, String networkId, Integer wireId,
             CasambiSimpleDriverLogger messageLogger, WebSocketClient webSocketClient) {
@@ -110,7 +107,7 @@ public class CasambiSimpleDriverSocket {
         casambiWireId = wireId;
         casambiMessageLogger = messageLogger;
 
-        casambiSocket = webSocketClient;
+        casambiWebSocketClient = webSocketClient;
         casambiSession = null;
         casambiListener = null;
         casambiRemote = null;
@@ -133,14 +130,7 @@ public class CasambiSimpleDriverSocket {
             final URI casambiURI = new URI(socketUrl);
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             request.setSubProtocols(apiKey);
-            if (casambiSocket != null) {
-                WebSocketClient casambiSocketLocal = casambiSocket;
-                // We don't need to start the shared socket
-                // casambiSocketLocal.start();
-                casambiSocketLocal.connect(casambiListener, casambiURI, request);
-            } else {
-                logger.error("casambiSocket.open, casambiSocket is null");
-            }
+            casambiWebSocketClient.connect(casambiListener, casambiURI, request);
         } catch (Exception e) {
             logger.error("casambiSocket.open, exception setting up session - {}", e.getMessage());
         }
@@ -189,12 +179,24 @@ public class CasambiSimpleDriverSocket {
 
     /**
      * reopen - tries to reopen the socket on close
-     * FIXME: put this into a job to run it independently
      */
     public void reopen() {
         if (!reopenSocketJobRunning) {
             logger.debug("casambiSocket.reopen: runnable started.");
             reopenSocketJob = scheduler.submit(runReopenSocket);
+
+            casambiMessageLogger.dumpMessage("+++ Socket reopen +++");
+            casambiSocketStatus = "reopening";
+            JsonObject msg = new JsonObject();
+            msg.addProperty(CasambiSimpleDriverConstants.controlMethod, "socketChanged");
+            msg.addProperty("status", "reopening");
+            msg.addProperty("conditon", 0);
+            msg.addProperty("response", "ok");
+            try {
+                queue.put(msg.toString());
+            } catch (InterruptedException e) {
+                logger.error("casambiSocket.reopen exception {}", e.getMessage());
+            }
         } else {
             logger.warn("casambiSocket.reopen: reopen job already running, not started.");
         }
@@ -209,11 +211,12 @@ public class CasambiSimpleDriverSocket {
     private Runnable runReopenSocket = new Runnable() {
         @Override
         public void run() {
-            logger.debug("casambiSocket.runReopenSocket: runnable started.");
+            int openErrorCount = 0;
+            logger.debug("casambiSocket.runReopenSocket: runnable started");
             reopenSocketJobRunning = true;
             while (reopenSocketJobRunning) {
                 if (Thread.interrupted()) {
-                    logger.info("casambiSocket.runReopenSocket: got thread interrupt. Exiting job.");
+                    logger.info("casambiSocket.runReopenSocket: got thread interrupt. Exiting job");
                     reopenSocketJobRunning = false;
                     return;
                 }
@@ -221,23 +224,24 @@ public class CasambiSimpleDriverSocket {
                 logger.info("casambiSocket.runReopenSocket: openErrorCount {}", openErrorCount);
                 try {
                     if (openErrorCount <= 3) {
-                        Thread.sleep(100 * mSec);
+                        Thread.sleep(2 * 1000 * mSec);
                     } else if (openErrorCount <= 10) {
                         Thread.sleep(60 * 1000 * mSec);
                     } else {
                         Thread.sleep(3600 * 1000 * mSec);
                     }
-                    if (casambiSocket != null && open()) {
-                        logger.info("casambiSocket.runReopenSocket, success.");
+                    if (open()) {
+                        logger.info("casambiSocket.runReopenSocket, success");
                         openErrorCount = 0;
                         reopenSocketJobRunning = false;
                     } else {
-                        logger.error("casambiSocket.runReopenSocket, error reopening socket");
+                        logger.error("casambiSocket.runReopenSocket, open not successful. Trying again");
                     }
                 } catch (Exception e) {
                     logger.warn("casambiSocket.runReopenSocket, sleep interrupted");
                 }
             }
+            logger.info("casambiSocket.runReopenSocket, exiting runnable");
         }
     };
 
@@ -396,6 +400,7 @@ public class CasambiSimpleDriverSocket {
         @OnWebSocketMessage
         public void onText(Session session, String message) {
             // logger.debug("onText: message {}", message);
+            // FIXME: reset casambiSocketStatus to "open" here?
             try {
                 if (message.length() > 0) {
                     queue.put(message);
@@ -422,6 +427,7 @@ public class CasambiSimpleDriverSocket {
         public void onBinary(Session session, byte[] payload, int offset, int length) {
             String message = new String(payload, StandardCharsets.UTF_8);
             // logger.debug("onBinary: message {}", message);
+            // FIXME: reset casambiSocketStatus to "open" here?
             try {
                 if (length > 0) {
                     queue.put(message);
@@ -461,16 +467,6 @@ public class CasambiSimpleDriverSocket {
             } catch (InterruptedException e) {
                 logger.error("casambiSocket.onError Exception {}", e.getMessage());
             }
-
-            // FIXME: maybe do a complete reinitialisation of the bridge
-            // evtl. neues runnable, mit variabler Wartezeit, das die Verbindung komplett neu initialisiert
-            // (initCasambiSession)
-            // logger.warn("onError: trying to reopen socket.");
-            // reopen(runReopenSocket);
-
-            // Reopening should not be done here, will be handled by 'onClose'. Else there will be multiple open sockets
-            logger.warn("casambiSocket.onError not reopening socket.");
-            // reopen(runReopenSocket);
         }
 
         /**

@@ -42,11 +42,11 @@ public class CasambiSimpleDriverSystem {
 
                 String oStr;
                 while ((oStr = stdout.readLine()) != null) {
-                    logger.debug("sendSshCommand: out {}", oStr);
+                    logger.debug("sendSshCommand: stdOut {}", oStr);
                 }
                 String eStr;
                 while ((eStr = stderr.readLine()) != null) {
-                    logger.debug("sendSshCommand: err {}", eStr);
+                    logger.debug("sendSshCommand: stdErr {}", eStr);
                 }
             } catch (Exception e) {
                 logger.error("sendSshCommand: exception {}", e.getMessage());
@@ -54,7 +54,7 @@ public class CasambiSimpleDriverSystem {
         }
     }
 
-    public static final void enableSshCommand(Boolean enable, String cmd) {
+    public static final void configureSshCommand(Boolean enable, String cmd) {
         logger.trace("enableSshCommand: {}, cmd '{}'", enable, cmd);
         enabled = enable;
         if (enable) {
