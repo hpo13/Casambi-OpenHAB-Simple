@@ -97,11 +97,11 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
     private void doDiscoveryScan() {
         logger.trace("doDiscoveryScan: starting runnable.");
         try {
-            CasambiSimpleBridgeHandler bridgeHandlerLocal = bridgeHandler;
+            final CasambiSimpleBridgeHandler bridgeHandlerLocal = bridgeHandler;
             if (bridgeHandlerLocal != null) {
-                CasambiSimpleDriverRest casambiRestLocal = bridgeHandlerLocal.casambiRest;
+                final CasambiSimpleDriverRest casambiRestLocal = bridgeHandlerLocal.casambiRest;
                 if (casambiRestLocal != null) {
-                    CasambiSimpleMessageNetworkState networkState = casambiRestLocal.getNetworkState();
+                    final CasambiSimpleMessageNetworkState networkState = casambiRestLocal.getNetworkState();
                     if (networkState != null) {
 
                         // Initialize list of existing things and new units
@@ -218,13 +218,13 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
 
     private void addDiscoveredLuminaire(CasambiSimpleMessageUnit unit) {
         try {
-            String uniqueID = CasambiSimpleLuminaireHandler.getUidFromFixtureId(unit.fixtureId);
-            ThingUID localBridgeUID = bridgeUID;
+            final String uniqueID = CasambiSimpleLuminaireHandler.getUidFromFixtureId(unit.fixtureId);
+            final ThingUID localBridgeUID = bridgeUID;
             if (localBridgeUID != null) {
                 ThingUID thingUID = new ThingUID(THING_TYPE_LUMINAIRE, localBridgeUID, uniqueID);
                 logger.debug("addDiscoveredLuminaire: tUID: {}, id {}, name {}, uid {}", thingUID, unit.id, unit.name,
                         unit.fixtureId);
-                Map<String, Object> properties = new HashMap<>();
+                final Map<String, Object> properties = new HashMap<>();
                 properties.put(LUMINAIRE_NAME, unit.name);
                 properties.put(LUMINAIRE_ID, unit.id);
                 properties.put(LUMINAIRE_UID, uniqueID);
@@ -268,13 +268,13 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
 
     private void addDiscoveredScene(CasambiSimpleMessageScene scene) {
         try {
-            String uniqueID = CasambiSimpleSceneHandler.getUidFromId(scene.id);
-            ThingUID localBridgeUID = bridgeUID;
+            final String uniqueID = CasambiSimpleSceneHandler.getUidFromId(scene.id);
+            final ThingUID localBridgeUID = bridgeUID;
             if (localBridgeUID != null) {
                 ThingUID thingUID = new ThingUID(THING_TYPE_LUMINAIRE, localBridgeUID, uniqueID);
                 logger.debug("addDiscoveredScene: tUID: {}, id {}, name {}, uid {}", thingUID, scene.id, scene.name,
                         uniqueID);
-                Map<String, Object> properties = new HashMap<>();
+                final Map<String, Object> properties = new HashMap<>();
                 properties.put(SCENE_NAME, scene.name);
                 properties.put(SCENE_ID, scene.id);
                 properties.put(SCENE_UID, uniqueID);
@@ -295,13 +295,13 @@ public class CasambiSimpleDiscoveryService extends AbstractDiscoveryService impl
 
     private void addDiscoveredGroup(CasambiSimpleMessageGroup group) {
         try {
-            String uniqueID = CasambiSimpleGroupHandler.getUidFromId(group.id);
-            ThingUID localBridgeUID = bridgeUID;
+            final String uniqueID = CasambiSimpleGroupHandler.getUidFromId(group.id);
+            final ThingUID localBridgeUID = bridgeUID;
             if (localBridgeUID != null) {
-                ThingUID thingUID = new ThingUID(THING_TYPE_LUMINAIRE, localBridgeUID, uniqueID);
+                final ThingUID thingUID = new ThingUID(THING_TYPE_LUMINAIRE, localBridgeUID, uniqueID);
                 logger.debug("addDiscoveredGroup: tUID: {}, id {}, name {}, uid {}", thingUID, group.id, group.name,
                         uniqueID);
-                Map<String, Object> properties = new HashMap<>();
+                final Map<String, Object> properties = new HashMap<>();
                 properties.put(GROUP_NAME, group.name);
                 properties.put(GROUP_ID, group.id);
                 properties.put(GROUP_UID, uniqueID);

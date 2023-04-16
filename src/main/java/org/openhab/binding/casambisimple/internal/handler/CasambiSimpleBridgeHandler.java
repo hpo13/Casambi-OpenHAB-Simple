@@ -99,8 +99,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
     private final int mSec = 1000;
     private final int min = 60 * mSec;
 
-    // FIXME: move this to the bridge handler. Then it needn't be static
-    public CasambiSimpleThingsById thingsById = new CasambiSimpleThingsById();
+    public final CasambiSimpleThingsById thingsById = new CasambiSimpleThingsById();
 
     // private @Nullable CasambiSimpleMessageSession userSession;
     // private @Nullable Map<String, CasambiSimpleMessageNetwork> networkSession;
@@ -201,7 +200,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
 
         // Discovery Handler
         BridgeHandler bridgeHandler = this.getThing().getHandler();
-        CasambiSimpleDiscoveryService localCasambiDiscover = casambiDiscover;
+        final CasambiSimpleDiscoveryService localCasambiDiscover = casambiDiscover;
         if (bridgeHandler != null && localCasambiDiscover != null) {
             localCasambiDiscover.setThingHandler(bridgeHandler);
             logger.debug("initialize: bridgeHandler set up");
@@ -341,7 +340,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                 casambiRest = new CasambiSimpleDriverRest(config.apiKey, config.userId, config.userPassword,
                         config.networkPassword, messageLogger, webSocketClient, httpClient);
                 CasambiSimpleDriverSystem.configureSshCommand(config.useRemCmd, config.remCmdStr);
-                CasambiSimpleDriverRest casambiRestLocal = casambiRest;
+                final CasambiSimpleDriverRest casambiRestLocal = casambiRest;
                 if (casambiRestLocal != null) {
                     // CasambiSimpleMessageSession userSession;
                     // Map<String, CasambiSimpleMessageNetwork> networkSession;
@@ -494,7 +493,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                                 // FIXME: What to do?
                                 break;
                             case networkLog:
-                                logger.warn("handleCasambiMessages: networkLog: {}", msg.message);
+                                logger.debug("handleCasambiMessages: networkLog: {}", msg.message);
                                 // FIXME: What to do?
                                 break;
                             case keepAlive:
@@ -639,18 +638,10 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                         casambiSocket.ping();
                         missedPong++;
                     } else {
-                        // FIXME: do we really want to exit here? or just wait for the socket to come back online?
                         logger.info("socketKeepAlive: socket is null. Continuing.");
-                        // logger.error("sendKeepAlive: socket is null. Exiting.");
-                        // socketKeepAliveJobRunning = false;
-                        // return;
                     }
                 } catch (Exception e) {
                     logger.warn("socketKeepAlive: exception {}. Continuing.", e.getMessage());
-                    // "sleep interrupted" exception on bundle:stop
-                    // logger.warn("sendKeepAlive: exception {}. Exiting.", e.getMessage());
-                    // socketKeepAliveJobRunning = false;
-                    // return;
                 }
             }
         }

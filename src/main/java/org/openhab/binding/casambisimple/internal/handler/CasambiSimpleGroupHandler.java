@@ -70,10 +70,10 @@ public class CasambiSimpleGroupHandler extends BaseThingHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
-        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
+        final CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         boolean doRefresh = false;
         if (bridgeHandler != null) {
-            CasambiSimpleDriverSocket casambiSocketLocal = bridgeHandler.casambiSocket;
+            final CasambiSimpleDriverSocket casambiSocketLocal = bridgeHandler.casambiSocket;
             if (casambiSocketLocal != null) {
                 if (GROUP_CHANNEL_ONOFF.equals(channelUID.getId())) {
                     try {
@@ -121,7 +121,7 @@ public class CasambiSimpleGroupHandler extends BaseThingHandler {
     @Override
     public void initialize() {
         // logger.debug("initialize: setting up group");
-        Bridge bridge = getBridge();
+        final Bridge bridge = getBridge();
 
         if (bridge == null) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
@@ -142,9 +142,9 @@ public class CasambiSimpleGroupHandler extends BaseThingHandler {
     public void handleRemoval() {
         logger.debug("handleRemoval: removing group");
         logger.debug("  removing from thingsById");
-        CasambiSimpleBridgeHandler localBridgeHandler = getBridgeHandler();
+        final CasambiSimpleBridgeHandler localBridgeHandler = getBridgeHandler();
         if (localBridgeHandler != null) {
-            CasambiSimpleThingsById thingsById = localBridgeHandler.thingsById;
+            final CasambiSimpleThingsById thingsById = localBridgeHandler.thingsById;
             thingsById.remove(thingsById.uidIdCombine(groupUid, groupId));
             updateStatus(ThingStatus.REMOVED);
         }
@@ -153,12 +153,12 @@ public class CasambiSimpleGroupHandler extends BaseThingHandler {
     @Override
     public void bridgeStatusChanged(ThingStatusInfo info) {
         logger.debug("bridgeStatusChanged: {}, updating group {}", info, groupId);
-        Bridge bridge = getBridge();
+        final Bridge bridge = getBridge();
 
         if (bridge == null) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
         } else {
-            ThingStatus bridgeStatus = bridge.getStatus();
+            final ThingStatus bridgeStatus = bridge.getStatus();
             if (bridgeStatus.equals(ThingStatus.ONLINE)) {
                 updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
             } else if (bridgeStatus.equals(ThingStatus.OFFLINE)) {
@@ -172,7 +172,7 @@ public class CasambiSimpleGroupHandler extends BaseThingHandler {
     @Nullable
     protected CasambiSimpleBridgeHandler getBridgeHandler() {
         BridgeHandler handler;
-        Bridge bridge = this.getBridge();
+        final Bridge bridge = this.getBridge();
         if (bridge != null) {
             handler = bridge.getHandler();
         } else {

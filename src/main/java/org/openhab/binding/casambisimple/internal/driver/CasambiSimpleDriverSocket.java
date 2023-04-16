@@ -120,7 +120,7 @@ public class CasambiSimpleDriverSocket {
      * @return true if websocket was opened successfully
      */
     public Boolean open() {
-        boolean socketOk = false;
+        socketClose = false;
 
         logger.info("casambiSocket.open, opening socket for casambi communication");
         // logger.info("casambiOpen: setting up socket");
@@ -153,7 +153,7 @@ public class CasambiSimpleDriverSocket {
             socketLock.unlock();
         }
 
-        JsonObject reqJson = new JsonObject();
+        final JsonObject reqJson = new JsonObject();
         reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, "open");
         reqJson.addProperty(CasambiSimpleDriverConstants.targetId, casambiNetworkId);
         reqJson.addProperty("session", casambiSessionId);
@@ -162,6 +162,7 @@ public class CasambiSimpleDriverSocket {
         reqJson.addProperty("type", 1);
 
         // No need to reopen in case of an error, this will be done by the listener (or will it?)
+        boolean socketOk = false;
         if (casambiRemote != null) {
             try {
                 casambiRemote.sendString(reqJson.toString());
@@ -181,13 +182,13 @@ public class CasambiSimpleDriverSocket {
      * reopen - tries to reopen the socket on close
      */
     public void reopen() {
-        if (!reopenSocketJobRunning) {
+        if (!socketClose && !reopenSocketJobRunning) {
             logger.debug("casambiSocket.reopen: runnable started.");
             reopenSocketJob = scheduler.submit(runReopenSocket);
 
             casambiMessageLogger.dumpMessage("+++ Socket reopen +++");
             casambiSocketStatus = "reopening";
-            JsonObject msg = new JsonObject();
+            final JsonObject msg = new JsonObject();
             msg.addProperty(CasambiSimpleDriverConstants.controlMethod, "socketChanged");
             msg.addProperty("status", "reopening");
             msg.addProperty("conditon", 0);
@@ -198,7 +199,7 @@ public class CasambiSimpleDriverSocket {
                 logger.error("casambiSocket.reopen exception {}", e.getMessage());
             }
         } else {
-            logger.warn("casambiSocket.reopen: reopen job already running, not started.");
+            logger.warn("casambiSocket.reopen: socketClose or reopen job running, not started.");
         }
     }
 
@@ -253,11 +254,8 @@ public class CasambiSimpleDriverSocket {
      * @return true if socket was closed successfully
      */
     public Boolean close() {
-        boolean socketOk = false;
         logger.info("casambiSocket.close, closing socket");
-
         socketClose = true;
-        casambiMessageLogger.close();
 
         if (reopenSocketJobRunning) {
             if (reopenSocketJob != null) {
@@ -266,21 +264,21 @@ public class CasambiSimpleDriverSocket {
             reopenSocketJobRunning = false;
         }
 
-        JsonObject reqJson = new JsonObject();
+        final JsonObject reqJson = new JsonObject();
         reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
         reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, "close");
 
+        boolean socketOk = false;
         if (casambiRemote != null) {
             try {
                 casambiRemote.sendString(reqJson.toString());
                 if (casambiSession != null) {
                     casambiSession.close();
                 }
-                logger.trace("casambiSocket.close, awaitClose, casambiListener {}", casambiListener);
                 if (casambiListener != null) {
+                    logger.trace("casambiSocket.close, awaitClose, casambiListener {}", casambiListener);
                     socketOk = casambiListener.awaitClose(5, TimeUnit.SECONDS);
                 }
-                // socketOk = true;
             } catch (IOException e) {
                 logger.error("casambiSocket.close: IO exception closing session {}", e.getMessage());
             } catch (InterruptedException e) {
@@ -289,6 +287,8 @@ public class CasambiSimpleDriverSocket {
         } else {
             logger.error("casambiSocket.close: error - remote connection not open.");
         }
+
+        casambiMessageLogger.close();
         casambiRemote = null;
         casambiSession = null;
         return socketOk;
@@ -334,7 +334,7 @@ public class CasambiSimpleDriverSocket {
 
             casambiMessageLogger.dumpMessage("+++ Socket onOpen +++");
             casambiSocketStatus = "open";
-            JsonObject msg = new JsonObject();
+            final JsonObject msg = new JsonObject();
             msg.addProperty(CasambiSimpleDriverConstants.controlMethod, "socketChanged");
             msg.addProperty("status", "open");
             msg.addProperty("conditon", 0);
@@ -352,8 +352,6 @@ public class CasambiSimpleDriverSocket {
          * Here a message is queued for the bridge handler. The session is not reopened
          * after a scheduled close (socketClose == true), else it is reopened.
          *
-         * FIXME: do not try to reopen socket when bridge is being taken down
-         *
          * @param session
          * @param status code
          * @param reason
@@ -365,7 +363,7 @@ public class CasambiSimpleDriverSocket {
             // Put 'closed' message into queue
             casambiMessageLogger.dumpMessage("+++ Socket onClose +++");
             casambiSocketStatus = "closed";
-            JsonObject msg = new JsonObject();
+            final JsonObject msg = new JsonObject();
             msg.addProperty("method", "socketChanged");
             msg.addProperty("status", "closed");
             msg.addProperty("conditon", statusCode);
@@ -382,7 +380,6 @@ public class CasambiSimpleDriverSocket {
 
             if (socketClose) {
                 logger.info("casambiSocket.onClose socket being closed intentionally, not reopening");
-                socketClose = false;
             } else {
                 logger.warn("casambiSocket.onClose socket closed unexpectedly, reopening");
                 reopen();
@@ -457,7 +454,7 @@ public class CasambiSimpleDriverSocket {
             // Put 'error' message into queue
             casambiMessageLogger.dumpMessage("+++ Socket onError +++");
             casambiSocketStatus = "error";
-            JsonObject msg = new JsonObject();
+            final JsonObject msg = new JsonObject();
             msg.addProperty("method", "socketChanged");
             msg.addProperty("status", "error");
             msg.addProperty("conditon", cause.hashCode());
@@ -530,7 +527,7 @@ public class CasambiSimpleDriverSocket {
     }
 
     /**
-     * setObjectOnOff does the actual switching for luminaires, scenes and groups
+     * setObjectOnOff does the actual switching for , scenes and groups
      *
      * Works by setting brightness to 0 or 1
      *
@@ -543,10 +540,10 @@ public class CasambiSimpleDriverSocket {
      */
     private void setObjectOnOff(String method, @Nullable String id, int objectId, boolean onOff)
             throws CasambiSimpleException, IOException {
-        JsonObject cOnOff = new JsonObject();
+        final JsonObject cOnOff = new JsonObject();
         cOnOff.addProperty(CasambiSimpleDriverConstants.controlValue, onOff ? (float) 1.0 : (float) 0.0);
 
-        JsonObject control = new JsonObject();
+        final JsonObject control = new JsonObject();
         control.add(CasambiSimpleDriverConstants.controlOnOff, cOnOff);
         setObjectControl(method, id, objectId, control);
     }
@@ -577,10 +574,10 @@ public class CasambiSimpleDriverSocket {
      */
     private void setObjectDimmer(String method, @Nullable String id, int objectId, float dim)
             throws CasambiSimpleException, IOException {
-        JsonObject dimmer = new JsonObject();
+        final JsonObject dimmer = new JsonObject();
         dimmer.addProperty(CasambiSimpleDriverConstants.controlValue, dim);
 
-        JsonObject control = new JsonObject();
+        final JsonObject control = new JsonObject();
         control.add(CasambiSimpleDriverConstants.controlDimmer, dimmer);
         setObjectControl(method, id, objectId, control);
     }
@@ -601,7 +598,7 @@ public class CasambiSimpleDriverSocket {
     private void setObjectControl(String method, @Nullable String id, int unitId, JsonObject control)
             throws CasambiSimpleException, IOException {
 
-        JsonObject reqJson = new JsonObject();
+        final JsonObject reqJson = new JsonObject();
         reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
         reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, method);
         if (id != null) {
@@ -671,7 +668,7 @@ public class CasambiSimpleDriverSocket {
     private void setObjectLevel(String method, @Nullable String id, int unitId, Float lvl)
             throws CasambiSimpleException, IOException {
 
-        JsonObject reqJson = new JsonObject();
+        final JsonObject reqJson = new JsonObject();
         reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
         reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, method);
         if (id != null) {
@@ -703,7 +700,7 @@ public class CasambiSimpleDriverSocket {
     public void setUnitHSB(int unitId, float h, float s, float b) throws CasambiSimpleException, IOException {
         logger.info("setUnitHSB: unit {} hsb {},{},{}", unitId, h, s, b);
 
-        JsonObject rgbC = new JsonObject();
+        final JsonObject rgbC = new JsonObject();
         rgbC.addProperty(CasambiSimpleDriverConstants.controlHue, h);
         rgbC.addProperty(CasambiSimpleDriverConstants.controlSat, s);
 
@@ -712,9 +709,9 @@ public class CasambiSimpleDriverSocket {
         // String rgbS = "rgb(" + rgb[0] + ", " + rgb[1] + ", " + rgb[2] + ")";
         // rgbC.addProperty("rgb", rgbS);
 
-        JsonObject colorsource = new JsonObject();
+        final JsonObject colorsource = new JsonObject();
         colorsource.addProperty(CasambiSimpleDriverConstants.controlSource, CasambiSimpleDriverConstants.controlRGB);
-        JsonObject control = new JsonObject();
+        final JsonObject control = new JsonObject();
         control.add(CasambiSimpleDriverConstants.controlRGB, rgbC);
         control.add(CasambiSimpleDriverConstants.controlColorsource, colorsource);
         setUnitDimmer(unitId, b);
@@ -731,12 +728,12 @@ public class CasambiSimpleDriverSocket {
      * @throws IOException
      */
     public void setUnitCCT(int unitId, float temp) throws CasambiSimpleException, IOException {
-        JsonObject colorTemperature = new JsonObject();
+        final JsonObject colorTemperature = new JsonObject();
         colorTemperature.addProperty(CasambiSimpleDriverConstants.controlValue, temp);
-        JsonObject colorsource = new JsonObject();
+        final JsonObject colorsource = new JsonObject();
         colorsource.addProperty(CasambiSimpleDriverConstants.controlSource, CasambiSimpleDriverConstants.controlTW);
 
-        JsonObject control = new JsonObject();
+        final JsonObject control = new JsonObject();
         control.add(CasambiSimpleDriverConstants.controlColorTemperature, colorTemperature);
         control.add(CasambiSimpleDriverConstants.controlColorsource, colorsource);
         setUnitControl(unitId, control);
@@ -752,10 +749,10 @@ public class CasambiSimpleDriverSocket {
      * @throws IOException
      */
     public void setUnitColorBalance(int unitId, float value) throws CasambiSimpleException, IOException {
-        JsonObject colorBalance = new JsonObject();
+        final JsonObject colorBalance = new JsonObject();
         colorBalance.addProperty(CasambiSimpleDriverConstants.controlValue, value);
 
-        JsonObject control = new JsonObject();
+        final JsonObject control = new JsonObject();
         control.add(CasambiSimpleDriverConstants.controlColorBalance, colorBalance);
         setUnitControl(unitId, control);
     }
@@ -770,10 +767,10 @@ public class CasambiSimpleDriverSocket {
      * @throws IOException
      */
     public void setUnitWhitelevel(int unitId, float value) throws CasambiSimpleException, IOException {
-        JsonObject whiteLevel = new JsonObject();
+        final JsonObject whiteLevel = new JsonObject();
         whiteLevel.addProperty(CasambiSimpleDriverConstants.controlValue, value);
 
-        JsonObject control = new JsonObject();
+        final JsonObject control = new JsonObject();
         control.add(CasambiSimpleDriverConstants.controlWhiteLevel, whiteLevel);
         setUnitControl(unitId, control);
     }
@@ -788,7 +785,7 @@ public class CasambiSimpleDriverSocket {
      */
     private void setUnitControl(int unitId, JsonObject control) throws CasambiSimpleException, IOException {
 
-        JsonObject reqJson = new JsonObject();
+        final JsonObject reqJson = new JsonObject();
         reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
         reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, CasambiSimpleDriverConstants.methodUnit);
         reqJson.addProperty(CasambiSimpleDriverConstants.targetId, unitId);
@@ -812,7 +809,7 @@ public class CasambiSimpleDriverSocket {
      * @throws IOException
      */
     public void ping() throws CasambiSimpleException, IOException {
-        JsonObject reqJson = new JsonObject();
+        final JsonObject reqJson = new JsonObject();
         reqJson.addProperty(CasambiSimpleDriverConstants.controlWire, casambiWireId);
         reqJson.addProperty(CasambiSimpleDriverConstants.controlMethod, "ping");
 
@@ -851,8 +848,8 @@ public class CasambiSimpleDriverSocket {
      * @return CasambiSimpleMessageEvent structure
      */
     public @Nullable CasambiSimpleMessageEvent receiveMessage() {
-        Gson gson = new Gson();
-        String msg = receiveMessageRaw();
+        final Gson gson = new Gson();
+        final String msg = receiveMessageRaw();
         if (msg != null) {
             // FIXME: why flush here?
             casambiMessageLogger.flush();

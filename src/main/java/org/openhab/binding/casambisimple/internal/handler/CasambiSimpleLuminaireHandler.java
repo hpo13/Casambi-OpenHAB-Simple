@@ -108,10 +108,10 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
     public void handleCommand(ChannelUID channelUID, Command command) {
         boolean commandHandled = false;
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
-        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
+        final CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         if (bridgeHandler != null) {
-            CasambiSimpleDriverRest casambiRestCopy = bridgeHandler.casambiRest;
-            CasambiSimpleDriverSocket casambiSocketCopy = bridgeHandler.casambiSocket;
+            final CasambiSimpleDriverRest casambiRestCopy = bridgeHandler.casambiRest;
+            final CasambiSimpleDriverSocket casambiSocketCopy = bridgeHandler.casambiSocket;
             if (casambiSocketCopy != null && casambiRestCopy != null) {
                 try {
                     if (!(command instanceof RefreshType)) {
@@ -151,10 +151,10 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
                             // Set color temperature (e.g. 2000 - 6500)
                             logger.info("handleCommand: got CCT channel command {}", command);
                             if (command instanceof DecimalType) {
-                                float slider = ((PercentType) command).floatValue() / 100;
-                                Float tMin = config.tempMin;
-                                Float tMax = config.tempMax;
-                                Float temp = tMin + (tMax - tMin) * slider;
+                                final float slider = ((PercentType) command).floatValue() / 100;
+                                final Float tMin = config.tempMin;
+                                final Float tMax = config.tempMax;
+                                final Float temp = tMin + (tMax - tMin) * slider;
                                 casambiSocketCopy.setUnitCCT(deviceId, temp);
                                 commandHandled = true;
                             }
@@ -183,7 +183,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
                     // Send refresh command here
                     try {
                         logger.trace("handleCommand: uid {} get unit state", channelUID);
-                        CasambiSimpleMessageUnit unitState = casambiRestCopy.getUnitState(deviceId);
+                        final CasambiSimpleMessageUnit unitState = casambiRestCopy.getUnitState(deviceId);
                         if (unitState != null) {
                             updateLuminaireState(unitState);
                         } else {
@@ -214,7 +214,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
         deviceId = ((BigDecimal) this.thing.getConfiguration().get(LUMINAIRE_ID)).intValueExact();
         deviceUid = this.thing.getConfiguration().get(LUMINAIRE_UID).toString();
 
-        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
+        final CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         if (bridgeHandler != null) {
 
             bridgeHandler.thingsById.put(bridgeHandler.thingsById.uidIdCombine(deviceUid, deviceId), this.thing);
@@ -223,9 +223,9 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
             // FIXME: This shouldn't be done on every initialization but once after as scan.
 
             // Get properties of the device
-            boolean hasBri = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_DIMMER));
-            boolean hasCo = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_COLOR));
-            boolean hasCoTe = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_CCT));
+            final boolean hasBri = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_DIMMER));
+            final boolean hasCo = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_COLOR));
+            final boolean hasCoTe = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_CCT));
             // boolean hasWhLv = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_WHITELEVEL));
 
             // logger.info("Thing {}: hasBri {}, hasCo {}, hasCoTe {}, hasWhLv {}", deviceUid, hasBri, hasCo, hasCoTe,
@@ -233,7 +233,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
             logger.info("Thing {}: hasBri {}, hasCo {}, hasCoTe {}", deviceUid, hasBri, hasCo, hasCoTe);
 
             // Remove channels that have no corresponding control in the device
-            ThingBuilder tb = editThing();
+            final ThingBuilder tb = editThing();
             for (Channel ch : this.thing.getChannels()) {
                 logger.info("Thing {} has channel: uid {}, label {} type {}", deviceUid, ch.getUID(), ch.getLabel(),
                         ch.getChannelTypeUID());
@@ -283,7 +283,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
         // }
         // updateThing(tb.build());
         logger.debug("  removing from thingsById");
-        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
+        final CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         if (bridgeHandler != null) {
             CasambiSimpleThingsById thingsById = bridgeHandler.thingsById;
             thingsById.remove(thingsById.uidIdCombine(deviceUid, deviceId));
@@ -306,12 +306,12 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
     @Override
     public void bridgeStatusChanged(ThingStatusInfo info) {
         logger.debug("bridgeStatusChanged: {}, updating luminaire {}", info, deviceId);
-        Bridge bridge = getBridge();
+        final Bridge bridge = getBridge();
 
         if (bridge == null) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
         } else {
-            ThingStatus bridgeStatus = bridge.getStatus();
+            final ThingStatus bridgeStatus = bridge.getStatus();
             if (bridgeStatus.equals(ThingStatus.ONLINE)) {
                 updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
             } else if (bridgeStatus.equals(ThingStatus.OFFLINE)) {
@@ -332,7 +332,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
     @Nullable
     protected CasambiSimpleBridgeHandler getBridgeHandler() {
         BridgeHandler handler;
-        Bridge bridge = this.getBridge();
+        final Bridge bridge = this.getBridge();
         if (bridge != null) {
             handler = bridge.getHandler();
         } else {
@@ -398,7 +398,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
      */
     @Nullable
     public String getUid() {
-        Object uid = this.thing.getConfiguration().getProperties().get(LUMINAIRE_UID);
+        final Object uid = this.thing.getConfiguration().getProperties().get(LUMINAIRE_UID);
         if (uid != null) {
             return uid.toString();
         } else {

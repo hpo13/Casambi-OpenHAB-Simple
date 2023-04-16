@@ -62,10 +62,10 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand: channel uid {}, command {}", channelUID, command);
-        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
+        final CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         boolean doRefresh = false;
         if (bridgeHandler != null) {
-            CasambiSimpleDriverSocket casambiSocketLocal = bridgeHandler.casambiSocket;
+            final CasambiSimpleDriverSocket casambiSocketLocal = bridgeHandler.casambiSocket;
             if (casambiSocketLocal != null) {
                 if (SCENE_CHANNEL_ONOFF.equals(channelUID.getId())) {
                     try {
@@ -113,7 +113,7 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
     @Override
     public void initialize() {
         // logger.debug("initialize: setting up scene");
-        Bridge bridge = getBridge();
+        final Bridge bridge = getBridge();
 
         if (bridge == null) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
@@ -134,7 +134,7 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
     public void handleRemoval() {
         logger.debug("handleRemoval: removing scene");
         logger.debug("  removing from thingsById");
-        CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
+        final CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         if (bridgeHandler != null) {
             CasambiSimpleThingsById thingsById = bridgeHandler.thingsById;
             thingsById.remove(thingsById.uidIdCombine(sceneUid, sceneId));
@@ -145,12 +145,12 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
     @Override
     public void bridgeStatusChanged(ThingStatusInfo info) {
         logger.debug("bridgeStatusChanged: {}, updating scene {}", info, sceneId);
-        Bridge bridge = getBridge();
+        final Bridge bridge = getBridge();
 
         if (bridge == null) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
         } else {
-            ThingStatus bridgeStatus = bridge.getStatus();
+            final ThingStatus bridgeStatus = bridge.getStatus();
             if (bridgeStatus.equals(ThingStatus.ONLINE)) {
                 updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
             } else if (bridgeStatus.equals(ThingStatus.OFFLINE)) {
@@ -164,7 +164,7 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
     @Nullable
     protected CasambiSimpleBridgeHandler getBridgeHandler() {
         BridgeHandler handler;
-        Bridge bridge = this.getBridge();
+        final Bridge bridge = this.getBridge();
         if (bridge != null) {
             handler = bridge.getHandler();
         } else {

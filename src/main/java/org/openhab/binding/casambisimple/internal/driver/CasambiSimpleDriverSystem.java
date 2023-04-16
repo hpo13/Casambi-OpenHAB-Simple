@@ -36,9 +36,9 @@ public class CasambiSimpleDriverSystem {
         if (enabled) {
             logger.debug("sendSshCommand: sending command {}", command);
             try {
-                Process process = Runtime.getRuntime().exec(command);
-                BufferedReader stdout = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                BufferedReader stderr = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                final Process process = Runtime.getRuntime().exec(command);
+                final BufferedReader stdout = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                final BufferedReader stderr = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
                 String oStr;
                 while ((oStr = stdout.readLine()) != null) {

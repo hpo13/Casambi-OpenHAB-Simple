@@ -55,7 +55,7 @@ public class CasambiSimpleDiscoverySet {
     }
 
     public void updateOldNew(String uid, Integer id) {
-        String uidId = thingMap.uidIdCombine(uid, id);
+        final String uidId = thingMap.uidIdCombine(uid, id);
         if (oldThings.contains(uidId)) {
             logger.trace("updateOldNew: uid {} matches, removing from oldThings", uidId);
             oldThings.remove(uidId);

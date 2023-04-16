@@ -146,7 +146,7 @@ public class CasambiSimpleThingsById {
      * @return id part of the uidId
      */
     public Integer getId(String uidId) {
-        String[] u = uidId.split(":");
+        final String[] u = uidId.split(":");
         return Integer.parseInt(u[1]);
     }
 
@@ -157,7 +157,7 @@ public class CasambiSimpleThingsById {
      * @return uid part of the uidId
      */
     public String getUid(String uidId) {
-        String[] u = uidId.split(":");
+        final String[] u = uidId.split(":");
         return u[0];
     }
 

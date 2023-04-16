@@ -166,8 +166,8 @@ public class CasambiSimpleDriverRest {
             logger.error("{} - error - null response", functionName);
             throw new CasambiSimpleException("checkHttpResponse - got null response");
         } else if (response.getStatus() != 200) {
-            String msg = String.format("%s -url: %s, got invalid status code: %d, %s", functionName, url.toString(),
-                    response.getStatus(), response.getContentAsString());
+            final String msg = String.format("%s -url: %s, got invalid status code: %d, %s", functionName,
+                    url.toString(), response.getStatus(), response.getContentAsString());
             logger.error(msg);
             throw new CasambiSimpleException(msg);
         } else {
@@ -189,7 +189,7 @@ public class CasambiSimpleDriverRest {
     public @Nullable CasambiSimpleMessageSession createUserSession() throws URISyntaxException, CasambiSimpleException,
             TimeoutException, ExecutionException, MalformedURLException, InterruptedException {
         final URL url = new URL(casaServer, "/v1/users/session");
-        JsonObject reqJson = new JsonObject();
+        final JsonObject reqJson = new JsonObject();
         reqJson.addProperty("email", userId);
         reqJson.addProperty("password", userPassword);
 
@@ -203,8 +203,8 @@ public class CasambiSimpleDriverRest {
             logger.warn("createUserSession: Exception {}", e.getMessage());
         }
         if (response != null) {
-            Gson gson = new Gson();
-            CasambiSimpleMessageSession sessObj = gson.fromJson(response.getContentAsString(),
+            final Gson gson = new Gson();
+            final CasambiSimpleMessageSession sessObj = gson.fromJson(response.getContentAsString(),
                     CasambiSimpleMessageSession.class);
             // casambiSessionId = sessObj.sessionId;
             if (sessObj != null) {
@@ -234,7 +234,7 @@ public class CasambiSimpleDriverRest {
     public @Nullable Map<String, CasambiSimpleMessageNetwork> createNetworkSession() throws URISyntaxException,
             IOException, InterruptedException, CasambiSimpleException, TimeoutException, ExecutionException {
         final URL url = new URL(casaServer, "/v1/networks/session");
-        JsonObject reqJson = new JsonObject();
+        final JsonObject reqJson = new JsonObject();
         reqJson.addProperty("email", userId);
         reqJson.addProperty("password", networkPassword);
 
@@ -250,10 +250,10 @@ public class CasambiSimpleDriverRest {
         }
 
         if (response != null) {
-            Gson gson = new Gson();
-            Type networkMapType = new TypeToken<Map<String, CasambiSimpleMessageNetwork>>() {
+            final Gson gson = new Gson();
+            final Type networkMapType = new TypeToken<Map<String, CasambiSimpleMessageNetwork>>() {
             }.getType();
-            Map<String, CasambiSimpleMessageNetwork> networks = gson.fromJson(response.getContentAsString(),
+            final Map<String, CasambiSimpleMessageNetwork> networks = gson.fromJson(response.getContentAsString(),
                     networkMapType);
             if (networks != null) {
                 for (CasambiSimpleMessageNetwork network : networks.values()) {
@@ -291,9 +291,9 @@ public class CasambiSimpleDriverRest {
     public @Nullable JsonObject getNetworkInformation() throws MalformedURLException, InterruptedException,
             TimeoutException, ExecutionException, CasambiSimpleException {
         final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId);
-        ContentResponse response = makeHttpGet(url).send();
+        final ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getNetworkInformation", url, response);
-        JsonObject networkInfo = JsonParser.parseString(response.getContentAsString()).getAsJsonObject();
+        final JsonObject networkInfo = JsonParser.parseString(response.getContentAsString()).getAsJsonObject();
         return networkInfo;
     }
 
@@ -313,11 +313,11 @@ public class CasambiSimpleDriverRest {
     public @Nullable CasambiSimpleMessageNetworkState getNetworkState() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
         final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/state");
-        ContentResponse response = makeHttpGet(url).send();
+        final ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getNetworkState", url, response);
 
-        Gson gson = new Gson();
-        CasambiSimpleMessageNetworkState networkState = gson.fromJson(response.getContentAsString(),
+        final Gson gson = new Gson();
+        final CasambiSimpleMessageNetworkState networkState = gson.fromJson(response.getContentAsString(),
                 CasambiSimpleMessageNetworkState.class);
         return networkState;
     }
@@ -342,17 +342,17 @@ public class CasambiSimpleDriverRest {
      */
     public JsonObject getNetworkDatapoints(LocalDateTime from, LocalDateTime to, int sensorType) throws IOException,
             InterruptedException, URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMddhhmmss");
-        String fromTime = from.format(fmt);
-        String toTime = to.format(fmt);
+        final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMddhhmmss");
+        final String fromTime = from.format(fmt);
+        final String toTime = to.format(fmt);
         final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/datapoints?sensorType=" + sensorType
                 + "&from=" + fromTime + "&to=" + toTime);
-        ContentResponse response = makeHttpGet(url).send();
+        final ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getNetworkDatapoints", url, response);
 
         // Wrap response into object because gson does not seem to like naked json-arrays
-        String res = "{\"datapoints\":" + response.getContentAsString() + "}";
-        JsonObject networkDataPoints = JsonParser.parseString(res).getAsJsonObject();
+        final String res = "{\"datapoints\":" + response.getContentAsString() + "}";
+        final JsonObject networkDataPoints = JsonParser.parseString(res).getAsJsonObject();
         return networkDataPoints;
     }
 
@@ -370,13 +370,14 @@ public class CasambiSimpleDriverRest {
     public @Nullable Map<String, CasambiSimpleMessageUnit> getUnitList() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
         final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units");
-        ContentResponse response = makeHttpGet(url).send();
+        final ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getUnitList", url, response);
 
-        Gson gson = new Gson();
-        Type unitMapType = new TypeToken<Map<String, CasambiSimpleMessageUnit>>() {
+        final Gson gson = new Gson();
+        final Type unitMapType = new TypeToken<Map<String, CasambiSimpleMessageUnit>>() {
         }.getType();
-        Map<String, CasambiSimpleMessageUnit> unitList = gson.fromJson(response.getContentAsString(), unitMapType);
+        final Map<String, CasambiSimpleMessageUnit> unitList = gson.fromJson(response.getContentAsString(),
+                unitMapType);
         return unitList;
     }
 
@@ -395,11 +396,11 @@ public class CasambiSimpleDriverRest {
     public @Nullable CasambiSimpleMessageUnit getUnitState(int unitId) throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
         final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units/" + unitId + "/state");
-        ContentResponse response = makeHttpGet(url).send();
+        final ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getUnitState", url, response);
 
-        Gson gson = new Gson();
-        CasambiSimpleMessageUnit unitState = gson.fromJson(response.getContentAsString(),
+        final Gson gson = new Gson();
+        final CasambiSimpleMessageUnit unitState = gson.fromJson(response.getContentAsString(),
                 CasambiSimpleMessageUnit.class);
         return unitState;
     }
@@ -418,13 +419,14 @@ public class CasambiSimpleDriverRest {
     public @Nullable Map<String, CasambiSimpleMessageScene> getScenes() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
         final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/scenes");
-        ContentResponse response = makeHttpGet(url).send();
+        final ContentResponse response = makeHttpGet(url).send();
         checkHttpResponse("getScenes", url, response);
 
-        Gson gson = new Gson();
-        Type sceneMapType = new TypeToken<Map<String, CasambiSimpleMessageScene>>() {
+        final Gson gson = new Gson();
+        final Type sceneMapType = new TypeToken<Map<String, CasambiSimpleMessageScene>>() {
         }.getType();
-        Map<String, CasambiSimpleMessageScene> scenes = gson.fromJson(response.getContentAsString(), sceneMapType);
+        final Map<String, CasambiSimpleMessageScene> scenes = gson.fromJson(response.getContentAsString(),
+                sceneMapType);
         return scenes;
     }
 
@@ -443,11 +445,11 @@ public class CasambiSimpleDriverRest {
     public JsonObject getFixtureInfo(int fixtureId) throws IOException, InterruptedException, URISyntaxException,
             CasambiSimpleException, TimeoutException, ExecutionException {
         final URL url = new URL(casaServer, "/v1/fixtures/" + fixtureId);
-        ContentResponse response = makeHttpGet(url).send();
+        final ContentResponse response = makeHttpGet(url).send();
 
         checkHttpResponse("getFixtureInfo", url, response);
 
-        JsonObject fixtureInfo = JsonParser.parseString(response.getContentAsString()).getAsJsonObject();
+        final JsonObject fixtureInfo = JsonParser.parseString(response.getContentAsString()).getAsJsonObject();
         return fixtureInfo;
     }
 }

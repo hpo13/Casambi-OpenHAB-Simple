@@ -48,8 +48,8 @@ public class CasambiSimpleDriverLogger {
     private String logPath;
     private String logFile;
 
-    private Timer timer = new Timer();
-    private Calendar calendar = Calendar.getInstance();
+    private final Timer timer = new Timer();
+    private final Calendar calendar = Calendar.getInstance();
 
     private final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverLogger.class);
 

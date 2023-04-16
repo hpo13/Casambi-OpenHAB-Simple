@@ -76,11 +76,11 @@ public class CasambiSimpleHandlerFactory extends BaseThingHandlerFactory {
 
     @Override
     protected @Nullable ThingHandler createHandler(Thing thing) {
-        ThingTypeUID thingTypeUID = thing.getThingTypeUID();
+        final ThingTypeUID thingTypeUID = thing.getThingTypeUID();
         logger.debug("createHandler: uid {}", thingTypeUID);
 
         if (THING_TYPE_BRIDGE.equals(thingTypeUID)) {
-            Bridge bridge = (Bridge) thing;
+            final Bridge bridge = (Bridge) thing;
             // Using shared clients here - no starting or stopping
             final @Nullable HttpClientFactory htf = httpClientFactory;
             final @Nullable WebSocketFactory wsf = webSocketFactory;
