@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2022 Contributors to the openHAB project
+d * Copyright (c) 2010-2022 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -116,14 +116,14 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
                 try {
                     if (!(command instanceof RefreshType)) {
                         if (LUMINAIRE_CHANNEL_ONOFF.equals(channelUID.getId())) {
-                            logger.info("handleCommand: got ONOFF channel command {}", command);
+                            logger.trace("handleCommand: got ONOFF channel command {}", command);
                             // Set dim level (0-100)
                             if (command instanceof OnOffType) {
                                 casambiSocketCopy.setUnitOnOff(deviceId, command.equals(OnOffType.ON));
                                 commandHandled = true;
                             }
                         } else if (LUMINAIRE_CHANNEL_DIMMER.equals(channelUID.getId())) {
-                            logger.info("handleCommand: got DIMMER channel command {}", command);
+                            logger.trace("handleCommand: got DIMMER channel command {}", command);
                             // Set dim level (0-100)
                             if (command instanceof PercentType) {
                                 casambiSocketCopy.setUnitDimmer(deviceId, ((PercentType) command).floatValue() / 100);
@@ -131,7 +131,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
                             }
                         } else if (LUMINAIRE_CHANNEL_COLOR.equals(channelUID.getId())) {
                             // Set hue (0-360), saturation (0-100) and brightness (0-100)
-                            logger.info("handleCommand: got COLOR channel command {}", command);
+                            logger.trace("handleCommand: got COLOR channel command {}", command);
                             if (command instanceof HSBType) {
                                 String[] hsb = ((HSBType) command).toString().split(",");
                                 if (hsb.length == 3) {
@@ -140,7 +140,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
                                     Float b = Float.valueOf(hsb[2]) / 100;
                                     casambiSocketCopy.setUnitHSB(deviceId, h, s, b);
                                 } else {
-                                    logger.warn("handleCommand: illegal hsb value {}", command.toString());
+                                    logger.info("handleCommand: illegal hsb value {}", command.toString());
                                 }
                                 commandHandled = true;
                             } else if (command instanceof OnOffType) {
@@ -149,7 +149,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
                             }
                         } else if (LUMINAIRE_CHANNEL_CCT.equals(channelUID.getId())) {
                             // Set color temperature (e.g. 2000 - 6500)
-                            logger.info("handleCommand: got CCT channel command {}", command);
+                            logger.trace("handleCommand: got CCT channel command {}", command);
                             if (command instanceof DecimalType) {
                                 final float slider = ((PercentType) command).floatValue() / 100;
                                 final Float tMin = config.tempMin;
@@ -167,14 +167,17 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
                             // commandHandled = true;
                             // }
                         } else {
-                            logger.warn("handleCommand: unexpected channel id {}", channelUID.getId());
+                            logger.info("handleCommand: unexpected channel id {}", channelUID.getId());
                         }
                         if (!commandHandled) {
-                            logger.warn("handleCommand: channel {}, unexpected command type {}", channelUID,
+                            logger.info("handleCommand: channel {}, unexpected command type {}", channelUID,
                                     command.getClass());
                         }
                     }
                 } catch (Exception e) {
+                    // FIXME: do a reopen here, if "remote endpoint not open"? Handle different types of errors?
+                    logger.info("handleCommand: Exception {} for channel {}, command {}.", e.toString(),
+                            channelUID.toString(), command.getClass());
                     updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                             String.format("Channel %s, Command %s, Exception %s", channelUID.toString(),
                                     command.getClass(), e.toString()));
@@ -218,7 +221,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
         if (bridgeHandler != null) {
 
             bridgeHandler.thingsById.put(bridgeHandler.thingsById.uidIdCombine(deviceUid, deviceId), this.thing);
-            logger.info("initialize: uid {}, id {}, thingUid {}", deviceUid, deviceId, this.thing.getUID());
+            logger.debug("initialize: uid {}, id {}, thingUid {}", deviceUid, deviceId, this.thing.getUID());
 
             // FIXME: This shouldn't be done on every initialization but once after as scan.
 
@@ -226,41 +229,32 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
             final boolean hasBri = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_DIMMER));
             final boolean hasCo = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_COLOR));
             final boolean hasCoTe = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_CCT));
-            // boolean hasWhLv = ((Boolean) true).equals(this.thing.getConfiguration().get(LUMINAIRE_HAS_WHITELEVEL));
 
-            // logger.info("Thing {}: hasBri {}, hasCo {}, hasCoTe {}, hasWhLv {}", deviceUid, hasBri, hasCo, hasCoTe,
-            // hasWhLv);
-            logger.info("Thing {}: hasBri {}, hasCo {}, hasCoTe {}", deviceUid, hasBri, hasCo, hasCoTe);
+            logger.trace("initialize: thing {}: hasBri {}, hasCo {}, hasCoTe {}", deviceUid, hasBri, hasCo, hasCoTe);
 
             // Remove channels that have no corresponding control in the device
             final ThingBuilder tb = editThing();
             for (Channel ch : this.thing.getChannels()) {
-                logger.info("Thing {} has channel: uid {}, label {} type {}", deviceUid, ch.getUID(), ch.getLabel(),
+                logger.trace("Thing {} has channel: uid {}, label {} type {}", deviceUid, ch.getUID(), ch.getLabel(),
                         ch.getChannelTypeUID());
                 if (LUMINAIRE_CHANNEL_DIMMER.equals(ch.getUID().getId())) {
                     if (!hasBri) {
-                        logger.info("Thing: {} removing DIMMER channel {}", deviceUid, ch.getUID());
+                        logger.trace("Thing: {} removing DIMMER channel {}", deviceUid, ch.getUID());
                         tb.withoutChannel(ch.getUID());
                     }
                 }
                 if (LUMINAIRE_CHANNEL_COLOR.equals(ch.getUID().getId())) {
                     if (!hasCo) {
-                        logger.info("Thing: {} removing COLOR channel {}", deviceUid, ch.getUID());
+                        logger.trace("Thing: {} removing COLOR channel {}", deviceUid, ch.getUID());
                         tb.withoutChannel(ch.getUID());
                     }
                 }
                 if (LUMINAIRE_CHANNEL_CCT.equals(ch.getUID().getId())) {
                     if (!hasCoTe) {
-                        logger.info("Thing: {} Removing CCT channel {}", deviceUid, ch.getUID());
+                        logger.trace("Thing: {} Removing CCT channel {}", deviceUid, ch.getUID());
                         tb.withoutChannel(ch.getUID());
                     }
                 }
-                // if (LUMINAIRE_CHANNEL_WHITELEVEL.equals(ch.getUID().getId())) {
-                // if (!hasWhLv) {
-                // logger.info("Thing: {} Removing WHITELEVEL channel {}", deviceUid, ch.getUID());
-                // tb.withoutChannel(ch.getUID());
-                // }
-                // }
             }
             updateThing(tb.build());
 
@@ -272,17 +266,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
 
     @Override
     public void handleRemoval() {
-        logger.debug("handleRemoval: removing luminaireid {}, uid {}", this.deviceId, this.deviceUid);
-        // FIXME: items need to be removed, not channels
-        // logger.debug(" removing channels first");
-        // ThingBuilder tb = editThing();
-        // for (Channel ch : this.thing.getChannels()) {
-        // logger.info(" removing channel: uid {}, label {} type {}", ch.getUID(), ch.getLabel(),
-        // ch.getChannelTypeUID());
-        // tb.withoutChannel(ch.getUID());
-        // }
-        // updateThing(tb.build());
-        logger.debug("  removing from thingsById");
+        logger.debug("handleRemoval: removing luminaireid {}, uid {} from thingsById", this.deviceId, this.deviceUid);
         final CasambiSimpleBridgeHandler bridgeHandler = getBridgeHandler();
         if (bridgeHandler != null) {
             CasambiSimpleThingsById thingsById = bridgeHandler.thingsById;
@@ -293,7 +277,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
 
     @Override
     public void dispose() {
-        logger.debug("dispose: dispose luminaire handler id {}, uid {}.", this.deviceId, this.deviceUid);
+        logger.trace("dispose: dispose luminaire handler id {}, uid {}.", this.deviceId, this.deviceUid);
         super.dispose();
     }
 
@@ -361,9 +345,10 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
      */
     public void updateLuminaireState(CasambiSimpleMessageUnit state) {
         if (state.online != null) {
-            if (state.online) {
+            boolean ol = state.online;
+            logger.trace("updateLuminaireState: id {} online {}", deviceId, ol);
+            if (ol) {
                 updateStatus(ThingStatus.ONLINE);
-                logger.trace("updateLuminaireState: id {} online {}", deviceId, state.online);
             } else {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                         String.format("Unit %d status offline", deviceId));

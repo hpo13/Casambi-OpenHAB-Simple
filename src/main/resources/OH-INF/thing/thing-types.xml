@@ -12,7 +12,6 @@
 			<channel id="peer" typeId="casambiOnline"/>
 			<channel id="message" typeId="casambiMessage"/>
 			<channel id="dim" typeId="casambiDim"/>
-			<channel id="restart" typeId="casambiRestart"/>
 		</channels>
 		<config-description>
 			<parameter-group name="connection">
@@ -26,7 +25,7 @@
 			</parameter-group>
 			<parameter-group name="remcmd">
 				<label>Remote Command</label>
-				<description>Remote command to reactivate the local Casambi bridge device</description>
+				<description>Commands to be sent to the bridge device to restart the Casambi app and the bluetooth connection</description>
 				<advanced>true</advanced>
 			</parameter-group>
 			<parameter name="apiKey" type="text" required="true" readOnly="false" multiple="false"
@@ -77,7 +76,8 @@
 				groupName="remcmd">
 				<required>false</required>
 				<label>Casambi Peer Reactivation Coammand</label>
-				<description>Command to be sent to the Casambi peer device to reactivate the bridge.</description>
+				<description>Remote command to reactivate the local Casambi bridge device. 
+                             Needs to understand arguments '--restart-app' and '--restart-bluetooth'.</description>
 			</parameter>
 		</config-description>
 	</bridge-type>
@@ -128,7 +128,6 @@
 				<label>Casambi Luminaire unique Id</label>
 				<description>Luminaire unique id, based on the fixture id.</description>
 			</parameter>
-
 			<parameter name="hasDimmer" type="boolean" required="false" readOnly="false" multiple="false"
 				groupName="properties">
 				<required>false</required>
@@ -136,7 +135,6 @@
 				<description>Luminaire brightness can be controlled</description>
 				<advanced>true</advanced>
 			</parameter>
-
 			<parameter name="hasCCT" type="boolean" required="false" readOnly="false" multiple="false"
 				groupName="properties">
 				<required>false</required>

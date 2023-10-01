@@ -99,7 +99,7 @@ public class CasambiSimpleDriverRest {
         try {
             casaServer = new URL("https://door.casambi.com/");
         } catch (Exception e) {
-            logger.error("CasambiDriverRest:constructor new URL - exception", e);
+            logger.warn("CasambiDriverRest:constructor new URL - exception", e);
             casaServer = null;
         }
         casambiWireId = 1;
@@ -127,7 +127,7 @@ public class CasambiSimpleDriverRest {
      * @return the the web-socket
      */
     public CasambiSimpleDriverSocket getNewCasambiSocket() {
-        logger.debug("casambiRest:getNewCasabmiSocket");
+        logger.trace("casambiRest:getNewCasabmiSocket");
         return new CasambiSimpleDriverSocket(apiKey, casambiSessionId, casambiNetworkId, casambiWireId, messageLogger,
                 webSocketClient);
     }
@@ -140,7 +140,7 @@ public class CasambiSimpleDriverRest {
     public void close() {
         // Close socket together with REST client
         // boolean socketOk = webSocketClient.close();
-        logger.debug("casambiRest:close - don't stop anything, we are using the shared client");
+        logger.trace("casambiRest:close - don't stop anything, we are using the shared client");
         // try {
         // httpClient.stop();
         // } catch (Exception e) {
@@ -163,12 +163,12 @@ public class CasambiSimpleDriverRest {
     private void checkHttpResponse(String functionName, URL url, @Nullable ContentResponse response)
             throws CasambiSimpleException {
         if (response == null) {
-            logger.error("{} - error - null response", functionName);
+            logger.warn("{} - error - null response", functionName);
             throw new CasambiSimpleException("checkHttpResponse - got null response");
         } else if (response.getStatus() != 200) {
             final String msg = String.format("%s -url: %s, got invalid status code: %d, %s", functionName,
                     url.toString(), response.getStatus(), response.getContentAsString());
-            logger.error(msg);
+            logger.warn(msg);
             throw new CasambiSimpleException(msg);
         } else {
             messageLogger.dumpJsonWithMessage("+++ " + functionName + " +++", response.getContentAsString());
@@ -206,7 +206,6 @@ public class CasambiSimpleDriverRest {
             final Gson gson = new Gson();
             final CasambiSimpleMessageSession sessObj = gson.fromJson(response.getContentAsString(),
                     CasambiSimpleMessageSession.class);
-            // casambiSessionId = sessObj.sessionId;
             if (sessObj != null) {
                 casambiSessionId = sessObj.sessionId;
             } else {
@@ -246,7 +245,7 @@ public class CasambiSimpleDriverRest {
                     .content(new StringContentProvider(reqJson.toString()), "application/json").send();
             checkHttpResponse("createNetworkSesssion", url, response);
         } catch (Exception e) {
-            logger.trace("createNetworkSession: Exception {}", e.getMessage());
+            logger.info("createNetworkSession: Exception {}", e.getMessage());
         }
 
         if (response != null) {

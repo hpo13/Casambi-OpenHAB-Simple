@@ -32,11 +32,11 @@ public class CasambiSimpleDriverSystem {
 
     final static Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverSystem.class);
 
-    public static final void sendSshCommand() {
+    private static final void sendSshCommand(String cmd) {
         if (enabled) {
-            logger.debug("sendSshCommand: sending command {}", command);
+            logger.debug("sendSshCommand: sending command {}", cmd);
             try {
-                final Process process = Runtime.getRuntime().exec(command);
+                final Process process = Runtime.getRuntime().exec(cmd);
                 final BufferedReader stdout = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 final BufferedReader stderr = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
@@ -54,11 +54,19 @@ public class CasambiSimpleDriverSystem {
         }
     }
 
-    public static final void configureSshCommand(Boolean enable, String cmd) {
+    public static final void configureRestartCommand(Boolean enable, String cmd) {
         logger.trace("enableSshCommand: {}, cmd '{}'", enable, cmd);
         enabled = enable;
         if (enable) {
             command = cmd;
         }
+    }
+
+    public static final void sendSshRestartCommand() {
+        sendSshCommand(command + " --restart-app");
+    }
+
+    public static final void sendSshBluetoothCommand() {
+        sendSshCommand(command + " --restart-bluetooth");
     }
 }

@@ -54,7 +54,7 @@ public class CasambiSimpleDriverLogger {
     private final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverLogger.class);
 
     /**
-     * Contstructor, sets up the logger for the messages received from the Casambi server. Messages can be logged for
+     * Constructor, sets up the logger for the messages received from the Casambi server. Messages can be logged for
      * debugging and development purposes
      *
      * @param activate - logger is only set up, if active is true, otherwise the Casambi messages are not logged
@@ -144,9 +144,10 @@ public class CasambiSimpleDriverLogger {
         calendar.getTime();
         calendar.add(Calendar.DAY_OF_MONTH, 1);
         calendar.set(Calendar.HOUR, 0);
-        calendar.set(Calendar.MINUTE, 1);
-        calendar.set(Calendar.SECOND, 0);
-        logger.info("RotateLog: next log rotation {}", calendar);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 1);
+        String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(calendar.getTime());
+        logger.info("RotateLog: next log rotation {}", timeStamp);
         timer.schedule(new RotateLog(), calendar.getTime());
     }
 
@@ -157,11 +158,13 @@ public class CasambiSimpleDriverLogger {
     private class RotateLog extends TimerTask {
         @Override
         public void run() {
-            dumpMessage(getTimeStamp() + "--- Log rotate should happen here");
+            logger.info("RotateLog: closing current log file.");
             timer.cancel();
-            // FIXME: close and reopen log file here
+
             close();
+
             writer = open(logPath, logFile);
+            logger.info("RotateLog: opened new log file.");
             scheduleRotate();
         }
     }
