@@ -836,14 +836,17 @@ public class CasambiSimpleDriverSocket {
      *
      * @return message as string
      */
-    public @Nullable String receiveMessageRaw() {
+    public @Nullable String receiveMessageRaw() /* throws InterruptedException */ {
         String res = null;
         do {
             try {
                 // Blocks until there is something in the queue
                 res = queue.take();
+            } catch (InterruptedException e) {
+                // FIXME: is this the right way to handle InterruptedException?
+                Thread.currentThread().interrupt();
+                return null;
             } catch (Exception e) {
-                // FIXME: how to handle InterruptedException?
                 logger.warn("receiveMessageJson: Exception {}", e.toString());
                 // return null;
             }

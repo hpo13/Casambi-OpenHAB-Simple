@@ -76,8 +76,9 @@
 				groupName="remcmd">
 				<required>false</required>
 				<label>Casambi Peer Reactivation Coammand</label>
-				<description>Remote command to reactivate the local Casambi bridge device. 
-                             Needs to understand arguments '--restart-app' and '--restart-bluetooth'.</description>
+				<description>Remote command to reactivate the local Casambi bridge device.
+					Needs to understand arguments
+					'--restart-app' and '--restart-bluetooth'.</description>
 			</parameter>
 		</config-description>
 	</bridge-type>
@@ -175,7 +176,7 @@
 				<label>Level of white component</label>
 				<description>Controls balance between color and white</description>
 				<advanced>true</advanced>
-			</parameter> -->
+				</parameter> -->
 		</config-description>
 	</thing-type>
 
