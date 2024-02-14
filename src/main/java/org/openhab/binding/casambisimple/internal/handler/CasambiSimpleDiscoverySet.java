@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link CasambiSimpleDiscoverySet} keeps count of new things discovered and old things rediscovered
+ * The {@link CasambiSimpleDiscoverySet} keeps count of new things discovered and known things rediscovered
  *
  * @author Hein Osenberg - Initial contribution
  */
@@ -33,7 +33,7 @@ public class CasambiSimpleDiscoverySet {
 
     // Instance stuff
 
-    private Set<String> oldThings = new HashSet<>();
+    private Set<String> knownThings = new HashSet<>();
     private Set<String> newThings = new HashSet<>();
 
     private CasambiSimpleThingsById thingMap;
@@ -41,26 +41,26 @@ public class CasambiSimpleDiscoverySet {
     CasambiSimpleDiscoverySet(CasambiSimpleThingsById thingsById) {
         thingMap = thingsById;
         for (Entry<String, Thing> mapping : thingMap.map.entrySet()) {
-            oldThings.add(mapping.getKey());
+            knownThings.add(mapping.getKey());
         }
-        logger.trace("CasambiSimpleThingsById: constructor oldThings {}", oldThings);
+        logger.trace("CasambiSimpleThingsById: constructor knownThings {}", knownThings);
     }
 
-    public Set<String> getOldThings() {
-        return oldThings;
+    public Set<String> getKnown() {
+        return knownThings;
     }
 
-    public Set<String> getNewThings() {
+    public Set<String> getNew() {
         return newThings;
     }
 
-    public void updateOldNew(String uid, Integer id) {
+    public void update(String uid, Integer id) {
         final String uidId = thingMap.uidIdCombine(uid, id);
-        if (oldThings.contains(uidId)) {
-            logger.trace("updateOldNew: uid {} matches, removing from oldThings", uidId);
-            oldThings.remove(uidId);
+        if (knownThings.contains(uidId)) {
+            logger.trace("updateKnownAndNewThings: uid {} matches, removing from knownThings", uidId);
+            knownThings.remove(uidId);
         } else {
-            logger.trace("updateOldNew: uid {} does not match, adding to newThings", uidId);
+            logger.trace("updateKnownAndNewThings: uid {} does not match, adding to newThings", uidId);
             newThings.add(uidId);
         }
     }

@@ -187,25 +187,6 @@ public class CasambiSimpleGroupHandler extends BaseThingHandler {
         super.updateState(chan, state);
     }
 
-    // Map Luminaire ids to things. Needed to update thing status based on casambi message content
-
-    // // Get thing corresponding to id
-    // public static @Nullable Thing getGroupById(@Nullable Integer id) {
-    // if (id != null) {
-    // return groupsById.get(id);
-    // } else {
-    // return null;
-    // }
-    // }
-    //
-    // // Add a (new) thing to the mapping
-    // private void putGroupById(@Nullable Integer id) {
-    // logger.debug("putThingById: id {}", id);
-    // if (id != null) {
-    // groupsById.putIfAbsent(id, this.thing);
-    // }
-    // }
-
     public static String getUidFromId(Integer id) {
         return "grp" + id.toString();
     }

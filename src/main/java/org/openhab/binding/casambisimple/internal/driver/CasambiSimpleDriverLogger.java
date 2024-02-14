@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -49,7 +50,6 @@ public class CasambiSimpleDriverLogger {
     private String logFile;
 
     private final Timer timer = new Timer();
-    private final Calendar calendar = Calendar.getInstance();
 
     private final Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverLogger.class);
 
@@ -141,14 +141,15 @@ public class CasambiSimpleDriverLogger {
     }
 
     public void scheduleRotate() {
-        calendar.getTime();
-        calendar.add(Calendar.DAY_OF_MONTH, 1);
-        calendar.set(Calendar.HOUR, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 1);
-        String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(calendar.getTime());
-        logger.info("RotateLog: next log rotation {}", timeStamp);
-        timer.schedule(new RotateLog(), calendar.getTime());
+        final Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 5);
+        calendar.set(Calendar.SECOND, 0);
+        // Roll over every night at 00:05
+        timer.schedule(new RotateLog(), calendar.getTime(), TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS));
+        // Date nextRotate = calendar.getTime();
+        // String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(nextRotate);
+        // logger.info("RotateLog: next log rotation {}", timeStamp);
     }
 
     /**
@@ -159,13 +160,13 @@ public class CasambiSimpleDriverLogger {
         @Override
         public void run() {
             logger.info("RotateLog: closing current log file.");
-            timer.cancel();
+            // timer.cancel();
 
             close();
 
             writer = open(logPath, logFile);
             logger.info("RotateLog: opened new log file.");
-            scheduleRotate();
+            // scheduleRotate();
         }
     }
 

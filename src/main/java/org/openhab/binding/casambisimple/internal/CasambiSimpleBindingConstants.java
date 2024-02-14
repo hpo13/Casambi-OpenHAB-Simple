@@ -45,7 +45,6 @@ public class CasambiSimpleBindingConstants {
     public static final String BRIDGE_CHANNEL_PEER = "peer";
     public static final String BRIDGE_CHANNEL_MESSAGE = "message";
     public static final String BRIDGE_CHANNEL_DIM = "dim";
-    // public static final String BRIDGE_CHANNEL_RESTART = "restart";
 
     // Luminaire constants
     // Parameters
@@ -56,8 +55,6 @@ public class CasambiSimpleBindingConstants {
     public static final String LUMINAIRE_HAS_DIMMER = "hasDimmer";
     public static final String LUMINAIRE_HAS_COLOR = "hasColor";
     public static final String LUMINAIRE_HAS_CCT = "hasCCT";
-    // public static final String LUMINAIRE_HAS_COLORBALANCE = "hasColorbalance";
-    // public static final String LUMINAIRE_HAS_WHITELEVEL = "hasWhitelevel";
     public static final String LUMINAIRE_TEMPERATURE_MIN = "tempMin";
     public static final String LUMINAIRE_TEMPERATURE_MAX = "tempMax";
 
@@ -67,8 +64,6 @@ public class CasambiSimpleBindingConstants {
     public static final String LUMINAIRE_CHANNEL_DIMMER = "dim";
     public static final String LUMINAIRE_CHANNEL_COLOR = "color";
     public static final String LUMINAIRE_CHANNEL_CCT = "cct";
-    // public static final String LUMINAIRE_CHANNEL_COLORBALANCE = "colorbalance";
-    // public static final String LUMINAIRE_CHANNEL_WHITELEVEL = "whitelevel";
 
     // Scene constants
     // Parameters

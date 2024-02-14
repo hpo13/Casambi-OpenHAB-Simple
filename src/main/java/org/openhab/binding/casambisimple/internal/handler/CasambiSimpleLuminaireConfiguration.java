@@ -24,7 +24,6 @@ public class CasambiSimpleLuminaireConfiguration {
     public Boolean hasDimmer = false;
     public Boolean hasColor = false;
     public Boolean hasCCT = false;
-    // public Boolean hasColorbalance = false;
     public Float tempMin = (float) 0;
     public Float tempMax = (float) 0;
 }

@@ -585,7 +585,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                     pollUnitStatusJobRunning = false;
                     return;
                 }
-                logger.trace("pollUnitStatus: #{}", this.hashCode());
+                logger.debug("pollUnitStatus: #{}", this.hashCode());
                 boolean allOffline = true;
                 try {
                     // Poll the unit status every 10 Minutes
@@ -637,7 +637,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                             logger.info("pollUnitStatus: got null network state message.");
                         }
                     } else {
-                        logger.warn("pollUnitStatus: #{} CasambiDriverRest is null. Continuing.",
+                        logger.warn("pollUnitStatus: #{} CasambiDriverRest is null. Stopping Job.",
                                 pollUnitStatus.hashCode());
                         pollUnitStatusJobRunning = false;
                         return;

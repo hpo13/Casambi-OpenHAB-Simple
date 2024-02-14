@@ -158,14 +158,6 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
                                 casambiSocketCopy.setUnitCCT(deviceId, temp);
                                 commandHandled = true;
                             }
-                            // } else if (LUMINAIRE_CHANNEL_WHITELEVEL.equals(channelUID.getId())) {
-                            // // Set color balance color (0-100) and white (0-100)
-                            // logger.info("handleCommand: got WHITELEVEL channel command {}", command);
-                            // if (command instanceof PercentType) {
-                            // Float slider = ((PercentType) command).floatValue();
-                            // casambiSocketCopy.setUnitWhitelevel(deviceId, slider);
-                            // commandHandled = true;
-                            // }
                         } else {
                             logger.info("handleCommand: unexpected channel id {}", channelUID.getId());
                         }
@@ -233,30 +225,30 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
             logger.trace("initialize: thing {}: hasBri {}, hasCo {}, hasCoTe {}", deviceUid, hasBri, hasCo, hasCoTe);
 
             // Remove channels that have no corresponding control in the device
-            final ThingBuilder tb = editThing();
+            final ThingBuilder thingBuilder = editThing();
             for (Channel ch : this.thing.getChannels()) {
                 logger.trace("Thing {} has channel: uid {}, label {} type {}", deviceUid, ch.getUID(), ch.getLabel(),
                         ch.getChannelTypeUID());
                 if (LUMINAIRE_CHANNEL_DIMMER.equals(ch.getUID().getId())) {
                     if (!hasBri) {
                         logger.trace("Thing: {} removing DIMMER channel {}", deviceUid, ch.getUID());
-                        tb.withoutChannel(ch.getUID());
+                        thingBuilder.withoutChannel(ch.getUID());
                     }
                 }
                 if (LUMINAIRE_CHANNEL_COLOR.equals(ch.getUID().getId())) {
                     if (!hasCo) {
                         logger.trace("Thing: {} removing COLOR channel {}", deviceUid, ch.getUID());
-                        tb.withoutChannel(ch.getUID());
+                        thingBuilder.withoutChannel(ch.getUID());
                     }
                 }
                 if (LUMINAIRE_CHANNEL_CCT.equals(ch.getUID().getId())) {
                     if (!hasCoTe) {
                         logger.trace("Thing: {} Removing CCT channel {}", deviceUid, ch.getUID());
-                        tb.withoutChannel(ch.getUID());
+                        thingBuilder.withoutChannel(ch.getUID());
                     }
                 }
             }
-            updateThing(tb.build());
+            updateThing(thingBuilder.build());
 
             updateStatus(ThingStatus.ONLINE);
         } else {

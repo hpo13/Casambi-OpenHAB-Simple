@@ -24,7 +24,7 @@ import org.eclipse.jdt.annotation.Nullable;
 @NonNullByDefault
 public class CasambiSimpleMessageControl {
     public @Nullable String type; // missing from Photo
-    public @Nullable Float value; // Dimmer, CCT, Colorbalance
+    public @Nullable Float value; // Dimmer, CCT
     public @Nullable String source; // Colorsource
     public @Nullable Float x; // Color(?), Photo
     public @Nullable Float y; // Color(?), Photo
@@ -35,8 +35,6 @@ public class CasambiSimpleMessageControl {
     public @Nullable Float level; // CCT
     public @Nullable Float sat; // Color
     public @Nullable Float hue; // Color
-    public @Nullable Float whiteLevel; // ColorBalance
-    public @Nullable Float colorLevel; // ColorBalance
     public @Nullable String name; // Button
     public @Nullable String label; // Color
     public @Nullable String buttonLabel; // Button
@@ -60,14 +58,6 @@ public class CasambiSimpleMessageControl {
 
     public Boolean isCCT() {
         return ("Slider".equals(type) && "CCT".equals(name)) || "CCT".equals(type);
-    }
-
-    public Boolean isColorbalance() {
-        return type != null && "ColorBalance".equals(type);
-    }
-
-    public Boolean isWhiteDimmer() {
-        return type != null && "Slider".equals(type) && "White Dimmer".equals(name);
     }
 
     public Float getMin() {
