@@ -41,7 +41,7 @@
 
 ## Production preparation
 
-* Internationalization (e.g. English and German)
+* Internationalisation (e.g. English and German)
 * Use OpenHAB supplied factories for HttpClient and WebSocket (See Coding Guidelines) - should be ok (230129)
 * Add binding to the OpenHAB source tree
 * Do 'mvn clean install' and 'mvn spotless:apply' - should be ok (230129)

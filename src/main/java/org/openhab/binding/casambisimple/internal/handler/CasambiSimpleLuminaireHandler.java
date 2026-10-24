@@ -170,7 +170,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
                     // FIXME: do a reopen here, if "remote endpoint not open"? Handle different types of errors?
                     logger.info("handleCommand: Exception {} for channel {}, command {}.", e.toString(),
                             channelUID.toString(), command.getClass());
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                             String.format("Channel %s, Command %s, Exception %s", channelUID.toString(),
                                     command.getClass(), e.toString()));
                 }
@@ -185,16 +185,16 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
                             logger.debug("handleCommand: uid {}, unit state is null", channelUID);
                         }
                     } catch (Exception e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, String.format(
+                        updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR, String.format(
                                 "Channel %s Exception getting unit state %s", channelUID.toString(), e.toString()));
                     }
                 }
             } else {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                         String.format("Channel %s Handler not found ", channelUID.toString()));
             }
         } else {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+            updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                     String.format("Channel %s Bridge not found ", channelUID.toString()));
         }
     }
@@ -285,13 +285,13 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
         final Bridge bridge = getBridge();
 
         if (bridge == null) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
+            updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
         } else {
             final ThingStatus bridgeStatus = bridge.getStatus();
             if (bridgeStatus.equals(ThingStatus.ONLINE)) {
-                updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
+                updateStatus(ThingStatus.ONLINE /* , ThingStatusDetail.NONE */);
             } else if (bridgeStatus.equals(ThingStatus.OFFLINE)) {
-                updateStatus(ThingStatus.ONLINE, ThingStatusDetail.BRIDGE_OFFLINE);
+                updateStatus(/* ThingStatus.ONLINE, */ ThingStatusDetail.BRIDGE_OFFLINE);
             } else {
                 logger.info("bridgeStatusChanged: unexpected bridge status {}", bridgeStatus);
             }
@@ -342,11 +342,11 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
             if (ol) {
                 updateStatus(ThingStatus.ONLINE);
             } else {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                         String.format("Unit %d status offline", deviceId));
             }
         } else {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+            updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                     String.format("Unit %d state.online is null", deviceId));
 
         }
@@ -354,7 +354,7 @@ public class CasambiSimpleLuminaireHandler extends BaseThingHandler {
             updateState(LUMINAIRE_CHANNEL_DIMMER, new PercentType(Math.round(state.dimLevel * 100)));
             logger.trace("updateLuminaireState: id {} dimLevel {}", deviceId, state.dimLevel);
         } else {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+            updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                     String.format("Unit %d state.dimLevel is null", deviceId));
         }
     }

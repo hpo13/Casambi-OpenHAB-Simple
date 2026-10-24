@@ -14,6 +14,8 @@ package org.openhab.binding.casambisimple.internal.driver;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.slf4j.Logger;
@@ -28,15 +30,15 @@ import org.slf4j.LoggerFactory;
 public class CasambiSimpleDriverSystem {
 
     private static Boolean enabled = false;
-    private static String command = " ";
+    private static List<String> command = new ArrayList<>();
 
     final static Logger logger = LoggerFactory.getLogger(CasambiSimpleDriverSystem.class);
 
-    private static final void sendSshCommand(String cmd) {
+    private static final void sendSshCommand(List<String> cmd) {
         if (enabled) {
-            logger.debug("sendSshCommand: sending command {}", cmd);
+            logger.debug("sendSshCommand: sending command {}", String.join(" ", cmd));
             try {
-                final Process process = Runtime.getRuntime().exec(cmd);
+                final Process process = Runtime.getRuntime().exec((String[]) cmd.toArray());
                 final BufferedReader stdout = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 final BufferedReader stderr = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
@@ -58,15 +60,21 @@ public class CasambiSimpleDriverSystem {
         logger.trace("enableSshCommand: {}, cmd '{}'", enable, cmd);
         enabled = enable;
         if (enable) {
-            command = cmd;
+            for (String part : cmd.split(" ")) {
+                command.add(part);
+            }
         }
     }
 
     public static final void sendSshRestartCommand() {
-        sendSshCommand(command + " --restart-app");
+        List<String> restartCmd = new ArrayList<String>(command);
+        restartCmd.add("--restart-app");
+        sendSshCommand(restartCmd);
     }
 
     public static final void sendSshBluetoothCommand() {
-        sendSshCommand(command + " --restart-bluetooth");
+        List<String> bluetoothCmd = new ArrayList<String>(command);
+        bluetoothCmd.add("--restart-bluetooth");
+        sendSshCommand(bluetoothCmd);
     }
 }

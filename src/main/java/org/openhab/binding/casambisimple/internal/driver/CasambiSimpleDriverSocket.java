@@ -130,7 +130,7 @@ public class CasambiSimpleDriverSocket {
             final URI casambiURI = new URI(socketUrl);
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             request.setSubProtocols(apiKey);
-            Future<Session> futureSession = casambiWebSocketClient.connect(casambiListener, casambiURI, request);
+            /* Future<Session> futureSession = */ casambiWebSocketClient.connect(casambiListener, casambiURI, request);
         } catch (Exception e) {
             logger.error("casambiSocket.open, exception connecting to server - {}", e.getMessage());
         }
@@ -282,9 +282,11 @@ public class CasambiSimpleDriverSocket {
                 if (casambiSession != null) {
                     casambiSession.close();
                 }
-                if (casambiListener != null) {
-                    logger.trace("casambiSocket.close, awaitClose, casambiListener {}", casambiListener);
-                    socketOk = casambiListener.awaitClose(5, TimeUnit.SECONDS);
+                @Nullable
+                CasambiListener casambiListenerLcl = casambiListener;
+                if (casambiListenerLcl != null) {
+                    logger.trace("casambiSocket.close, awaitClose, casambiListener {}", casambiListenerLcl);
+                    socketOk = casambiListenerLcl.awaitClose(5, TimeUnit.SECONDS);
                 }
             } catch (IOException e) {
                 logger.warn("casambiSocket.close: IO exception closing session {}", e.getMessage());

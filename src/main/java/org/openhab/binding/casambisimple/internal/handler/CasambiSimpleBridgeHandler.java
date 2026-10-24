@@ -17,7 +17,6 @@ import static org.openhab.binding.casambisimple.internal.CasambiSimpleBindingCon
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -148,12 +147,12 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
         logger.debug("initialize: setting up bridge #{}", this.hashCode());
 
         // Setup REST & WebSocket interface and start jobs
-        if (initSessionJob != null) {
-            logger.debug("casambiBridge:initialize stopping initSessionJob #{}", initSessionJob.hashCode());
-            initSessionJob.cancel(true);
+        @Nullable
+        Future<?> initSessionJobLcl = initSessionJob;
+        if (initSessionJobLcl != null) {
+            logger.debug("casambiBridge:initialize stopping initSessionJob #{}", initSessionJobLcl.hashCode());
+            initSessionJobLcl.cancel(true);
         }
-        // initSessionJobRunning = false;
-        // initSessionJob = scheduler.submit(initCasambiSession);
         casambiExecutor = Executors.newFixedThreadPool(10);
         initSessionJob = casambiExecutor.submit(initCasambiSession);
         logger.debug("initialize: initSessionJob #{} started", initCasambiSession.hashCode());
@@ -176,10 +175,12 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
         logger.info("casambiBridge:dispose tear down bridge #{}", this.hashCode());
         shutdownInProgress = true;
 
-        if (casambiExecutor != null) {
-            List<Runnable> stoppedJobs = casambiExecutor.shutdownNow();
+        @Nullable
+        ExecutorService casambiExecutorLcl = casambiExecutor;
+        if (casambiExecutorLcl != null) {
+            /* List<Runnable> stoppedJobs = */ casambiExecutorLcl.shutdownNow();
             try {
-                casambiExecutor.awaitTermination(5 * mSec, TimeUnit.MILLISECONDS); // Wait 5 seconds
+                casambiExecutorLcl.awaitTermination(5 * mSec, TimeUnit.MILLISECONDS); // Wait 5 seconds
                 logger.debug("casambiBridge:dispose all Jobs shut down.");
             } catch (InterruptedException e) {
                 logger.warn("casambiBridge:dispose Exception shutting down casambiExecutor {}", e.getMessage());
@@ -189,41 +190,53 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
         }
 
         // FIXME: these should all have been shut down by now
-        if (pollMessageJob != null) {
-            int hc = pollMessageJob.hashCode();
-            pollMessageJob.cancel(true);
+        @Nullable
+        Future<?> pollMessageJobLcl = pollMessageJob;
+        if (pollMessageJobLcl != null) {
+            int hc = pollMessageJobLcl.hashCode();
+            pollMessageJobLcl.cancel(true);
             pollMessageJobRunning = false;
             logger.debug("casambiBridge:dispose pollMessageJob #{} stopped", hc);
         }
-        if (socketKeepAliveJob != null) {
-            int hc = socketKeepAliveJob.hashCode();
-            socketKeepAliveJob.cancel(true);
+        @Nullable
+        Future<?> socketKeepAliveJobLcl = socketKeepAliveJob;
+        if (socketKeepAliveJobLcl != null) {
+            int hc = socketKeepAliveJobLcl.hashCode();
+            socketKeepAliveJobLcl.cancel(true);
             socketKeepAliveJobRunning = false;
             logger.debug("casambiBridge:dispose keepAlive #{} stopped", hc);
         }
-        if (pollUnitStatusJob != null) {
-            int hc = pollUnitStatusJob.hashCode();
-            pollUnitStatusJob.cancel(true);
+        @Nullable
+        Future<?> pollUnitStatusJobLcl = pollUnitStatusJob;
+        if (pollUnitStatusJobLcl != null) {
+            int hc = pollUnitStatusJobLcl.hashCode();
+            pollUnitStatusJobLcl.cancel(true);
             pollUnitStatusJobRunning = false;
             logger.debug("casambiBridge:dispose pollStatus #{} stopped", hc);
         }
-        if (peerRecoveryJob != null) {
-            int hc = peerRecoveryJob.hashCode();
-            peerRecoveryJob.cancel(true);
+        @Nullable
+        Future<?> peerRecoveryJobLcl = peerRecoveryJob;
+        if (peerRecoveryJobLcl != null) {
+            int hc = peerRecoveryJobLcl.hashCode();
+            peerRecoveryJobLcl.cancel(true);
             peerRecoveryJobRunning = false;
             logger.debug("casambiBridge:dispose peerRecovery #{} stopped", hc);
         }
 
         // Close sockets before opening new ones
-        if (casambiSocket != null) {
-            logger.debug("casambiBridge:dispose closing socket #{}", casambiSocket.hashCode());
-            casambiSocket.close();
+        @Nullable
+        CasambiSimpleDriverSocket casambiSocketLcl = casambiSocket;
+        if (casambiSocketLcl != null) {
+            logger.debug("casambiBridge:dispose closing socket #{}", casambiSocketLcl.hashCode());
+            casambiSocketLcl.close();
             casambiSocket = null;
         }
         // FIXME: wait for socket to be closed before closing REST?
-        if (casambiRest != null) {
-            logger.debug("casambiBridge:dispose closing rest #{}", casambiRest.hashCode());
-            casambiRest.close();
+        @Nullable
+        CasambiSimpleDriverRest casambiRestLcl = casambiRest;
+        if (casambiRestLcl != null) {
+            logger.debug("casambiBridge:dispose closing rest #{}", casambiRestLcl.hashCode());
+            casambiRestLcl.close();
             casambiRest = null;
         }
         bridgeOnline = false;
@@ -251,7 +264,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                     try {
                         casambiSocketLocal.setNetworkLevel(((PercentType) command).floatValue() / 100);
                     } catch (Exception e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                        updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                                 String.format("Channel %s Exception %s", channelUID.toString(), e.toString()));
                     }
                 } else {
@@ -262,7 +275,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                 logger.warn("handleCommand: unexpected channel {}, command {}", channelUID, command.getClass());
             }
         } else {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+            updateStatus( /* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                     String.format("CasambiSimpleSocket is null, channel ", channelUID.toString()));
         }
     }
@@ -322,27 +335,31 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
             logger.debug("initCasambiSession: starting Job #{}", initCasambiSession.hashCode());
 
             // FIXME: these should be all null if cleanup works properly,
-            if (pollUnitStatusJob != null) {
-                logger.debug("initCasambiSession: cancelling pollUnitStatusJob #{}", pollUnitStatusJob.hashCode());
-                pollUnitStatusJob.cancel(true);
+            Future<?> pollUnitStatusJobLcl = pollUnitStatusJob;
+            if (pollUnitStatusJobLcl != null) {
+                logger.debug("initCasambiSession: cancelling pollUnitStatusJob #{}", pollUnitStatusJobLcl.hashCode());
+                pollUnitStatusJobLcl.cancel(true);
             }
             pollUnitStatusJobRunning = false;
 
-            if (pollMessageJob != null) {
-                logger.debug("initCasambiSession: cancelling pollMessageJob #{}", pollMessageJob.hashCode());
-                pollMessageJob.cancel(true);
+            Future<?> pollMessageJobLcl = pollMessageJob;
+            if (pollMessageJobLcl != null) {
+                logger.debug("initCasambiSession: cancelling pollMessageJob #{}", pollMessageJobLcl.hashCode());
+                pollMessageJobLcl.cancel(true);
             }
             pollMessageJobRunning = false;
 
-            if (socketKeepAliveJob != null) {
-                logger.debug("initCasambiSession: cancelling socketKeepAliveJob #{}", socketKeepAliveJob.hashCode());
-                socketKeepAliveJob.cancel(true);
+            Future<?> socketKeepAliveJobLcl = socketKeepAliveJob;
+            if (socketKeepAliveJobLcl != null) {
+                logger.debug("initCasambiSession: cancelling socketKeepAliveJob #{}", socketKeepAliveJobLcl.hashCode());
+                socketKeepAliveJobLcl.cancel(true);
             }
             socketKeepAliveJobRunning = false;
 
-            if (peerRecoveryJob != null) {
-                logger.debug("initCasambiSession: cancelling peerRecoveryJob #{}", peerRecoveryJob.hashCode());
-                peerRecoveryJob.cancel(true);
+            Future<?> peerRecoveryJobLcl = peerRecoveryJob;
+            if (peerRecoveryJobLcl != null) {
+                logger.debug("initCasambiSession: cancelling peerRecoveryJob #{}", peerRecoveryJobLcl.hashCode());
+                peerRecoveryJobLcl.cancel(true);
             }
             peerRecoveryJobRunning = false;
 
@@ -374,10 +391,17 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
 
                         // Job pollUnitStatus - starting
                         if (!pollUnitStatusJobRunning) {
-                            // pollUnitStatusJob = scheduler.submit(pollUnitStatus);
-                            pollUnitStatusJob = casambiExecutor.submit(pollUnitStatus);
-                            logger.debug("initCasambiSession: pollUnitStatusJob #{} started",
-                                    pollUnitStatusJob.hashCode());
+                            if (casambiExecutor != null) {
+                                pollUnitStatusJob = casambiExecutor.submit(pollUnitStatus);
+                            } else {
+                                logger.error("initCasambiSession: casambiExecutor is null. This should not happen.");
+                            }
+                            if (pollUnitStatusJob != null) {
+                                logger.debug("initCasambiSession: pollUnitStatusJob #{} started",
+                                        pollUnitStatusJob.hashCode());
+                            } else {
+                                logger.error("initCasambiSession: pollUnitStatusJob is null. This should not happen.");
+                            }
                         } else {
                             logger.debug("initCasambiSession: pollUnitStatusJob already running");
                         }
@@ -385,7 +409,7 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                         // Socket - opening
                         casambiSocket = casambiRestLocal.getNewCasambiSocket();
                         logger.debug("initCasambiSession: opened socket #{}", casambiSocket.hashCode());
-                        if (/* casambiSocket != null && */ casambiSocket.open()) {
+                        if (casambiSocket != null && casambiSocket.open()) {
                             bridgeOnline = true;
                             updateStatus(ThingStatus.ONLINE);
                             updateState(BRIDGE_CHANNEL_PEER, OnOffType.ON);
@@ -393,9 +417,18 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                             // Job pollMessageJob - starting
                             if (!pollMessageJobRunning) {
                                 // pollMessageJob = scheduler.submit(handleCasambiMessages);
-                                pollMessageJob = casambiExecutor.submit(handleCasambiMessages);
-                                logger.debug("initCasambiSession: pollMessageJob #{} started",
-                                        pollMessageJob.hashCode());
+                                if (casambiExecutor != null) {
+                                    pollMessageJob = casambiExecutor.submit(handleCasambiMessages);
+                                } else {
+                                    logger.error(
+                                            "initCasambiSession: casambiExecutor is null. This should not happen.");
+                                }
+                                if (pollMessageJob != null) {
+                                    logger.debug("initCasambiSession: pollMessageJob #{} started",
+                                            pollMessageJob.hashCode());
+                                } else {
+                                    logger.error("initCasambiSession: pollMessageJob is null. This should not happen.");
+                                }
                             } else {
                                 logger.debug("initCasambiSession: pollMessageJob already running");
                             }
@@ -403,9 +436,19 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                             // Job socketKeepAliveJob - starting
                             if (!socketKeepAliveJobRunning) {
                                 // socketKeepAliveJob = scheduler.submit(socketKeepAlive);
-                                socketKeepAliveJob = casambiExecutor.submit(socketKeepAlive);
-                                logger.debug("initCasambiSession: socketKeepAliveJob #{} started",
-                                        socketKeepAliveJob.hashCode());
+                                if (casambiExecutor != null) {
+                                    socketKeepAliveJob = casambiExecutor.submit(socketKeepAlive);
+                                } else {
+                                    logger.error(
+                                            "initCasambiSession: casambiExecutor is null. This should not happen.");
+                                }
+                                if (socketKeepAliveJob != null) {
+                                    logger.debug("initCasambiSession: socketKeepAliveJob #{} started",
+                                            socketKeepAliveJob.hashCode());
+                                } else {
+                                    logger.error(
+                                            "initCasambiSession: socketKeepAliveJob is null. This should not happen.");
+                                }
                             } else {
                                 logger.debug("initCasambiSession: socketKeepAliveJob already running");
                             }
@@ -414,19 +457,19 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                         } else {
                             // FIXME: how do we handle socket open errors here?
                             logger.error("initCasambiSession: Socket not open");
-                            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                            updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                                     "Error: Socket not open.");
                         }
                     }
                 } else {
                     // FIXME: how do we handle rest open errors here?
                     logger.error("initCasambiSession: #{} REST session not open", initCasambiSession.hashCode());
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                             "Error: REST session not open.");
                 }
             } catch (Exception e) {
                 logger.warn("initCasambiSession: #{} Exception {}", initCasambiSession.hashCode(), e.getMessage());
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                         "Exception during session initialisation: " + e.getMessage());
             }
             logger.debug("initCasambiSession: #{} done.", initCasambiSession.hashCode());
@@ -508,9 +551,19 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                                     if (!peerRecoveryJobRunning) {
                                         if (config.useRemCmd) {
                                             // peerRecoveryJob = scheduler.submit(doPeerRecovery);
-                                            peerRecoveryJob = casambiExecutor.submit(doPeerRecovery);
-                                            logger.debug("initCasambiSession: peerRecoveryJob #{} started",
-                                                    peerRecoveryJob.hashCode());
+                                            if (casambiExecutor != null) {
+                                                peerRecoveryJob = casambiExecutor.submit(doPeerRecovery);
+                                            } else {
+                                                logger.error(
+                                                        "initCasambiSession: casambiExecutor is null. This should not happen.");
+                                            }
+                                            if (peerRecoveryJob != null) {
+                                                logger.debug("initCasambiSession: peerRecoveryJob #{} started",
+                                                        peerRecoveryJob.hashCode());
+                                            } else {
+                                                logger.error(
+                                                        "initCasambiSession: peerRecoveryJob is null. This should not happen.");
+                                            }
                                         }
                                     } else {
                                         logger.debug(
@@ -555,7 +608,8 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                 } else {
                     logger.warn("handleCasambiMessages: #{} casambi socket or rest driver is null. Continuing.",
                             handleCasambiMessages.hashCode());
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Casambi driver is null");
+                    updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
+                            "Casambi driver is null");
                     pollMessageJobRunning = false;
                     return;
                 }
@@ -691,9 +745,11 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                             }
                         }
                     }
-                    if (casambiSocket != null) {
+                    @Nullable
+                    CasambiSimpleDriverSocket casambiSocketLcl = casambiSocket;
+                    if (casambiSocketLcl != null) {
                         logger.trace("socketKeepAlive: #{} ping", socketKeepAlive.hashCode());
-                        casambiSocket.ping();
+                        casambiSocketLcl.ping();
                         missedPong++;
                     } else {
                         logger.info("socketKeepAlive: #{}, socket is null. Exiting.", socketKeepAlive.hashCode());
@@ -708,8 +764,11 @@ public class CasambiSimpleBridgeHandler extends BaseBridgeHandler {
                             e.getMessage());
                     // FIXME: reopen socket here?
                     if (casambiSocket != null & !shutdownInProgress) {
-                        logger.debug("socketKeepAlive: reopening socket #{}.", casambiSocket.hashCode());
-                        casambiSocket.reopen();
+                        @Nullable
+                        CasambiSimpleDriverSocket casambiSocketLcl = casambiSocket;
+                        logger.debug("socketKeepAlive: reopening socket #{}.", casambiSocketLcl.hashCode());
+                        casambiSocketLcl.reopen();
+                        casambiSocket = casambiSocketLcl;
                     }
                 }
             }

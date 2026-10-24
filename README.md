@@ -6,7 +6,7 @@ OpenHAB driver for the Casambi lighting system
 
 Allows to control lighting in a Casambi network. Dimming, color and  color temperature can be controlled. Discovery of luminaires, scenes and groups is possible.
 
-This is currently in development based on the new 3.2.0 OpenHAB release. A 'jar' file is provided in the 'target' folder that can be installed by copying it into the 'addons' folder of your OpenHAB installation.
+This is currently in development based on the new 5.3.0 OpenHAB release. A 'jar' file is provided in the 'target' folder that can be installed by copying it into the 'addons' folder of your OpenHAB installation.
 
 ## Features
 
@@ -126,7 +126,7 @@ Missing are Slider, XY and RGB color modes (only HSB is supported) and probably 
 
 Also the driver is currently limited to one network (and one site). 
 
-There is no internationalization and tests are missing as well.
+There is no internationalisation and tests are missing as well.
 
 ## Operation with an Android Phone as a Gateway 
 

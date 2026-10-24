@@ -15,8 +15,8 @@ package org.openhab.binding.casambisimple.internal.driver;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -60,7 +60,7 @@ public class CasambiSimpleDriverRest {
 
     // Connection parameters
 
-    private @Nullable URL casaServer;
+    private @Nullable URI casaServer;
     private final String userId;
     private final String userPassword;
     private final String networkPassword;
@@ -97,9 +97,9 @@ public class CasambiSimpleDriverRest {
         logger.debug("CasambiSimpleDriverRest:constructor webSocketClient {}, httpClient {}", webSocketClient,
                 httpClient);
         try {
-            casaServer = new URL("https://door.casambi.com/");
+            casaServer = new URI("https://door.casambi.com/");
         } catch (Exception e) {
-            logger.warn("CasambiDriverRest:constructor new URL - exception", e);
+            logger.warn("CasambiDriverRest:constructor new URI - exception", e);
             casaServer = null;
         }
         casambiWireId = 1;
@@ -160,7 +160,7 @@ public class CasambiSimpleDriverRest {
      * @param response - the response information from the GET or POST request.
      * @throws CasambiSimpleException - if response is not ok (response == null or status != 200)
      */
-    private void checkHttpResponse(String functionName, URL url, @Nullable ContentResponse response)
+    private void checkHttpResponse(String functionName, URI url, @Nullable ContentResponse response)
             throws CasambiSimpleException {
         if (response == null) {
             logger.warn("{} - error - null response", functionName);
@@ -188,33 +188,39 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable CasambiSimpleMessageSession createUserSession() throws URISyntaxException, CasambiSimpleException,
             TimeoutException, ExecutionException, MalformedURLException, InterruptedException {
-        final URL url = new URL(casaServer, "/v1/users/session");
-        final JsonObject reqJson = new JsonObject();
-        reqJson.addProperty("email", userId);
-        reqJson.addProperty("password", userPassword);
+        if (casaServer != null) {
+            final URI url = casaServer.resolve("/v1/users/session");
+            final JsonObject reqJson = new JsonObject();
+            reqJson.addProperty("email", userId);
+            reqJson.addProperty("password", userPassword);
 
-        ContentResponse response = null;
-        try {
-            response = httpClient.POST(url.toString()).header("Content-Type", "application/json")
-                    .header("X-Casambi-Key", apiKey)
-                    .content(new StringContentProvider(reqJson.toString()), "application/json").send();
-            checkHttpResponse("createUserSesssion", url, response);
-        } catch (Exception e) {
-            logger.warn("createUserSession: Exception {}", e.getMessage());
-        }
-        if (response != null) {
-            final Gson gson = new Gson();
-            final CasambiSimpleMessageSession sessObj = gson.fromJson(response.getContentAsString(),
-                    CasambiSimpleMessageSession.class);
-            if (sessObj != null) {
-                casambiSessionId = sessObj.sessionId;
-            } else {
-                logger.warn("createUserSession: Session object is null. HTTP response was '{}'",
-                        response.getContentAsString());
+            ContentResponse response = null;
+            try {
+                response = httpClient.POST(url.toString()).header("Content-Type", "application/json")
+                        .header("X-Casambi-Key", apiKey)
+                        .content(new StringContentProvider(reqJson.toString()), "application/json").send();
+                checkHttpResponse("createUserSesssion", url, response);
+            } catch (Exception e) {
+                logger.warn("createUserSession: Exception {}", e.getMessage());
             }
+            if (response != null) {
+                final Gson gson = new Gson();
+                final CasambiSimpleMessageSession sessObj = gson.fromJson(response.getContentAsString(),
+                        CasambiSimpleMessageSession.class);
+                if (sessObj != null) {
+                    casambiSessionId = sessObj.sessionId;
+                } else {
+                    logger.warn("createUserSession: Session object is null. HTTP response was '{}'",
+                            response.getContentAsString());
+                }
 
-            return sessObj;
+                return sessObj;
+            } else {
+                logger.warn("createUserSession: HTTP response is null");
+                return null;
+            }
         } else {
+            logger.warn("createUserSession: casaServer is null");
             return null;
         }
     }
@@ -232,47 +238,53 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable Map<String, CasambiSimpleMessageNetwork> createNetworkSession() throws URISyntaxException,
             IOException, InterruptedException, CasambiSimpleException, TimeoutException, ExecutionException {
-        final URL url = new URL(casaServer, "/v1/networks/session");
-        final JsonObject reqJson = new JsonObject();
-        reqJson.addProperty("email", userId);
-        reqJson.addProperty("password", networkPassword);
+        if (casaServer != null) {
+            final URI url = casaServer.resolve("/v1/networks/session");
+            final JsonObject reqJson = new JsonObject();
+            reqJson.addProperty("email", userId);
+            reqJson.addProperty("password", networkPassword);
 
-        // logger.trace("createNetworkSession: before sending request");
-        ContentResponse response = null;
-        try {
-            response = httpClient.POST(url.toString()).header("Content-Type", "application/json")
-                    .header("X-Casambi-Key", apiKey)
-                    .content(new StringContentProvider(reqJson.toString()), "application/json").send();
-            checkHttpResponse("createNetworkSesssion", url, response);
-        } catch (Exception e) {
-            logger.info("createNetworkSession: Exception {}", e.getMessage());
-        }
-
-        if (response != null) {
-            final Gson gson = new Gson();
-            final Type networkMapType = new TypeToken<Map<String, CasambiSimpleMessageNetwork>>() {
-            }.getType();
-            final Map<String, CasambiSimpleMessageNetwork> networks = gson.fromJson(response.getContentAsString(),
-                    networkMapType);
-            if (networks != null) {
-                for (CasambiSimpleMessageNetwork network : networks.values()) {
-                    casambiNetworkId = network.id;
-                }
+            // logger.trace("createNetworkSession: before sending request");
+            ContentResponse response = null;
+            try {
+                response = httpClient.POST(url.toString()).header("Content-Type", "application/json")
+                        .header("X-Casambi-Key", apiKey)
+                        .content(new StringContentProvider(reqJson.toString()), "application/json").send();
+                checkHttpResponse("createNetworkSesssion", url, response);
+            } catch (Exception e) {
+                logger.info("createNetworkSession: Exception {}", e.getMessage());
             }
-            return networks;
+
+            if (response != null) {
+                final Gson gson = new Gson();
+                final Type networkMapType = new TypeToken<Map<String, CasambiSimpleMessageNetwork>>() {
+                }.getType();
+                final Map<String, CasambiSimpleMessageNetwork> networks = gson.fromJson(response.getContentAsString(),
+                        networkMapType);
+                if (networks != null) {
+                    for (CasambiSimpleMessageNetwork network : networks.values()) {
+                        casambiNetworkId = network.id;
+                    }
+                }
+                return networks;
+            } else {
+                logger.error("createNetworkSession: HTTP response is null");
+                return null;
+            }
         } else {
+            logger.info("createNetworkSession: casambiServer is null");
             return null;
         }
     }
 
     /**
-     * makeHttpGet sets up a Casambi REST GET request. The request type and the parameters are contained in the URL.
+     * makeHttpGet sets up a Casambi REST GET request. The request type and the parameters are contained in the URI.
      * Authentication and context information is added.
      *
      * @param url - request url, contains the request type
      * @return a REST request
      */
-    private Request makeHttpGet(URL url) {
+    private Request makeHttpGet(URI url) {
         return httpClient.newRequest(url.toString()).method(HttpMethod.GET).header("Content-Type", "application/json")
                 .header("X-Casambi-Key", apiKey).header("X-Casambi-Session", casambiSessionId);
     }
@@ -289,11 +301,16 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable JsonObject getNetworkInformation() throws MalformedURLException, InterruptedException,
             TimeoutException, ExecutionException, CasambiSimpleException {
-        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId);
-        final ContentResponse response = makeHttpGet(url).send();
-        checkHttpResponse("getNetworkInformation", url, response);
-        final JsonObject networkInfo = JsonParser.parseString(response.getContentAsString()).getAsJsonObject();
-        return networkInfo;
+        if (casaServer != null) {
+            final URI url = casaServer.resolve("/v1/networks/" + casambiNetworkId);
+            final ContentResponse response = makeHttpGet(url).send();
+            checkHttpResponse("getNetworkInformation", url, response);
+            final JsonObject networkInfo = JsonParser.parseString(response.getContentAsString()).getAsJsonObject();
+            return networkInfo;
+        } else {
+            logger.info("createNetworkSession: casambiServer is null");
+            return null;
+        }
     }
 
     /**
@@ -311,14 +328,19 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable CasambiSimpleMessageNetworkState getNetworkState() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
-        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/state");
-        final ContentResponse response = makeHttpGet(url).send();
-        checkHttpResponse("getNetworkState", url, response);
+        if (casaServer != null) {
+            final URI url = casaServer.resolve("/v1/networks/" + casambiNetworkId + "/state");
+            final ContentResponse response = makeHttpGet(url).send();
+            checkHttpResponse("getNetworkState", url, response);
 
-        final Gson gson = new Gson();
-        final CasambiSimpleMessageNetworkState networkState = gson.fromJson(response.getContentAsString(),
-                CasambiSimpleMessageNetworkState.class);
-        return networkState;
+            final Gson gson = new Gson();
+            final CasambiSimpleMessageNetworkState networkState = gson.fromJson(response.getContentAsString(),
+                    CasambiSimpleMessageNetworkState.class);
+            return networkState;
+        } else {
+            logger.info("createNetworkSession: casambiServer is null");
+            return null;
+        }
     }
 
     /**
@@ -339,20 +361,26 @@ public class CasambiSimpleDriverRest {
      *             FIXME: use new url "https://door.casambi.com/datapoints/networks/NETWORK-ID-HERE/datapoints" + filter
      *             FIXME: see https://developer.casambi.com/#rest-api-request-network-datapoints
      */
-    public JsonObject getNetworkDatapoints(LocalDateTime from, LocalDateTime to, int sensorType) throws IOException,
-            InterruptedException, URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
+    public @Nullable JsonObject getNetworkDatapoints(LocalDateTime from, LocalDateTime to, int sensorType)
+            throws IOException, InterruptedException, URISyntaxException, CasambiSimpleException, TimeoutException,
+            ExecutionException {
         final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMddhhmmss");
         final String fromTime = from.format(fmt);
         final String toTime = to.format(fmt);
-        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/datapoints?sensorType=" + sensorType
-                + "&from=" + fromTime + "&to=" + toTime);
-        final ContentResponse response = makeHttpGet(url).send();
-        checkHttpResponse("getNetworkDatapoints", url, response);
+        if (casaServer != null) {
+            final URI url = casaServer.resolve("/v1/networks/" + casambiNetworkId + "/datapoints?sensorType="
+                    + sensorType + "&from=" + fromTime + "&to=" + toTime);
+            final ContentResponse response = makeHttpGet(url).send();
+            checkHttpResponse("getNetworkDatapoints", url, response);
 
-        // Wrap response into object because gson does not seem to like naked json-arrays
-        final String res = "{\"datapoints\":" + response.getContentAsString() + "}";
-        final JsonObject networkDataPoints = JsonParser.parseString(res).getAsJsonObject();
-        return networkDataPoints;
+            // Wrap response into object because gson does not seem to like naked json-arrays
+            final String res = "{\"datapoints\":" + response.getContentAsString() + "}";
+            final JsonObject networkDataPoints = JsonParser.parseString(res).getAsJsonObject();
+            return networkDataPoints;
+        } else {
+            logger.info("createNetworkSession: casambiServer is null");
+            return null;
+        }
     }
 
     /**
@@ -368,16 +396,21 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable Map<String, CasambiSimpleMessageUnit> getUnitList() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
-        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units");
-        final ContentResponse response = makeHttpGet(url).send();
-        checkHttpResponse("getUnitList", url, response);
+        if (casaServer != null) {
+            final URI url = casaServer.resolve("/v1/networks/" + casambiNetworkId + "/units");
+            final ContentResponse response = makeHttpGet(url).send();
+            checkHttpResponse("getUnitList", url, response);
 
-        final Gson gson = new Gson();
-        final Type unitMapType = new TypeToken<Map<String, CasambiSimpleMessageUnit>>() {
-        }.getType();
-        final Map<String, CasambiSimpleMessageUnit> unitList = gson.fromJson(response.getContentAsString(),
-                unitMapType);
-        return unitList;
+            final Gson gson = new Gson();
+            final Type unitMapType = new TypeToken<Map<String, CasambiSimpleMessageUnit>>() {
+            }.getType();
+            final Map<String, CasambiSimpleMessageUnit> unitList = gson.fromJson(response.getContentAsString(),
+                    unitMapType);
+            return unitList;
+        } else {
+            logger.info("createNetworkSession: casambiServer is null");
+            return null;
+        }
     }
 
     /**
@@ -394,14 +427,19 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable CasambiSimpleMessageUnit getUnitState(int unitId) throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
-        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/units/" + unitId + "/state");
-        final ContentResponse response = makeHttpGet(url).send();
-        checkHttpResponse("getUnitState", url, response);
+        if (casaServer != null) {
+            final URI url = casaServer.resolve("/v1/networks/" + casambiNetworkId + "/units/" + unitId + "/state");
+            final ContentResponse response = makeHttpGet(url).send();
+            checkHttpResponse("getUnitState", url, response);
 
-        final Gson gson = new Gson();
-        final CasambiSimpleMessageUnit unitState = gson.fromJson(response.getContentAsString(),
-                CasambiSimpleMessageUnit.class);
-        return unitState;
+            final Gson gson = new Gson();
+            final CasambiSimpleMessageUnit unitState = gson.fromJson(response.getContentAsString(),
+                    CasambiSimpleMessageUnit.class);
+            return unitState;
+        } else {
+            logger.info("createNetworkSession: casambiServer is null");
+            return null;
+        }
     }
 
     /**
@@ -417,16 +455,21 @@ public class CasambiSimpleDriverRest {
      */
     public @Nullable Map<String, CasambiSimpleMessageScene> getScenes() throws IOException, InterruptedException,
             URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
-        final URL url = new URL(casaServer, "/v1/networks/" + casambiNetworkId + "/scenes");
-        final ContentResponse response = makeHttpGet(url).send();
-        checkHttpResponse("getScenes", url, response);
+        if (casaServer != null) {
+            final URI url = casaServer.resolve("/v1/networks/" + casambiNetworkId + "/scenes");
+            final ContentResponse response = makeHttpGet(url).send();
+            checkHttpResponse("getScenes", url, response);
 
-        final Gson gson = new Gson();
-        final Type sceneMapType = new TypeToken<Map<String, CasambiSimpleMessageScene>>() {
-        }.getType();
-        final Map<String, CasambiSimpleMessageScene> scenes = gson.fromJson(response.getContentAsString(),
-                sceneMapType);
-        return scenes;
+            final Gson gson = new Gson();
+            final Type sceneMapType = new TypeToken<Map<String, CasambiSimpleMessageScene>>() {
+            }.getType();
+            final Map<String, CasambiSimpleMessageScene> scenes = gson.fromJson(response.getContentAsString(),
+                    sceneMapType);
+            return scenes;
+        } else {
+            logger.info("createNetworkSession: casambiServer is null");
+            return null;
+        }
     }
 
     /**
@@ -441,14 +484,19 @@ public class CasambiSimpleDriverRest {
      * @throws TimeoutException
      * @throws ExecutionException
      */
-    public JsonObject getFixtureInfo(int fixtureId) throws IOException, InterruptedException, URISyntaxException,
-            CasambiSimpleException, TimeoutException, ExecutionException {
-        final URL url = new URL(casaServer, "/v1/fixtures/" + fixtureId);
-        final ContentResponse response = makeHttpGet(url).send();
+    public @Nullable JsonObject getFixtureInfo(int fixtureId) throws IOException, InterruptedException,
+            URISyntaxException, CasambiSimpleException, TimeoutException, ExecutionException {
+        if (casaServer != null) {
+            final URI url = casaServer.resolve("/v1/fixtures/" + fixtureId);
+            final ContentResponse response = makeHttpGet(url).send();
 
-        checkHttpResponse("getFixtureInfo", url, response);
+            checkHttpResponse("getFixtureInfo", url, response);
 
-        final JsonObject fixtureInfo = JsonParser.parseString(response.getContentAsString()).getAsJsonObject();
-        return fixtureInfo;
+            final JsonObject fixtureInfo = JsonParser.parseString(response.getContentAsString()).getAsJsonObject();
+            return fixtureInfo;
+        } else {
+            logger.info("createNetworkSession: casambiServer is null");
+            return null;
+        }
     }
 }

@@ -80,7 +80,7 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
                             logger.warn("handleCommand: unexpected command type {}", command.getClass());
                         }
                     } catch (Exception e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                        updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                                 String.format("Channel %s Exception %s", channelUID.toString(), e.toString()));
                     }
                 } else if (SCENE_CHANNEL_DIM.equals(channelUID.getId())) {
@@ -93,7 +93,7 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
                             logger.warn("handleCommand: unexpected command type {}", command.getClass());
                         }
                     } catch (Exception e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                        updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                                 String.format("Channel %s Exception %s", channelUID.toString(), e.toString()));
                     }
                 } else {
@@ -105,7 +105,7 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
                 }
             }
         } else {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+            updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.COMMUNICATION_ERROR,
                     String.format("Channel %s Bridge or Handler not found ", channelUID.toString()));
         }
     }
@@ -116,7 +116,7 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
         final Bridge bridge = getBridge();
 
         if (bridge == null) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
+            updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
         } else {
             updateStatus(ThingStatus.ONLINE);
         }
@@ -148,13 +148,13 @@ public class CasambiSimpleSceneHandler extends BaseThingHandler {
         final Bridge bridge = getBridge();
 
         if (bridge == null) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
+            updateStatus(/* ThingStatus.OFFLINE, */ ThingStatusDetail.CONFIGURATION_ERROR, "No bridge configured");
         } else {
             final ThingStatus bridgeStatus = bridge.getStatus();
             if (bridgeStatus.equals(ThingStatus.ONLINE)) {
-                updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
+                updateStatus(ThingStatus.ONLINE /* , ThingStatusDetail.NONE */);
             } else if (bridgeStatus.equals(ThingStatus.OFFLINE)) {
-                updateStatus(ThingStatus.ONLINE, ThingStatusDetail.BRIDGE_OFFLINE);
+                updateStatus(ThingStatus.ONLINE /* , ThingStatusDetail.BRIDGE_OFFLINE */);
             } else {
                 logger.debug("bridgeStatusChanged: unexpected bridge status {}", bridgeStatus);
             }
